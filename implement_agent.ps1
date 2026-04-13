@@ -1,5 +1,5 @@
 $basePath = "c:\kpi monitoring"
-cd $basePath
+Set-Location $basePath
 
 function Write-File {
     param([string]$Path, [string]$Content)
