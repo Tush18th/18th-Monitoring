@@ -44,8 +44,8 @@ async function run() {
 
     // 5. Query Dashboard bounds wrapping logic locally securely 
     console.log('\n>>> DASHBOARD EXTRACTION TIER');
-    const summaries = await DashboardService.getKpiSummaries({});
-    const alerts = await DashboardService.getActiveAlerts({});
+    const summaries = await DashboardService.getKpiSummaries({ siteId: 'store_001', timeRange: '24h' });
+    const alerts = await DashboardService.getActiveAlerts({ siteId: 'store_001', timeRange: '24h' });
 
     console.log('\n--- Accessible Dashboard Metrics Profiles ---');
     console.table(summaries);

@@ -9,10 +9,12 @@ export const TopBar = ({ projectId }: { projectId: string }) => {
     const [simulating, setSimulating] = useState(false);
     const router = useRouter();
 
+    const API_BASE = 'http://localhost:4000';
+
     useEffect(() => {
         if (user?.role === 'SUPER_ADMIN') {
-            apiFetch('/api/v1/projects')
-                .then(data => setProjects(data))
+            apiFetch(`${API_BASE}/api/v1/projects`)
+                .then(data => setProjects(Array.isArray(data) ? data : []))
                 .catch(e => console.error(e));
         }
     }, [user, apiFetch]);
@@ -29,7 +31,7 @@ export const TopBar = ({ projectId }: { projectId: string }) => {
     const triggerSimulation = async () => {
         setSimulating(true);
         try {
-            await apiFetch('/api/v1/simulate', { 
+            await apiFetch(`${API_BASE}/api/v1/simulate`, { 
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ siteId: projectId })

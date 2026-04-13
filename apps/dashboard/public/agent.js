@@ -1,7 +1,7 @@
 (async function() {
     console.log('[Agent] KPI Monitoring Agent initializing…');
     const SITE_ID = 'store_001'; // Usually injected via template tag or data-attribute
-    const BASE_URL = 'http://localhost:4000';
+    const BASE_URL = window.KPI_API_URL || 'http://localhost:4000';
     const CONFIG_API = `${BASE_URL}/api/v1/config/${SITE_ID}`;
     const INGEST_API = `${BASE_URL}/api/v1/i/browser`;
     

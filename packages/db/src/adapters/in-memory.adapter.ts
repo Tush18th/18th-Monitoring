@@ -14,7 +14,7 @@ export const GlobalMemoryStore = {
     sessions: new Map<string, any>(),
 
     _p(pwd: string): string {
-        const salt = 'hardcoded_demo_salt';
+        const salt = process.env.JWT_SECRET || 'hardcoded_demo_salt';
         const hash = crypto.scryptSync(pwd, salt, 64).toString('hex');
         return `${salt}:${hash}`;
     },

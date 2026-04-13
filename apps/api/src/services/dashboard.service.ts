@@ -31,6 +31,13 @@ function stateFor(kpiName: string, val: number | null): 'healthy' | 'warning' | 
 }
 
 export class DashboardService {
+    /**
+     * Extracts and calculates the core Key Performance Indicators for a specific site.
+     * Evaluates data over the given time range and computes the standard health states.
+     * 
+     * @param filters - The DTO containing the 'siteId' constraint.
+     * @returns A mapped array of aggregated KPI objects.
+     */
     static async getKpiSummaries(filters: MetricFilterDto): Promise<KpiSummaryResponse[]> {
         const { siteId } = filters;
 
@@ -95,6 +102,13 @@ export class DashboardService {
         ];
     }
 
+    /**
+     * Retrieves currently active threshold breaches and architectural alerts.
+     * Guaranteed to isolate outputs to the requested 'siteId' preventing cross-tenant leakage.
+     * 
+     * @param filters - Contains limit/offset for pagination and 'siteId'.
+     * @returns A mapped array of alert summaries sorted dynamically.
+     */
     static async getActiveAlerts(filters: MetricFilterDto): Promise<AlertSummaryResponse[]> {
         const { siteId, limit = 50, offset = 0 } = filters;
         // ⚠️ Critical: filter by siteId to prevent cross-tenant data leakage
@@ -222,6 +236,12 @@ export class DashboardService {
         ];
     }
 
+    /**
+     * Collates complex order aggregation metrics including delays, channels, and total volumes.
+     * 
+     * @param filters - Filter matching current boundaries.
+     * @returns Breakdown metrics regarding total and delayed system orders.
+     */
     static async getOrderSummary(filters: MetricFilterDto) {
         const { siteId } = filters;
         const orders = Array.from(GlobalMemoryStore.orders.values()).filter(o => o.siteId === siteId);

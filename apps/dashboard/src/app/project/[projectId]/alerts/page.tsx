@@ -4,7 +4,6 @@ import { useAuth } from '../../../../context/AuthContext';
 import { useParams } from 'next/navigation';
 import { StatusBadge } from '../../../../components/ui/StatusBadge';
 
-const API = 'http://localhost:4000';
 
 export default function AlertsPage() {
     const params = useParams();
@@ -16,7 +15,7 @@ export default function AlertsPage() {
     useEffect(() => {
         if (!token || !projectId) return;
         setLoading(true);
-        apiFetch(`${API}/api/v1/dashboard/alerts?siteId=${projectId}`)
+        apiFetch(`/api/v1/dashboard/alerts?siteId=${projectId}`)
             .then(data => {
                 setAlerts(Array.isArray(data) ? data : []);
                 setLoading(false);

@@ -4,12 +4,12 @@ import { useAuth } from '../../../../context/AuthContext';
 import { useParams } from 'next/navigation';
 import { MetricCard } from '../../../../components/ui/MetricCard';
 
-const API = 'http://localhost:4000';
+
 
 export default function ProjectOverviewPage() {
   const params = useParams();
   const projectId = params.projectId as string;
-  const { token, apiFetch } = useAuth();
+  const { token, apiFetch, user } = useAuth();
   const [metrics, setMetrics] = useState<any[]>([]);
   const [alerts, setAlerts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -19,8 +19,8 @@ export default function ProjectOverviewPage() {
 
     setLoading(true);
     Promise.all([
-      apiFetch(`${API}/api/v1/dashboard/summaries?siteId=${projectId}`),
-      apiFetch(`${API}/api/v1/dashboard/alerts?siteId=${projectId}`)
+      apiFetch(`/api/v1/dashboard/summaries?siteId=${projectId}`),
+      apiFetch(`/api/v1/dashboard/alerts?siteId=${projectId}`)
     ]).then(([m, a]) => {
       setMetrics(Array.isArray(m) ? m : []);
       setAlerts(Array.isArray(a) ? a : []);

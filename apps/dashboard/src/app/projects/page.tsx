@@ -11,8 +11,8 @@ export default function GlobalProjectsPage() {
 
     useEffect(() => {
         if (!token) return;
-        apiFetch('http://localhost:4000/api/v1/projects')
-            .then(data => setProjects(data))
+        apiFetch('/api/v1/projects')
+            .then(data => setProjects(Array.isArray(data) ? data : []))
             .catch(e => console.error(e));
     }, [token, apiFetch]);
 

@@ -1,47 +1,52 @@
-# Multi-Tenant Dashboard
+# Dashboard Workspace (`apps/dashboard`)
 
-The visualization and administrative control plane for the E-Commerce Monitoring platform.
+The visualization and administration control plane mapping event ingestion flows directly to human-readable Key Performance Indicators.
 
-## 1. Overview
+## 🎯 App Purpose
 
-The Dashboard is a high-performance, role-aware web application built with **Next.js 15 (App Router)**. It provides real-time visualization of site health across multiple projects and serves as the management console for project admins.
+The Web Dashboard handles the presentation layer utilizing a modern, reactive stack built on **Next.js 15 (App Router)**. It provides near-real-time synchronization parsing REST aggregates dynamically enforcing Tenant strict isolation guaranteeing users can only view KPIs authorized to their boundaries. 
 
-## 2. Multi-Tenant Architecture
+By consuming complex telemetry (sync counts, HTTP errors, UX bottlenecks), it normalizes data dynamically into comprehensive chart summaries for Admins and read-only Overviews for basic Customers.
 
-The dashboard uses a dynamic routing structure to achieve project isolation:
-- **Global View**: `/projects` - Portfolio landing page for Super Admins.
-- **Project Context**: `/project/[projectId]/...` - All monitoring and configuration pages are scoped to a specific store context.
+## 🔄 Routing Structure (Next.js)
 
-### Access Control & Visibility
-- **`AuthContext`**: Manages session tokens and role-based metadata.
-- **`apiFetch` Wrapper**: Automatically attaches headers and handles global 401/403 redirections.
-- **Role-Based Navigation**: 
-    - **`RoleGuard`**: Protects administrative pages from viewer access.
-    - **Dynamic Sidebar**: Filters links based on active user capabilities (e.g., hiding "Customers" for viewers).
-    - **Project Switcher**: Filters the project list in the TopBar to only show assigned stores.
+- **`/login`**: Autonomous token generation. Secures gateway interceptors.
+- **`/projects`**: Portfolio summary interface. Dynamically rendered for multi-project overseers (`SUPER_ADMIN`).
+- **`/project/[projectId]/...`**: Tenant-scoped routes mapping specific boundaries:
+    - `/overview`: Real-time primary operational KPIs.
+    - `/alerts`: Triggered rule SLA evaluations.
+    - `/customers`: RBAC viewer-management tools.
+    - `/integrations`: External API/ERP Sync health summaries.
+    - `/settings`: Rule threshold modifier controls (e.g. Page Load caps).
 
-## 3. Core Pages (Project-Scoped)
+## 🧩 Key Components & Layout Structure
 
-- **Overview**: High-level KPI summary and capability roadmap.
-- **Performance / Users / Orders / Integrations**: Dedicated domain monitors.
-- **Alerts**: Real-time incident logs and breach history.
-- **Settings**: Threshold management and project configuration (Admin Only).
-- **Customers**: Viewer account provisioning and status management (Admin Only).
+- `TopBar.tsx`: Manages cross-tenant workspace swapping safely validating available bounds ensuring isolation natively. Dispatches simulated background inputs securely.
+- `RoleGuard.tsx`: Server/Client interceptor protecting explicit Next.js routes ensuring nested un-authorized bounces navigate gracefully.
+- `AuthContext.tsx`: Core State Provider caching JWTs, intercepting 401 unauthenticated drops automatically through centralized Axios structures.
 
-## 4. How It Fits in Architecture
+## 💾 State Management & Data Fetching
 
-- **Data Source**: Fetches authenticated data from **apps/api** (Port 4000).
-- **Context Injection**: Uses the `projectId` URL segment to drive consistent data fetching across all sub-pages.
-- **Safety Boundary**: The `/unauthorized` landing page provides a recovery path when RBAC boundaries are hit.
+- Environment properties are explicitly prefixed natively: `NEXT_PUBLIC_API_URL`, capturing endpoints explicitly.
+- The platform manages a globally wrapped Axios instance inside its `AuthContext` protecting token headers safely on each dynamic call routing gracefully.
+- Component-level states natively await the global data feed executing inline mapping guarantees `Array.isArray(x)`. Ensure components use `.env` paths appropriately.
 
-## 5. UI & Styling
+## ⚙️ How It Works (Data Flow)
+1. User interacts (clicks specific `store_001` project context mapping bounds).
+2. UI fetches data synchronously: `GET /api/v1/dashboard/summaries?siteId=store_001` dynamically evaluated by the `API_BASE` variables securely.
+3. Axios interceptors inject session maps safely passing authorization checks.
+4. Server parses data dynamically and responds.
 
-The app uses **Tailwind CSS v4** and **Vanilla CSS** for a "Premium Light" aesthetic. It emphasizes glassmorphism, fluid transitions, and clear typography (Inter/Outfit) for professional readability.
+## 🚀 Commands
 
-## 6. Local Development
-
-Run the dashboard independently:
+Navigate specifically to this workspace boundary before running standard inputs:
 ```bash
-npm run dev --workspace=@kpi/dashboard
-```
-The app will be available at http://localhost:3000.
+npm install
+npm run dev
+npm run build
+npm start
+``` 
+
+## 🔧 Known Issues & Fixes
+- **Next.js Hook Isolation**: Importing Next.js Native Server context (e.g., `useParams`) requires proper React structural boundaries. Always assert `'use client';` inside pages navigating layout structures gracefully.
+- **Interceptor 401 Ghosting**: Using outdated JWT cookies will silently force Axios to refresh your bounds sending you strictly to `/login`. Ensure you restart the UI if the backend flushes.

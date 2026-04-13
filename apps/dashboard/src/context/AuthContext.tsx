@@ -1,6 +1,7 @@
 'use client';
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import axios from 'axios';
 
 interface User {
     id: string;
@@ -47,42 +48,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, []);
 
     const apiFetch = async (url: string, options: any = {}) => {
+        const fetchUrl = url.startsWith('http') ? url : `${API_BASE}${url}`;
         const headers = {
             ...options.headers,
             'session-token': token || localStorage.getItem('session-token') || ''
         };
         
-        const res = await fetch(url, { ...options, headers });
-        
-        if (res.status === 401) {
-            logout();
-            throw new Error('Unauthorized');
+        try {
+            const res = await axios({
+                url: fetchUrl,
+                method: options.method || 'GET',
+                headers,
+                data: options.body ? JSON.parse(options.body) : undefined
+            });
+            return res.data;
+        } catch (error: any) {
+             if (error.response?.status === 401) {
+                logout();
+                throw new Error('Unauthorized');
+            }
+            if (error.response?.status === 403) {
+                router.push('/unauthorized');
+                throw new Error('Forbidden');
+            }
+            throw new Error(error.response?.data?.message || error.message);
         }
-        
-        if (res.status === 403) {
-            router.push('/unauthorized');
-            throw new Error('Forbidden');
-        }
-        
-        const contentType = res.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-            return res.json();
-        }
-        return res.text();
     };
 
     const login = async (email: string, password: string) => {
-        const res = await fetch(`${API_BASE}/api/v1/auth/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
-        });
-
-        if (!res.ok) throw new Error('Invalid credentials');
-
-        const { token, user } = await res.json();
-        
-        setToken(token);
+        try {
+            const res = await axios.post(`${API_BASE}/api/v1/auth/login`, { email, password });
+            const { token, user } = res.data;
+            
+            setToken(token);
         setUser(user);
         localStorage.setItem('session-token', token);
         localStorage.setItem('session-user', JSON.stringify(user));
@@ -92,6 +90,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             router.push('/');
         } else {
             router.push('/projects');
+        }
+        } catch (error: any) {
+            throw new Error(error.response?.data?.message || 'Invalid credentials');
         }
     };
 

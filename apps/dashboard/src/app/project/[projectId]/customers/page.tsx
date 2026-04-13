@@ -18,7 +18,7 @@ export default function CustomersPage() {
     const loadCustomers = async () => {
         setLoading(true);
         try {
-            const data = await apiFetch(`http://localhost:4000/api/v1/admin/projects/${projectId}/customers`);
+            const data = await apiFetch(`/api/v1/admin/projects/${projectId}/customers`);
             setCustomers(Array.isArray(data) ? data : []);
         } catch (e) {
             console.error(e);
@@ -35,7 +35,7 @@ export default function CustomersPage() {
         e.preventDefault();
         setIsSaving(true);
         try {
-            await apiFetch(`http://localhost:4000/api/v1/admin/projects/${projectId}/customers`, {
+            await apiFetch(`/api/v1/admin/projects/${projectId}/customers`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newCustomer)
@@ -53,7 +53,7 @@ export default function CustomersPage() {
     const toggleStatus = async (custId: string, currentStatus: string) => {
         const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
         try {
-            await apiFetch(`http://localhost:4000/api/v1/admin/customers/${custId}/status`, {
+            await apiFetch(`/api/v1/admin/customers/${custId}/status`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: newStatus })

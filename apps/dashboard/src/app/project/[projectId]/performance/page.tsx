@@ -4,7 +4,6 @@ import { useAuth } from '../../../../context/AuthContext';
 import { useParams } from 'next/navigation';
 import { MetricCard } from '../../../../components/ui/MetricCard';
 
-const API = 'http://localhost:4000';
 
 export default function PerformancePage() {
     const params = useParams();
@@ -16,7 +15,7 @@ export default function PerformancePage() {
     useEffect(() => {
         if (!token || !projectId) return;
         setLoading(true);
-        apiFetch(`${API}/api/v1/dashboard/summaries?siteId=${projectId}`)
+        apiFetch(`/api/v1/dashboard/summaries?siteId=${projectId}`)
             .then(data => {
                 const perf = data.find((m: any) => m.kpiName === 'pageLoadTime');
                 setStats(perf);

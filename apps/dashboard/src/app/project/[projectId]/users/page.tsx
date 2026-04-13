@@ -4,7 +4,7 @@ import { useAuth } from '../../../../context/AuthContext';
 import { useParams } from 'next/navigation';
 import { MetricCard } from '../../../../components/ui/MetricCard';
 
-const API = 'http://localhost:4000';
+
 
 export default function UsersPage() {
     const params = useParams();
@@ -16,9 +16,9 @@ export default function UsersPage() {
     useEffect(() => {
         if (!token || !projectId) return;
         setLoading(true);
-        apiFetch(`${API}/api/v1/dashboard/summaries?siteId=${projectId}`)
+        apiFetch(`/api/v1/dashboard/summaries?siteId=${projectId}`)
             .then(data => {
-                const s = data.find((m: any) => m.kpiName === 'activeUsers');
+                const s = Array.isArray(data) ? data.find((m: any) => m.kpiName === 'activeUsers') : null;
                 setStats(s);
                 setLoading(false);
             })
