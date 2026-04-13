@@ -1,3 +1,4 @@
+export * from './config';
 import { z } from 'zod';
 import { BaseEventSchema, BrowserIngestPayloadSchema, ServerIngestPayloadSchema } from '../../events/src/schemas';
 
@@ -57,4 +58,24 @@ export interface OrderEventMetadata {
 export interface PageViewMetadata {
     url: string;
     loadTime?: number;
+}
+
+export type OrderSource = 'online' | 'offline';
+export type OrderStatus = 'placed' | 'processed' | 'shipped' | 'cancelled' | 'refunded';
+
+export interface CanonicalOrder {
+    orderId: string;
+    externalOrderId?: string;
+    tenantId: string;
+    siteId: string;
+    orderSource: OrderSource;
+    sourceSystem: string;
+    channel: string;
+    orderType: string;
+    status: OrderStatus;
+    currency: string;
+    amount: number;
+    createdAt: string;
+    updatedAt: string;
+    metadata: Record<string, any>;
 }

@@ -12,6 +12,8 @@ import { tenantAuthHandler } from './middlewares/auth.middleware';
 import { viewOnlyGuard, roleGuard } from './middlewares/rbac.middleware';
 import { rateLimiter } from './middlewares/rate-limiter.middleware';
 import { secureHeaders } from './middlewares/secure-headers.middleware';
+import { tenantIsolationGuard } from './middlewares/tenant-isolation.middleware';
+import { idempotencyGuard } from './middlewares/idempotency.middleware';
 
 // ─── Boot the in-process stream consumer ──────────────────────────────────────
 
@@ -25,7 +27,24 @@ consumer.connectAndSubscribe([TOPICS.BROWSER_EVENTS, TOPICS.SERVER_EVENTS])
 export const bootstrapApi = async () => {
     console.log('[API] Initializing Fastify server…');
     const server = fastify({ logger: false });
-    await server.register(cors, { origin: true });
+
+    // ── Security Hardening ──────────────────────────────────────────────────
+    
+    // 1. Strict CORS Policy
+    const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
+    await server.register(cors, { 
+        origin: allowedOrigins.length > 0 ? allowedOrigins : [/localhost:\d+$/], // Default to localhost but forbid '*' in prod
+        credentials: true
+    });
+
+    // 2. JWT Secret Strength Validation
+    const jwtSecret = process.env.JWT_SECRET || '';
+    if (process.env.NODE_ENV === 'production') {
+        if (jwtSecret.length < 64 || jwtSecret === 'replace_with_at_least_64_char_random_string') {
+            console.error('[FATAL] Production JWT_SECRET is missing or insecure (min 64 chars required).');
+            process.exit(1);
+        }
+    }
     
     // ── Global Observability & Security Middlewares ────────────────────────
     
@@ -43,8 +62,8 @@ export const bootstrapApi = async () => {
 
     server.addHook('onResponse', async (req, reply) => {
         const time = Math.round(reply.getResponseTime());
-        console.log(`[RES] ${req.id} | ${req.method} ${req.url} | status=${reply.statusCode} | ${time}ms`);
-        // TODO (PROD): Send to APM (e.g. Datadog / Prometheus histogram `http_request_duration_seconds`)
+        // Structured log for CloudWatch/Datadog metrics extraction
+        console.log(`[METRIC] event=http_request siteId=${(req.params as any).siteId || 'global'} status=${reply.statusCode} latency_ms=${time} path=${req.url}`);
     });
 
     server.addHook('onRequest', secureHeaders);
@@ -56,6 +75,22 @@ export const bootstrapApi = async () => {
         preHandler: [tenantAuthHandler, viewOnlyGuard] 
     });
 
+    await server.register(require('./routes/public').publicRoutes, {
+        prefix: '/api/v1'
+    });
+
+    await server.register(require('./routes/config').configRoutes, {
+        prefix: '/api/v1/projects'
+    });
+
+    await server.register(require('./routes/sync').syncRoutes, {
+        prefix: '/api/v1/projects'
+    });
+
+
+    await server.register(require('./routes/webhooks').webhookRoutes, {
+        prefix: '/api/v1/webhooks'
+    });
 
     // ── Auth & RBAC ────────────────────────────────────────────────────────
     server.post('/api/v1/auth/login', login);
@@ -71,6 +106,8 @@ export const bootstrapApi = async () => {
     server.get('/health', async (_req, reply) => {
         // Liveness probe (is the process running?)
         const memoryUsage = process.memoryUsage();
+        const { cache } = require('../../../packages/cache/src');
+        
         reply.send({ 
             status: 'UP', 
             environment: process.env.NODE_ENV || 'development',
@@ -78,6 +115,7 @@ export const bootstrapApi = async () => {
             memory: {
                 rss: Math.round(memoryUsage.rss / 1024 / 1024) + ' MB',
             },
+            cache: cache.getTelemetry(),
             ts: new Date().toISOString() 
         });
     });
@@ -194,17 +232,24 @@ export const bootstrapApi = async () => {
     const port = process.env.PORT ? parseInt(process.env.PORT) : 4000;
     server.listen({ port, host: '0.0.0.0' }, (err, address) => {
         if (err) { console.error(err); process.exit(1); }
-        console.log(`[API] Server listening at ${address}`);
-        console.log(`[API] Endpoints: GET /health, GET /api/v1/dashboard/summaries, POST /api/v1/i/browser, POST /api/v1/simulate`);
+        console.log(`[API] Server listening on everything at ${address}`);
+        console.log(`[API] Endpoints: GET /health, GET /api/v1/projects/:siteId/metrics/catalog, GET /api/v1/projects/:siteId/integrations/status`);
+
+        // Start connector polling timers after the server is bound
+        const { connectorRegistryService } = require('./services/connector-registry.service');
+        connectorRegistryService.startAllPollers('*');
     });
 
     // ─── Graceful Shutdown ─────────────────────────────────────────────────
     const exitHandler = async (signal: string) => {
         console.log(`\n[Server] Received ${signal}, starting graceful shutdown...`);
         try {
+            // Stop connector polling timers first to prevent new work being enqueued
+            const { connectorRegistryService } = require('./services/connector-registry.service');
+            connectorRegistryService.stopAllPollers();
             // TODO (PROD): Add publisher.disconnect(), db.close() when adapters have real connections
             await server.close();
-            console.log('[Server] Fastify server closed.');
+            console.log('[Server] Fastify server closed. All pollers drained successfully.');
             process.exit(0);
         } catch (err) {
             console.error('[Server] Error during graceful shutdown:', err);

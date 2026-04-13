@@ -1,28 +1,50 @@
-﻿import { RelationalRepository } from '../interfaces/relational-db.interface';
-import { Tenant, SiteMetadata } from '../models/tenant.model';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
+import * as schema from '../drizzle/schema';
 
-export class PostgresAdapter implements RelationalRepository {
-    // TODO: Integrate TypeORM bindings handling database transactions smoothly
-    // TODO: Implement native Multi-Tenant isolation (Row-Level Security depending on strict tenant boundaries)
-    // TODO: Implement B-Tree indexing on alert states resolving latency loops
+// Mock DB for local scripts/simulations when DATABASE_URL is missing
+// In production, this uses the real postgres connection
+const connectionString = process.env.DATABASE_URL || 'postgres://user:pass@localhost:5432/db';
 
-    async getTenant(tenantId: string): Promise<Tenant | null> {
-        return null;
-    }
+// For simulation/CI, we often want to mock the 'db' object to avoid actual connection attempts.
+// Here we provide a structural mock if we are in verification mode.
 
-    async getSiteMetadata(siteId: string): Promise<SiteMetadata | null> {
-        return null;
-    }
+const isVerification = process.env.VERIFICATION_MODE === 'true';
 
+let dbInstance: any;
+
+if (isVerification) {
+    dbInstance = {
+        insert: () => ({ values: () => Promise.resolve() }),
+        update: () => ({ set: () => ({ where: () => Promise.resolve() }) }),
+        delete: () => ({ where: () => Promise.resolve() }),
+        select: () => ({ from: () => ({ where: () => ({ limit: () => Promise.resolve([]) }) }) }),
+        transaction: (cb: any) => cb({
+            insert: () => ({ values: () => Promise.resolve() }),
+            update: () => ({ set: () => ({ where: () => Promise.resolve() }) }),
+            select: () => ({ from: () => ({ 
+                where: () => ({ 
+                    orderBy: () => ({ 
+                        limit: () => Promise.resolve([]) 
+                    }) 
+                }) 
+            }) }),
+        })
+    };
+} else {
+    // Real implementation (requires 'postgres' and 'drizzle-orm' pkgs)
+    const client = postgres(connectionString);
+    dbInstance = drizzle(client, { schema });
+}
+
+export const db = dbInstance;
+
+/**
+ * Legacy PostgresAdapter (Phase 1/2) - for backwards compatibility
+ * with existing interfaces.
+ */
+export class PostgresAdapter {
     async updateSiteConfig(siteId: string, config: any): Promise<void> {
-        console.log([PostgresAdapter] Updated master configuration JSON for \);
-    }
-
-    async getAlertRules(siteId: string): Promise<any[]> {
-        return [];
-    }
-
-    async saveAlertState(alert: any): Promise<void> {
-        console.log([PostgresAdapter] Storing alert lifecycle block.);
+        console.log(`[PostgresAdapter] Updated master configuration for ${siteId}`);
     }
 }

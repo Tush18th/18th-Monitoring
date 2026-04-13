@@ -1,5 +1,6 @@
 import { KpiEngine } from '../engine/kpi-engine';
 import { GlobalMemoryStore } from '../../../../packages/db/src/adapters/in-memory.adapter';
+import { orderNormalizationService } from '../../../../apps/api/src/services/order-normalization.service';
 
 export class OrderHandler {
     static async handle(event: any) {
@@ -8,11 +9,13 @@ export class OrderHandler {
         if (!orderId) return;
 
         if (eventType === 'order_placed') {
+            const canonicalOrder = await orderNormalizationService.normalize(event.value, siteId);
             GlobalMemoryStore.orders.set(orderId, {
-                status: 'placed',
-                placedAt: new Date().toISOString(),
+                status: canonicalOrder.status,
+                placedAt: canonicalOrder.createdAt,
                 siteId,
-                channel: metadata.channel || 'web'
+                channel: canonicalOrder.channel,
+                source: canonicalOrder.orderSource
             });
             await KpiEngine.recordOrder(siteId, orderId, true);
         } else if (eventType === 'order_processed') {

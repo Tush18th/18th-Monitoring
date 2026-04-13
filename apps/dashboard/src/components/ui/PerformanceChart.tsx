@@ -1,5 +1,15 @@
 'use client';
 import React from 'react';
+import { 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend, 
+  ResponsiveContainer 
+} from 'recharts';
 
 interface ChartPoint {
     timestamp: string;
@@ -17,19 +27,6 @@ interface PerformanceChartProps {
 export const PerformanceChart = ({ data, title }: PerformanceChartProps) => {
     if (!data || data.length === 0) return null;
 
-    const width = 800;
-    const height = 200;
-    const padding = 20;
-
-    const maxVal = Math.max(...data.map(d => Math.max(d.pageLoadTime, d.lcp, d.fcp, d.ttfb, 1000)));
-    
-    const getX = (index: number) => (index / (data.length - 1)) * (width - 2 * padding) + padding;
-    const getY = (value: number) => height - ((value / maxVal) * (height - 2 * padding) + padding);
-
-    const createPath = (key: keyof Omit<ChartPoint, 'timestamp'>) => {
-        return data.map((d, i) => `${i === 0 ? 'M' : 'L'} ${getX(i)} ${getY(d[key] as number)}`).join(' ');
-    };
-
     return (
         <div style={{
             background: 'var(--bg-surface)',
@@ -43,48 +40,48 @@ export const PerformanceChart = ({ data, title }: PerformanceChartProps) => {
             <h3 style={{ fontSize: '14px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '20px', textTransform: 'uppercase', letterSpacing: '1px' }}>
                 {title}
             </h3>
-            <div style={{ position: 'relative', height: `${height}px`, width: '100%' }}>
-                <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', height: '100%', overflow: 'visible' }}>
-                    {/* Grid Lines */}
-                    {[0, 0.25, 0.5, 0.75, 1].map(v => (
-                        <line 
-                            key={v}
-                            x1={padding} y1={getY(v * maxVal)} 
-                            x2={width - padding} y2={getY(v * maxVal)} 
-                            stroke="var(--border-light)" 
-                            strokeWidth="1" 
-                            strokeDasharray="4 4"
-                        />
-                    ))}
-
-                    {/* Paths */}
-                    <path d={createPath('pageLoadTime')} fill="none" stroke="var(--accent-blue)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d={createPath('lcp')} fill="none" stroke="var(--accent-orange)" strokeWidth="2" strokeDasharray="5 5" />
-                    <path d={createPath('fcp')} fill="none" stroke="var(--accent-green)" strokeWidth="2" strokeDasharray="5 5" />
-                    <path d={createPath('ttfb')} fill="none" stroke="var(--accent-red)" strokeWidth="2" strokeDasharray="5 5" />
-
-                    {/* X-Axis Labels */}
-                    {data.map((d, i) => (
-                        <text key={i} x={getX(i)} y={height + 15} textAnchor="middle" style={{ fontSize: '10px', fill: 'var(--text-secondary)', fontWeight: '600' }}>
-                            {d.timestamp}
-                        </text>
-                    ))}
-                </svg>
-            </div>
             
-            {/* Legend */}
-            <div style={{ display: 'flex', gap: '24px', marginTop: '30px', justifyContent: 'center' }}>
-                {[
-                    { label: 'Page Load', color: 'var(--accent-blue)' },
-                    { label: 'LCP', color: 'var(--accent-orange)' },
-                    { label: 'FCP', color: 'var(--accent-green)' },
-                    { label: 'TTFB', color: 'var(--accent-red)' },
-                ].map(item => (
-                    <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{ width: '12px', height: '3px', background: item.color, borderRadius: '2px' }} />
-                        <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-secondary)' }}>{item.label}</span>
-                    </div>
-                ))}
+            <div style={{ width: '100%', height: 300 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-light)" />
+                        <XAxis 
+                            dataKey="timestamp" 
+                            stroke="var(--text-secondary)" 
+                            fontSize={12} 
+                            tickLine={false} 
+                            axisLine={false} 
+                        />
+                        <YAxis 
+                            stroke="var(--text-secondary)" 
+                            fontSize={12} 
+                            tickLine={false} 
+                            axisLine={false} 
+                            tickFormatter={(value) => `${value}ms`}
+                        />
+                        <Tooltip 
+                            contentStyle={{ 
+                                backgroundColor: 'var(--bg-surface)', 
+                                border: '1px solid var(--border)',
+                                borderRadius: '8px',
+                                fontSize: '12px'
+                            }}
+                        />
+                        <Legend iconType="circle" />
+                        <Line 
+                            type="monotone" 
+                            dataKey="pageLoadTime" 
+                            name="Page Load" 
+                            stroke="var(--accent-blue)" 
+                            strokeWidth={3} 
+                            dot={{ r: 4 }} 
+                            activeDot={{ r: 6 }} 
+                        />
+                        <Line type="monotone" dataKey="lcp" name="LCP" stroke="var(--accent-orange)" strokeWidth={2} strokeDasharray="5 5" />
+                        <Line type="monotone" dataKey="fcp" name="FCP" stroke="var(--accent-green)" strokeWidth={2} strokeDasharray="5 5" />
+                        <Line type="monotone" dataKey="ttfb" name="TTFB" stroke="var(--accent-red)" strokeWidth={2} strokeDasharray="5 5" />
+                    </LineChart>
+                </ResponsiveContainer>
             </div>
         </div>
     );

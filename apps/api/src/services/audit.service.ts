@@ -1,30 +1,74 @@
 /**
- * Audit Logging Service
- * 
- * Centralized structured logging for security-sensitive operations.
- * 
- * PRODUCTION NOTE: This should write to an append-only datastore or 
- * external log aggregator (e.g., Splunk, Elasticsearch, Datadog)
- * and definitely NOT just stdout.
+ * AuditService — Phase 4 Enhanced
+ *
+ * Writes structured audit events to:
+ *   1. Postgres `audit_logs` table (durable, queryable)
+ *   2. stdout (structured JSON for log aggregators — Datadog, Splunk, CloudWatch)
+ *
+ * Covers all auditability domains:
+ *   - CONFIG_*         config publish / rollback / draft
+ *   - SYNC_*           connector sync start / complete / fail
+ *   - IMPORT_*         CSV import submit / complete / fail
+ *   - RECON_*          reconciliation trigger / complete
+ *   - API_ACCESS       public/admin API access events
  */
+
+import crypto from 'crypto';
+import { db } from '../../../../packages/db/src/adapters/postgres-relational.adapter';
+import { auditLogs } from '../../../../packages/db/src/drizzle/schema';
+
+export type AuditAction =
+    | 'CONFIG_PUBLISHED' | 'CONFIG_ROLLBACK' | 'CONFIG_DRAFT_CREATED'
+    | 'SYNC_STARTED'     | 'SYNC_COMPLETED'  | 'SYNC_FAILED'
+    | 'IMPORT_SUBMITTED' | 'IMPORT_COMPLETED' | 'IMPORT_FAILED'
+    | 'RECON_TRIGGERED'  | 'RECON_COMPLETED'
+    | 'API_ACCESS'       | 'AUTH_LOGIN'       | 'AUTH_FAILURE';
+
+export interface AuditEvent {
+    action:      AuditAction;
+    actorId:     string;
+    siteId:      string;
+    entityType:  string;
+    entityId:    string;
+    changes?:    Record<string, any>;
+    status?:     'SUCCESS' | 'FAILURE' | 'PENDING';
+    meta?:       Record<string, any>;
+}
+
 export class AuditService {
-    static async log(event: {
-        action: string;
-        actorId: string;
-        actorRole?: string;
-        targetId?: string;
-        resource?: string;
-        status: 'SUCCESS' | 'FAILURE';
-        metadata?: Record<string, any>;
-    }) {
+    static async log(event: AuditEvent): Promise<void> {
+        const logId = crypto.randomUUID();
+        const timestamp = new Date();
+
         const entry = {
-            ...event,
-            timestamp: new Date().toISOString(),
-            service: 'kpi-monitoring-api',
-            type: 'AUDIT'
+            action:     event.action,
+            actorId:    event.actorId,
+            siteId:     event.siteId,
+            entityType: event.entityType,
+            entityId:   event.entityId,
+            changes:    event.changes    ?? {},
+            status:     event.status     ?? 'SUCCESS',
+            meta:       event.meta       ?? {},
+            timestamp:  timestamp.toISOString(),
+            service:    'kpi-monitoring-api',
         };
 
-        // In a real system, publish to SEC_EVENTS topic or write to DB
+        // 1. Structured stdout — parsed by log aggregators
         console.log(`[AUDIT] ${JSON.stringify(entry)}`);
+
+        // 2. Persist to Postgres
+        try {
+            await db.insert(auditLogs).values({
+                siteId:     event.siteId,
+                actorId:    event.actorId,
+                action:     event.action,
+                entityType: event.entityType,
+                entityId:   event.entityId,
+                changes:    { ...event.changes, status: entry.status, meta: entry.meta },
+            });
+        } catch (err) {
+            // Non-blocking — never let audit write failure break the primary path
+            console.error('[AuditService] Failed to persist audit log to DB:', err);
+        }
     }
 }

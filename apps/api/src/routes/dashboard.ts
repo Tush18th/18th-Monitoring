@@ -15,7 +15,10 @@ import {
     getIntegrationHealthSummary,
     getSyncTrends,
     getFailedSyncs,
-    getIntegrationSystemBreakdown
+    getIntegrationSystemBreakdown,
+    getRegionalPerformance,
+    getDeviceSegmentation,
+    getResourceBreakdown
 } from '../controllers/dashboard.controller';
 import { tenantAuthHandler } from '../middlewares/auth.middleware';
 
@@ -31,6 +34,9 @@ export const dashboardRoutes = async (fastify: any) => {
     fastify.get('/performance/summary', getPerformanceSummary);
     fastify.get('/performance/trends', getPerformanceTrends);
     fastify.get('/performance/slowest-pages', getSlowestPages);
+    fastify.get('/performance/regional', getRegionalPerformance);
+    fastify.get('/performance/device', getDeviceSegmentation);
+    fastify.get('/performance/resources', getResourceBreakdown);
     
     // User Activity Endpoints
     fastify.get('/users/summary', getUserActivitySummary);

@@ -3,6 +3,8 @@ import React, { useEffect } from 'react';
 import { useAuth, AuthProvider } from '../context/AuthContext';
 import { usePathname, useRouter } from 'next/navigation';
 import Script from 'next/script';
+import { ErrorBoundary } from '../components/ui/ErrorBoundary';
+import { OutageNotificationShell } from '../components/layout/OutageNotificationShell';
 import './globals.css';
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -16,8 +18,9 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
         router.push('/login');
       } else if (user && pathname === '/') {
         // Landing logic
-        if (user.role === 'CUSTOMER') {
-          router.push(`/project/${user.assignedProjects[0]}/overview`);
+        const projects = user.assignedProjects || [];
+        if (user.role === 'CUSTOMER' && projects.length > 0) {
+          router.push(`/project/${projects[0]}/overview`);
         } else {
           router.push('/projects');
         }
@@ -38,11 +41,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body>
-        <AuthProvider>
-          <AuthGuard>
-            {children}
-          </AuthGuard>
-        </AuthProvider>
+        <ErrorBoundary>
+          <AuthProvider>
+            <OutageNotificationShell />
+            <AuthGuard>
+              {children}
+            </AuthGuard>
+          </AuthProvider>
+        </ErrorBoundary>
         <Script src="/agent.js" strategy="afterInteractive" />
       </body>
     </html>

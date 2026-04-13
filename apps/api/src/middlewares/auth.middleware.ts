@@ -1,7 +1,13 @@
 import { AuthService } from '../services/auth.service';
 
 export const tenantAuthHandler = async (req: any, reply: any) => {
-    const token = req.headers['session-token'];
+    // Standardize on Authorization: Bearer <token>
+    const authHeader = req.headers['authorization'];
+    let token = req.headers['session-token']; // Legacy support
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.split(' ')[1];
+    }
     
     if (!token) {
         return reply.code(401).send({ error: 'Authentication required' });

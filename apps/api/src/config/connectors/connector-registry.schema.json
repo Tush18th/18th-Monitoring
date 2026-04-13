@@ -1,0 +1,104 @@
+{
+  "connectors": [
+    {
+      "connectorId": "magento_us_web",
+      "label": "Magento US Storefront",
+      "type": "api_poll",
+      "priority": 1,
+      "schedule": "*/15 * * * *",
+      "auth": {
+        "type": "oauth2",
+        "vaultKey": "magento_us_creds"
+      },
+      "endpoint": "https://store.example.com/rest/V1/orders",
+      "pagination": {
+        "strategy": "cursor",
+        "cursorField": "created_at",
+        "pageSize": 100
+      },
+      "fieldMapping": {
+        "orderId":          "increment_id",
+        "externalOrderId":  "entity_id",
+        "amount":           "grand_total",
+        "currency":         "order_currency_code",
+        "channel":          "const:web",
+        "sourceSystem":     "const:Magento",
+        "orderType":        "const:B2C",
+        "status":           "status",
+        "createdAt":        "created_at"
+      },
+      "dedupeRule": {
+        "strategy": "upsert_on_newer",
+        "key": "externalOrderId"
+      },
+      "retryPolicy": {
+        "maxRetries": 3,
+        "backoffMs": 5000,
+        "dlqTopic": "SYNC_DLQ"
+      }
+    },
+    {
+      "connectorId": "pos_us_stores",
+      "label": "In-Store POS (VendPOS)",
+      "type": "webhook",
+      "priority": 1,
+      "webhookPath": "/api/v1/webhooks/pos_us_stores",
+      "auth": {
+        "type": "apiKey",
+        "headerName": "X-Vend-Token",
+        "vaultKey": "vendpos_us_creds"
+      },
+      "fieldMapping": {
+        "orderId":          "sale_id",
+        "externalOrderId":  "sale_id",
+        "amount":           "total_price",
+        "currency":         "const:USD",
+        "channel":          "const:instore",
+        "sourceSystem":     "const:VendPOS",
+        "orderType":        "const:Retail",
+        "status":           "const:placed",
+        "createdAt":        "sale_date"
+      },
+      "dedupeRule": {
+        "strategy": "reject_duplicate",
+        "key": "externalOrderId"
+      },
+      "retryPolicy": {
+        "maxRetries": 5,
+        "backoffMs": 2000,
+        "dlqTopic": "SYNC_DLQ"
+      }
+    },
+    {
+      "connectorId": "csv_fallback",
+      "label": "CSV File Import (Legacy Fallback)",
+      "type": "csv_import",
+      "priority": 3,
+      "csvSchema": {
+        "requiredColumns": ["externalOrderId", "sourceSystem", "channel", "orderType", "status", "currency", "amount", "createdAt"],
+        "delimiter": ",",
+        "dateFormat": "ISO8601"
+      },
+      "limits": {
+        "maxRowsPerFile": 50000,
+        "maxFileSizeMb": 10,
+        "chunkSize": 500
+      },
+      "fieldMapping": {
+        "orderId":          "externalOrderId",
+        "externalOrderId":  "externalOrderId",
+        "amount":           "amount",
+        "currency":         "currency",
+        "channel":          "channel",
+        "sourceSystem":     "sourceSystem",
+        "orderType":        "orderType",
+        "status":           "status",
+        "createdAt":        "createdAt"
+      },
+      "dedupeRule": {
+        "strategy": "reject_duplicate",
+        "key": "externalOrderId"
+      }
+    }
+  ]
+}

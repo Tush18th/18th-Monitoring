@@ -21,6 +21,8 @@ interface AuthContextType {
     setProject: (id: string) => void;
     isLoading: boolean;
     apiFetch: (url: string, options?: any) => Promise<any>;
+    outageStatus: 'none' | 'stale' | 'expired';
+    lastUpdated: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,6 +32,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [token, setToken] = useState<string | null>(null);
     const [currentProject, setCurrentProject] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [outageStatus, setOutageStatus] = useState<'none' | 'stale' | 'expired'>('none');
+    const [lastUpdated, setLastUpdated] = useState<string | null>(null);
     const router = useRouter();
 
     const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
@@ -49,9 +53,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const apiFetch = async (url: string, options: any = {}) => {
         const fetchUrl = url.startsWith('http') ? url : `${API_BASE}${url}`;
+        const activeToken = token || localStorage.getItem('session-token');
+        const cacheKey = `api_cache_${url.replace(/\W/g, '_')}`;
+
         const headers = {
             ...options.headers,
-            'session-token': token || localStorage.getItem('session-token') || ''
+            'Authorization': activeToken ? `Bearer ${activeToken}` : '',
+            'session-token': activeToken || ''
         };
         
         try {
@@ -59,18 +67,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 url: fetchUrl,
                 method: options.method || 'GET',
                 headers,
-                data: options.body ? JSON.parse(options.body) : undefined
+                data: options.body ? JSON.parse(options.body) : undefined,
+                timeout: 5000 
             });
+
+            // Cache Success
+            if (options.method === 'GET' || !options.method) {
+                const timestamp = new Date().toISOString();
+                localStorage.setItem(cacheKey, JSON.stringify({ data: res.data, timestamp }));
+                setOutageStatus('none');
+                setLastUpdated(timestamp);
+            }
+
             return res.data;
         } catch (error: any) {
-             if (error.response?.status === 401) {
+             const status = error.response?.status;
+             
+             if (status === 401) {
                 logout();
                 throw new Error('Unauthorized');
             }
-            if (error.response?.status === 403) {
+            
+            // Outage / Connectivity Error Handling
+            if (!status || status >= 500 || error.code === 'ECONNABORTED') {
+                const cached = localStorage.getItem(cacheKey);
+                if (cached) {
+                    const { data, timestamp } = JSON.parse(cached);
+                    const ageMs = Date.now() - new Date(timestamp).getTime();
+                    const ageHours = ageMs / (1000 * 60 * 60);
+
+                    if (ageHours < 24) {
+                        console.warn(`[AuthContext] API Outage. Serving STALE data from ${timestamp}`);
+                        if (ageHours > 1) setOutageStatus('stale');
+                        setLastUpdated(timestamp);
+                        return data;
+                    } else {
+                        console.error(`[AuthContext] API Outage. Cache EXPIRED (>24h).`);
+                        setOutageStatus('expired');
+                        return null; // Force empty state on page
+                    }
+                }
+            }
+
+            if (status === 403) {
                 router.push('/unauthorized');
                 throw new Error('Forbidden');
             }
+
             throw new Error(error.response?.data?.message || error.message);
         }
     };
@@ -110,7 +153,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     return (
-        <AuthContext.Provider value={{ user, token, currentProject, login, logout, setProject, isLoading, apiFetch }}>
+        <AuthContext.Provider value={{ 
+            user, token, currentProject, login, logout, setProject, isLoading, apiFetch,
+            outageStatus, lastUpdated 
+        }}>
             {children}
         </AuthContext.Provider>
     );

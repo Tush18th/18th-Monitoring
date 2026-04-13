@@ -1,39 +1,64 @@
 'use client';
-import React, { useEffect, useState } from 'react';
-import { useAuth } from '../../../../context/AuthContext';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import { useAuth } from '../../../../context/AuthContext';
+import { 
+  ShieldCheck, 
+  Zap, 
+  AlertTriangle, 
+  Settings, 
+  PlayCircle, 
+  ChevronRight 
+} from 'lucide-react';
+import { PerformanceChart } from '../../../../components/ui/PerformanceChart';
 import { MetricCard } from '../../../../components/ui/MetricCard';
-
-
 
 export default function ProjectOverviewPage() {
   const params = useParams();
   const projectId = params.projectId as string;
-  const { token, apiFetch, user } = useAuth();
+  const { token, apiFetch, user, outageStatus, lastUpdated } = useAuth();
   const [metrics, setMetrics] = useState<any[]>([]);
+  const [trends, setTrends] = useState<any[]>([]);
   const [alerts, setAlerts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!token || !projectId) return;
+  const isExpired = outageStatus === 'expired';
 
+  useEffect(() => {
+    // Proactive Guard: If token or projectId are missing, wait for AuthProvider/Routing to stabilize.
+    if (!token || !projectId) {
+      setLoading(false);
+      return;
+    }
+
+    let isMounted = true;
     setLoading(true);
-    Promise.all([
+
+    Promise.allSettled([
       apiFetch(`/api/v1/dashboard/summaries?siteId=${projectId}`),
-      apiFetch(`/api/v1/dashboard/alerts?siteId=${projectId}`)
-    ]).then(([m, a]) => {
+      apiFetch(`/api/v1/dashboard/alerts?siteId=${projectId}`),
+      apiFetch(`/api/v1/dashboard/performance/trends?siteId=${projectId}`)
+    ]).then((results) => {
+      if (!isMounted) return;
+
+      const [m, a, t] = results.map(r => r.status === 'fulfilled' ? r.value : []);
+      
       setMetrics(Array.isArray(m) ? m : []);
       setAlerts(Array.isArray(a) ? a : []);
+      setTrends(Array.isArray(t) ? t : []);
       setLoading(false);
     }).catch(e => {
-      console.error('Data fetch error:', e);
+      if (!isMounted) return;
+      console.error('[Dashboard] Critical Data Fetch Failure:', e);
       setLoading(false);
     });
+
+    return () => { isMounted = false; };
   }, [projectId, token, apiFetch]);
 
-  if (loading) return <div style={{ color: 'var(--text-secondary)', padding: '40px', textAlign: 'center' }}>Loading project overview...</div>;
+  if (loading) return <div style={{ color: 'var(--text-secondary)', padding: '40px', textAlign: 'center' }}>Gathering project context...</div>;
 
-  const activeAlerts = alerts.filter((a: any) => a.status === 'active');
+  const activeAlerts = (alerts || []).filter((a: any) => a.status === 'active');
 
   const metricLabelMap: Record<string, { title: string, icon: string, unit?: string }> = {
     'pageLoadTime':      { title: 'Page Load Avg', icon: '⚡', unit: 'ms' },
@@ -45,87 +70,157 @@ export default function ProjectOverviewPage() {
   };
 
   return (
-    <div className="animate-fade-in" style={{ paddingBottom: '32px' }}>
-      <header style={{ marginBottom: '32px' }}>
-        <h2 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '8px', letterSpacing: '-0.4px' }}>
-          Project Dashboard
-        </h2>
-        <p style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: '500' }}>
-          Real-time metrics for <strong>{projectId}</strong> · All systems operational
-        </p>
-      </header>
-
-      {/* Metric Grid */}
-      <div style={{
-        display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px', marginBottom: '32px'
-      }}>
-        {metrics.map((m: any) => {
-          const cfg = metricLabelMap[m.kpiName] || { title: m.kpiName, icon: '📈' };
-          return (
-            <MetricCard
-              key={m.kpiName}
-              title={cfg.title}
-              value={m.value}
-              unit={cfg.unit}
-              state={m.state}
-              icon={cfg.icon}
-              trendPct={m.trendPct}
-            />
-          );
-        })}
-      </div>
-
-      {activeAlerts.length > 0 && (
+    <div className="animate-fade-in" style={{ paddingBottom: '60px', position: 'relative' }}>
+      {isExpired && (
         <div style={{
-          background: 'rgba(220, 38, 38, 0.04)', border: '1px solid rgba(220, 38, 38, 0.15)',
-          borderRadius: '16px', padding: '24px', marginBottom: '32px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+          position: 'absolute',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(15, 23, 42, 0.4)',
+          backdropFilter: 'blur(4px)',
+          zIndex: 50,
+          borderRadius: '24px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '40px',
+          textAlign: 'center',
+          border: '1px solid rgba(239, 68, 68, 0.2)'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            <div style={{ 
-              width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(220, 38, 38, 0.1)', 
-              display: 'flex', alignItems: 'center', justifyContent: 'center' 
-            }}>
-                <div className="status-dot" style={{ background: 'var(--accent-red)', width: '12px', height: '12px' }} />
-            </div>
-            <div>
-              <h4 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--accent-red)' }}>
-                {activeAlerts.length} Active Alerts require attention
-              </h4>
-              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                {activeAlerts.slice(0, 2).map((a: any) => a.kpiName).join(' · ')}
-              </p>
-            </div>
-          </div>
-          <a href={`/project/${projectId}/alerts`} style={{
-            background: 'var(--accent-red)', color: '#fff', padding: '10px 20px',
-            borderRadius: '10px', fontSize: '13px', fontWeight: '800', textDecoration: 'none'
-          }}>View Alerts →</a>
+           <div style={{
+             width: '80px', height: '80px', borderRadius: '30px',
+             background: 'rgba(239, 68, 68, 0.1)',
+             display: 'flex', alignItems: 'center', justifyContent: 'center',
+             marginBottom: '24px',
+             border: '1px solid rgba(239, 68, 68, 0.2)'
+           }}>
+             <AlertTriangle size={40} color="var(--accent-red)" />
+           </div>
+           <h2 style={{ fontSize: '28px', fontWeight: '800', color: '#fff', marginBottom: '16px' }}>Data Lifecycle Expired</h2>
+           <p style={{ maxWidth: '400px', color: 'rgba(255,255,255,0.7)', lineHeight: '1.6', marginBottom: '32px' }}>
+             The dashboard has been disconnected from live services for more than 24 hours. 
+             Last successful sync: <strong style={{ color: '#fff' }}>{lastUpdated ? new Date(lastUpdated).toLocaleString() : 'Unknown'}</strong>.
+           </p>
+           <button 
+             onClick={() => window.location.reload()}
+             style={{
+               padding: '12px 32px',
+               background: 'var(--accent-red)',
+               color: '#fff',
+               border: 'none',
+               borderRadius: '12px',
+               fontWeight: '800',
+               cursor: 'pointer',
+               boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)'
+             }}
+           >
+             Attempt Reconnection
+           </button>
         </div>
       )}
 
-      {/* Capabilities & Governance */}
-      <div style={{ marginTop: '48px', padding: '32px', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '24px' }}>
-          <h3 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '16px' }}>Platform Capabilities</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
-              <div style={{ padding: '20px', background: 'var(--border-light)', borderRadius: '16px' }}>
-                  <div style={{ fontSize: '20px', marginBottom: '8px' }}>🚀</div>
-                  <h4 style={{ fontSize: '14px', fontWeight: '800', marginBottom: '4px' }}>Real-time Monitoring</h4>
-                  <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Low-latency data ingestion and processing for immediate insights into {projectId}.</p>
-              </div>
-              <div style={{ padding: '20px', background: 'var(--border-light)', borderRadius: '16px' }}>
-                  <div style={{ fontSize: '20px', marginBottom: '8px' }}>🔒</div>
-                  <h4 style={{ fontSize: '14px', fontWeight: '800', marginBottom: '4px' }}>Data Security</h4>
-                  <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Strict isolation and project-based access control for your privacy.</p>
-              </div>
-              {user?.role !== 'CUSTOMER' && (
-                  <div style={{ padding: '20px', background: 'rgba(37, 99, 235, 0.05)', borderRadius: '16px', border: '1px dashed var(--accent-blue)' }}>
-                      <div style={{ fontSize: '20px', marginBottom: '8px' }}>🛠️</div>
-                      <h4 style={{ fontSize: '14px', fontWeight: '800', color: 'var(--accent-blue)', marginBottom: '4px' }}>Admin Governance</h4>
-                      <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Configure thresholds, manage users, and simulate event streams for this project.</p>
-                  </div>
-              )}
+      <header style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', opacity: isExpired ? 0.3 : 1 }}>
+        <div>
+          <h2 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '8px', letterSpacing: '-0.4px' }}>
+            Project Dashboard
+          </h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>PROJECT ID: <code style={{ color: 'var(--accent-blue)', fontWeight: '700' }}>{projectId}</code></span>
+            <span style={{ width: '4px', height: '4px', background: 'var(--border)', borderRadius: '50%' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', color: 'var(--accent-green)', fontWeight: '700' }}>
+              <ShieldCheck size={14} /> System Operational
+            </div>
           </div>
+        </div>
+        
+        {user?.role !== 'CUSTOMER' && (
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button style={{ padding: '10px 16px', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Settings size={16} /> Manage
+            </button>
+            <button style={{ padding: '10px 16px', background: 'var(--accent-blue)', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <PlayCircle size={16} /> Simulate Traffic
+            </button>
+          </div>
+        )}
+      </header>
+
+      {/* Main Grid: Metrics & Trend */}
+      <div style={{ display: 'grid', gridTemplateColumns: '2.5fr 1fr', gap: '24px', marginBottom: '32px' }}>
+        
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <div style={{
+            display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px'
+          }}>
+            {Array.isArray(metrics) && metrics.map((m: any) => {
+              const cfg = metricLabelMap[m?.kpiName] || { title: m?.kpiName || 'Unknown KPI', icon: '📈', unit: undefined };
+              return (
+                <MetricCard
+                  key={m?.kpiName || Math.random()}
+                  title={cfg.title}
+                  value={m?.value}
+                  unit={cfg.unit}
+                  state={m?.state || 'healthy'}
+                  icon={cfg.icon}
+                  trendPct={m?.trendPct}
+                />
+              );
+            })}
+          </div>
+          
+          <PerformanceChart data={trends || []} title="Global Latency Trend" />
+        </div>
+
+        {/* Sidebar: Alerts & Activity */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          
+          <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '20px', padding: '24px' }}>
+             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h3 style={{ fontSize: '14px', fontWeight: '800', color: 'var(--text-secondary)' }}>ACTIVE ALERTS</h3>
+                <span style={{ fontSize: '10px', padding: '2px 8px', background: activeAlerts.length > 0 ? 'var(--accent-red)' : 'var(--border)', color: '#fff', borderRadius: '10px' }}>
+                  {activeAlerts.length}
+                </span>
+             </div>
+             
+             {activeAlerts.length === 0 ? (
+               <div style={{ textAlign: 'center', padding: '24px 0' }}>
+                 <ShieldCheck size={32} color="var(--accent-green)" style={{ opacity: 0.5, marginBottom: '8px' }} />
+                 <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>No critical breaches detected</p>
+               </div>
+             ) : (
+               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {activeAlerts.slice(0, 3).map((a: any) => (
+                    <div key={a?.alertId || Math.random()} style={{ padding: '12px', background: 'rgba(220, 38, 38, 0.05)', border: '1px solid rgba(220, 38, 38, 0.1)', borderRadius: '12px' }}>
+                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                          <span style={{ fontSize: '12px', fontWeight: '800', color: 'var(--accent-red)' }}>{a?.kpiName}</span>
+                          <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>2m ago</span>
+                       </div>
+                       <p style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>{a?.message}</p>
+                    </div>
+                  ))}
+                  <a href={`/project/${projectId}/alerts`} style={{ marginTop: '8px', fontSize: '12px', fontWeight: '700', color: 'var(--accent-blue)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    View all alerts <ChevronRight size={14} />
+                  </a>
+               </div>
+             )}
+          </div>
+
+          <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '20px', padding: '24px' }}>
+             <h3 style={{ fontSize: '14px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '16px' }}>GOVERNANCE</h3>
+             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '12px' }}>
+                  <Zap size={14} color="var(--accent-orange)" />
+                  Trend Ingestion: <span style={{ fontWeight: '700', marginLeft: 'auto' }}>Active</span>
+                </li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '12px' }}>
+                  <AlertTriangle size={14} color="var(--accent-red)" />
+                  Auto-Recovery: <span style={{ fontWeight: '700', marginLeft: 'auto' }}>Enabled</span>
+                </li>
+             </ul>
+          </div>
+
+        </div>
+
       </div>
     </div>
   );
