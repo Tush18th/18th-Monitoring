@@ -42,7 +42,7 @@ For detailed technical details, see the [Architecture Documentation](./docs/arch
    npm install
    ```
 
-2. **Start the Platform**:
+2. **Start the Platform (Development Mode)**:
    ```bash
    npm run dev
    ```
@@ -52,7 +52,22 @@ For detailed technical details, see the [Architecture Documentation](./docs/arch
    - Login as `superadmin@monitor.io` (pass: `password123`) for full global access.
    - Use the **"▶ Simulate Events"** button to populate real-time data.
 
-For a full setup and roles guide, see the [Local Setup Guide](./docs/setup-guide.md).
+## 🐳 Production Deployment
+
+The platform is containerized for production scale. The `infra/docker-compose.prod.yml` blueprint orchestrates the API, Dashboard (in Next.js Standalone Mode), Kafka, and ClickHouse constraints.
+
+1. **Configure Environment**:
+   ```bash
+   cp apps/api/.env.example apps/api/.env.local
+   cp apps/dashboard/.env.example apps/dashboard/.env.local
+   ```
+
+2. **Boot the Cluster**:
+   ```bash
+   docker-compose -f infra/docker-compose.prod.yml up -d --build
+   ```
+
+See the [Production Readiness Guide](./brain/68894302-075a-41da-8741-a01f8c9540ff/production_readiness.md) for full security, operations, and scaling documentation.
 
 ## 📊 Compliance & Validation
 
