@@ -1,52 +1,91 @@
-# Dashboard Workspace (`apps/dashboard`)
+# Dashboard (`apps/dashboard`)
 
-The visualization and administration control plane mapping event ingestion flows directly to human-readable Key Performance Indicators.
+The Next.js 15 (App Router) visualization layer for the KPI Monitoring Platform. Renders real-time observability, synthetic monitoring results, and integration health across tenant-scoped project boundaries.
 
-## 🎯 App Purpose
+---
 
-The Web Dashboard handles the presentation layer utilizing a modern, reactive stack built on **Next.js 15 (App Router)**. It provides near-real-time synchronization parsing REST aggregates dynamically enforcing Tenant strict isolation guaranteeing users can only view KPIs authorized to their boundaries. 
+## 📺 Pages
 
-By consuming complex telemetry (sync counts, HTTP errors, UX bottlenecks), it normalizes data dynamically into comprehensive chart summaries for Admins and read-only Overviews for basic Customers.
+| Route | Description |
+|-------|-------------|
+| `/login` | Token-based authentication gateway |
+| `/projects` | Multi-project portfolio view (SUPER_ADMIN) |
+| `/project/[projectId]/overview` | Real-time primary KPIs |
+| `/project/[projectId]/performance` | **Enhanced** — RUM + Synthetic monitoring |
+| `/project/[projectId]/alerts` | Active alert log |
+| `/project/[projectId]/integrations` | ERP/OMS sync health |
+| `/project/[projectId]/customers` | User management (RBAC) |
+| `/project/[projectId]/settings` | Alert threshold config |
 
-## 🔄 Routing Structure (Next.js)
+---
 
-- **`/login`**: Autonomous token generation. Secures gateway interceptors.
-- **`/projects`**: Portfolio summary interface. Dynamically rendered for multi-project overseers (`SUPER_ADMIN`).
-- **`/project/[projectId]/...`**: Tenant-scoped routes mapping specific boundaries:
-    - `/overview`: Real-time primary operational KPIs.
-    - `/alerts`: Triggered rule SLA evaluations.
-    - `/customers`: RBAC viewer-management tools.
-    - `/integrations`: External API/ERP Sync health summaries.
-    - `/settings`: Rule threshold modifier controls (e.g. Page Load caps).
+## 🧩 UI Components
 
-## 🧩 Key Components & Layout Structure
+### Performance Module (New/Enhanced)
 
-- `TopBar.tsx`: Manages cross-tenant workspace swapping safely validating available bounds ensuring isolation natively. Dispatches simulated background inputs securely.
-- `RoleGuard.tsx`: Server/Client interceptor protecting explicit Next.js routes ensuring nested un-authorized bounces navigate gracefully.
-- `AuthContext.tsx`: Core State Provider caching JWTs, intercepting 401 unauthenticated drops automatically through centralized Axios structures.
+| Component | File | Description |
+|-----------|------|-------------|
+| `SyntheticJourneyWidget` | `SyntheticJourneyWidget.tsx` | Health overview card per journey with success rate + sparkbar |
+| `SyntheticFailureLog` | `SyntheticFailureLog.tsx` | Expandable failure log with error text + screenshot links |
+| `SyntheticHistoryChart` | `SyntheticHistoryChart.tsx` | 7-day line chart of journey success rates (line per flow) |
+| `BrowserMatrix` | `BrowserMatrix.tsx` | Per-browser LCP + success rate table for desktop & mobile |
+| `DeviceMobileComparison` | `DeviceMobileComparison.tsx` | Side-by-side bar comparison of key metrics across devices |
+| `SlowPageTable` | `SlowPageTable.tsx` | Top 5 slowest user-facing pages with status classification |
+| `RegionalBreakdown` | `RegionalBreakdown.tsx` | TTFB + LCP comparison bar chart per region |
+| `ResourceBreakdown` | `ResourceBreakdown.tsx` | Frontend payload weight (JS/CSS/Images/Fonts) |
 
-## 💾 State Management & Data Fetching
+---
 
-- Environment properties are explicitly prefixed natively: `NEXT_PUBLIC_API_URL`, capturing endpoints explicitly.
-- The platform manages a globally wrapped Axios instance inside its `AuthContext` protecting token headers safely on each dynamic call routing gracefully.
-- Component-level states natively await the global data feed executing inline mapping guarantees `Array.isArray(x)`. Ensure components use `.env` paths appropriately.
+## 📡 Data Fetching (Performance Page)
 
-## ⚙️ How It Works (Data Flow)
-1. User interacts (clicks specific `store_001` project context mapping bounds).
-2. UI fetches data synchronously: `GET /api/v1/dashboard/summaries?siteId=store_001` dynamically evaluated by the `API_BASE` variables securely.
-3. Axios interceptors inject session maps safely passing authorization checks.
-4. Server parses data dynamically and responds.
+The performance page fetches 8 endpoints in parallel via `Promise.allSettled`:
 
-## 🚀 Commands
+```
+/api/v1/dashboard/performance/summary
+/api/v1/dashboard/performance/trends
+/api/v1/dashboard/performance/regional
+/api/v1/dashboard/performance/device
+/api/v1/dashboard/performance/resources
+/api/v1/dashboard/performance/slowest-pages
+/api/v1/dashboard/synthetic/dashboard      ← NEW
+/api/v1/dashboard/synthetic/failures       ← NEW
+```
 
-Navigate specifically to this workspace boundary before running standard inputs:
+All requests carry `Authorization: Bearer <token>` injected by `AuthContext.apiFetch()`.
+
+---
+
+## 🚀 Running
+
 ```bash
-npm install
-npm run dev
-npm run build
-npm start
-``` 
+# From workspace root
+npm run dev:dashboard
 
-## 🔧 Known Issues & Fixes
-- **Next.js Hook Isolation**: Importing Next.js Native Server context (e.g., `useParams`) requires proper React structural boundaries. Always assert `'use client';` inside pages navigating layout structures gracefully.
-- **Interceptor 401 Ghosting**: Using outdated JWT cookies will silently force Axios to refresh your bounds sending you strictly to `/login`. Ensure you restart the UI if the backend flushes.
+# OR directly
+cd apps/dashboard
+npm run dev
+# Serves on http://localhost:3000
+```
+
+### Environment
+```
+NEXT_PUBLIC_API_URL=http://localhost:4000
+```
+
+---
+
+## 🔐 Auth Flow
+
+1. User logs in → API returns JWT token
+2. `AuthContext` stores token in memory + localStorage
+3. All `apiFetch()` calls inject `Authorization: Bearer <token>`
+4. 401 responses trigger auto-logout redirect to `/login`
+
+---
+
+## 💡 Design System
+
+- Variables defined in `globals.css`: `--bg-surface`, `--accent-blue`, `--text-primary`, etc.
+- All components use inline styles with CSS variables for theme consistency
+- Micro-animations via `transition: all 0.2s ease` + `transform: translateY(-Xpx)` on hover
+- Color-coded states: `#10b981` (healthy) · `#f59e0b` (warning) · `#ef4444` (critical)

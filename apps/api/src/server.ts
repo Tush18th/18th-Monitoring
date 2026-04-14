@@ -79,9 +79,8 @@ export const bootstrapApi = async () => {
         prefix: '/api/v1'
     });
 
-    await server.register(require('./routes/config').configRoutes, {
-        prefix: '/api/v1/projects'
-    });
+    const configRoutes = require('./routes/config').configRoutes;
+    await server.register(configRoutes, { prefix: '/api/v1/config' });
 
     await server.register(require('./routes/sync').syncRoutes, {
         prefix: '/api/v1/projects'
@@ -135,13 +134,6 @@ export const bootstrapApi = async () => {
     });
 
 
-    // ── Configuration ──────────────────────────────────────────────────────
-    server.get('/api/v1/config/:siteId', { preHandler: [tenantAuthHandler, roleGuard(['ADMIN', 'SUPER_ADMIN'])] }, async (request, reply) => {
-        const { siteId } = request.params as any;
-        const resolver = new ConfigResolver();
-        const config = resolver.resolve(siteId);
-        return reply.send(config);
-    });
 
     // ── Browser Ingest (/i/browser) ─────────────────────────────────────────
     server.post('/api/v1/i/browser', async (request, reply) => {
@@ -233,7 +225,7 @@ export const bootstrapApi = async () => {
     server.listen({ port, host: '0.0.0.0' }, (err, address) => {
         if (err) { console.error(err); process.exit(1); }
         console.log(`[API] Server listening on everything at ${address}`);
-        console.log(`[API] Endpoints: GET /health, GET /api/v1/projects/:siteId/metrics/catalog, GET /api/v1/projects/:siteId/integrations/status`);
+        console.log(`[API] Endpoints: GET /health, GET /api/v1/projects/:siteId/metrics/catalog`);
 
         // Start connector polling timers after the server is bound
         const { connectorRegistryService } = require('./services/connector-registry.service');

@@ -2,17 +2,20 @@
 import React from 'react';
 
 interface System {
+    id: string;
     name: string;
     status: 'Active' | 'Degraded' | 'Offline';
     latency: string;
     health: number;
+    lastSync: string;
 }
 
 interface SystemStatusListProps {
     data: System[];
+    onResync: (id: string) => void;
 }
 
-export const SystemStatusList = ({ data }: SystemStatusListProps) => {
+export const SystemStatusList = ({ data, onResync }: SystemStatusListProps) => {
     return (
         <div style={{
             background: 'var(--bg-surface)',
@@ -50,13 +53,24 @@ export const SystemStatusList = ({ data }: SystemStatusListProps) => {
                                 <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600' }}>Latency: {system.latency}</div>
                             </div>
                         </div>
-                        <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontSize: '14px', fontWeight: '900', color: system.health > 90 ? 'var(--accent-green)' : 'var(--accent-orange)' }}>
-                                {system.health}%
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                            <div style={{ textAlign: 'right' }}>
+                                <div style={{ fontSize: '14px', fontWeight: '900', color: system.health > 90 ? 'var(--accent-green)' : 'var(--accent-orange)' }}>
+                                    {system.health}%
+                                </div>
+                                <div style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
+                                    Avail.
+                                </div>
                             </div>
-                            <div style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
-                                Availability
-                            </div>
+                            <button 
+                                onClick={() => onResync(system.id)}
+                                style={{
+                                    padding: '8px 12px', background: 'white', border: '1px solid var(--border)', 
+                                    borderRadius: '8px', fontSize: '11px', fontWeight: '800', cursor: 'pointer',
+                                    transition: 'all 0.2s', whiteSpace: 'nowrap'
+                                }}>
+                                Force Resync
+                            </button>
                         </div>
                     </div>
                 ))}

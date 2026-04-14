@@ -3,7 +3,13 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "start:simulation": "tsx scripts/e2e-simulation.ts"
+    "start:simulation": "tsx scripts/e2e-simulation.ts",
+    "dev:api": "tsx apps/api/src/server.ts",
+    "dev:dashboard": "npm run dev --prefix apps/dashboard",
+    "dev:synthetic": "tsx apps/synthetic-agent/src/index.ts",
+    "synthetic:run": "tsx apps/synthetic-agent/src/index.ts",
+    "demo:seed": "tsx scripts/demo-http-seed.ts",
+    "dev": "npm run dev:api & npm run dev:dashboard"
   },
   "workspaces": [
     "apps/*",

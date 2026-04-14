@@ -241,6 +241,60 @@ export class DashboardService {
         }));
     }
 
+
+    static async getUserAnalytics(filters: MetricFilterDto) {
+        const { siteId } = filters;
+        const now = Date.now();
+        const activeWindow = 5 * 60 * 1000; // 5 minutes
+
+        const allSessions = Array.from(GlobalMemoryStore.sessions.values())
+            .filter(s => s.siteId === siteId);
+
+        const activeSessions = allSessions.filter(s => {
+            const lastActive = new Date(s.lastActiveAt).getTime();
+            return (now - lastActive) <= activeWindow;
+        });
+
+        const deviceBreakdown: Record<string, number> = { desktop: 0, mobile: 0, tablet: 0 };
+        const browserBreakdown: Record<string, number> = { chrome: 0, safari: 0, edge: 0, firefox: 0, other: 0 };
+        
+        let activeCustomers = 0;
+        let activeVisitors = 0;
+
+        activeSessions.forEach(s => {
+            // Device
+            const device = (s.deviceType || 'desktop').toLowerCase();
+            if (deviceBreakdown[device] !== undefined) deviceBreakdown[device]++;
+            else deviceBreakdown.desktop++;
+
+            // Browser
+            const browser = (s.browser || 'chrome').toLowerCase();
+            if (browserBreakdown[browser] !== undefined) browserBreakdown[browser]++;
+            else browserBreakdown.other++;
+
+            // Customer type
+            if (s.isCustomer) activeCustomers++;
+            else activeVisitors++;
+        });
+
+        return {
+            activeUsers: activeSessions.length,
+            totalCustomers: activeCustomers, // Active Authenticated
+            activeVisitors: activeVisitors,   // Active Anonymous
+            deviceBreakdown: {
+                desktop: { count: deviceBreakdown.desktop, percentage: activeSessions.length ? Math.round((deviceBreakdown.desktop / activeSessions.length) * 100) : 0 },
+                mobile:  { count: deviceBreakdown.mobile,  percentage: activeSessions.length ? Math.round((deviceBreakdown.mobile / activeSessions.length) * 100) : 0 },
+                tablet:  { count: deviceBreakdown.tablet,  percentage: activeSessions.length ? Math.round((deviceBreakdown.tablet / activeSessions.length) * 100) : 0 }
+            },
+            browserBreakdown: Object.entries(browserBreakdown).map(([name, count]) => ({
+                name,
+                count,
+                percentage: activeSessions.length ? Math.round((count / activeSessions.length) * 100) : 0
+            })).sort((a,b) => b.count - a.count)
+        };
+    }
+
+
     static async getTopPages(filters: MetricFilterDto) {
         const { siteId } = filters;
         const records = GlobalMemoryStore.metrics.filter(m => m.siteId === siteId && m.kpiName === 'userPageViewCount');
@@ -270,44 +324,126 @@ export class DashboardService {
 
     /**
      * Collates complex order aggregation metrics including delays, channels, and total volumes.
-     * 
-     * @param filters - Filter matching current boundaries.
-     * @returns Breakdown metrics regarding total and delayed system orders.
      */
     static async getOrderSummary(filters: MetricFilterDto) {
         const { siteId } = filters;
         const orders = Array.from(GlobalMemoryStore.orders.values()).filter(o => o.siteId === siteId);
         
         const total = orders.length;
-        const onlineCount = orders.filter(o => o.channel !== 'pos').length;
-        const offlineCount = total - onlineCount;
-        
-        const delayedCount = orders.filter(o => {
-            const placedAt = new Date(o.placedAt).getTime();
-            const now = new Date().getTime();
-            // In a real system this would be 60 min, but for the demo we'll use a smaller window or just check status
-            return o.status === 'placed' && (now - placedAt) > 5 * 1000; // 5 seconds for demo
-        }).length;
+        const onlineCount = orders.filter(o => o.orderSource === 'online' || !o.orderSource).length;
+        const offlineCount = orders.filter(o => o.orderSource === 'offline').length;
+        const delayedCount = orders.filter(o => o.status === 'placed' && (Date.now() - new Date(o.createdAt).getTime()) > 10 * 60 * 1000).length;
+        const failedCount = orders.filter(o => o.status === 'failed' || o.paymentStatus === 'failed').length;
 
         return {
             totalOrders: total,
-            ordersPerMinute: (total / 60).toFixed(2), // Mocked for time range
+            ordersThisHour: orders.filter(o => (Date.now() - new Date(o.createdAt).getTime()) < 3600000).length,
             onlineSplit: total > 0 ? Math.round((onlineCount / total) * 100) : 0,
             offlineSplit: total > 0 ? Math.round((offlineCount / total) * 100) : 0,
-            delayedOrders: delayedCount,
+            delayedCount,
+            failedCount,
+            ordersPerMinute: (total / 60).toFixed(2)
         };
     }
 
     static async getOrderTrends(filters: MetricFilterDto) {
         const { siteId } = filters;
-        const labels = ['12:00', '12:10', '12:20', '12:30', '12:40', '12:50'];
-        const total = Array.from(GlobalMemoryStore.orders.values()).filter(o => o.siteId === siteId).length || 50;
+        const labels = Array.from({ length: 6 }, (_, i) => `${10 + i}:00`);
+        const base = 50;
         
-        return labels.map((label) => ({
+        return labels.map((label, i) => ({
             timestamp: label,
-            orders: Math.floor(total / 6) + Math.floor(Math.random() * 5),
-            revenue: Math.floor(Math.random() * 5000) + 2000,
+            online: base + Math.floor(Math.random() * 20) + (i === 4 ? -30 : 0), // Drop in 12:40 for RCA demo
+            offline: 15 + Math.floor(Math.random() * 10)
         }));
+    }
+
+    static async getOrderRCA(filters: MetricFilterDto) {
+        const { siteId } = filters;
+        const anomalies = [];
+        
+        // 1. Check for Performance Correlation
+        const p95Latency = GlobalMemoryStore.metrics.filter(m => m.siteId === siteId && m.kpiName === 'pageLoadTime');
+        const avgLatency = p95Latency.reduce((acc, m) => acc + m.value, 0) / (p95Latency.length || 1);
+        
+        if (avgLatency > 3000) {
+            anomalies.push({
+                type: 'Performance Degradation',
+                metric: 'Page Load Time',
+                value: `${Math.round(avgLatency)}ms`,
+                impact: 'High correlation with checkout abandonment',
+                confidence: 0.85
+            });
+        }
+
+        // 2. Check for Integration Failures
+        const syncFailures = GlobalMemoryStore.integrationSyncs.filter(s => s.siteId === siteId && s.status === 'failure');
+        if (syncFailures.length > 0) {
+            anomalies.push({
+                type: 'Integration Failure',
+                metric: 'OMS Sync Health',
+                value: `${syncFailures.length} failed attempts`,
+                impact: 'Offline order ingestion blocked',
+                confidence: 0.95
+            });
+        }
+
+        // 3. Check for JS Errors
+        const jsErrors = GlobalMemoryStore.metrics.filter(m => m.siteId === siteId && m.kpiName === 'errorRateIncrement');
+        if (jsErrors.length > 3) {
+            anomalies.push({
+                type: 'Frontend Stability',
+                metric: 'JS Error Rate',
+                value: `${jsErrors.length} spikes`,
+                impact: 'Potential breakage in Add to Cart / Checkout flow',
+                confidence: 0.7
+            });
+        }
+
+        return {
+            status: anomalies.length > 0 ? 'alert' : 'healthy',
+            anomalies,
+            analyzedAt: new Date().toISOString()
+        };
+    }
+
+    static async getRecommendations(filters: MetricFilterDto) {
+        const rca = await this.getOrderRCA(filters);
+        const recommendations = [];
+
+        for (const anomaly of rca.anomalies) {
+            if (anomaly.type === 'Performance Degradation') {
+                recommendations.push({
+                    title: 'Optimize Checkout Assets',
+                    action: 'Investigate LCP on /checkout page. Heavy script or image blocking render.',
+                    priority: 'Critical'
+                });
+            }
+            if (anomaly.type === 'Integration Failure') {
+                recommendations.push({
+                    title: 'Restart OMS Connector',
+                    action: 'Verify API credentials and connectivity for OMS-1 system.',
+                    priority: 'High'
+                });
+            }
+            if (anomaly.type === 'Frontend Stability') {
+                recommendations.push({
+                    title: 'Check Payment Gateway Hook',
+                    action: 'Frequent "ReferenceError" detected in payment script handler.',
+                    priority: 'High'
+                });
+            }
+        }
+
+        if (recommendations.length === 0) {
+            recommendations.push({
+                title: 'No Action Required',
+                action: 'System operating within normal baseline parameters.',
+                priority: 'Low'
+            });
+        }
+
+        return recommendations;
     }
 
     static async getDelayedOrders(filters: MetricFilterDto) {
@@ -383,5 +519,33 @@ export class DashboardService {
             { name: 'Payment Gateway', status: 'Active', latency: '150ms', health: 100 },
             { name: 'Email Provider', status: 'Offline', latency: 'N/A', health: 0 },
         ];
+    }
+
+    static async getMetricsCatalog(filters: MetricFilterDto) {
+        return [
+            { id: 'pageLoadTime', name: 'Page Load Time', category: 'Performance', type: 'latency', unit: 'ms' },
+            { id: 'errorRatePct', name: 'JS Error Rate', category: 'Performance', type: 'percentage', unit: '%' },
+            { id: 'activeUsers', name: 'Active Users', category: 'Audience', type: 'count', unit: 'users' },
+            { id: 'totalOrders', name: 'Total Orders', category: 'Business', type: 'count', unit: 'orders' },
+            { id: 'delayedOrders', name: 'Delayed Orders', category: 'Business', type: 'count', unit: 'orders' },
+            { id: 'syncSuccessRate', name: 'Sync Success Rate', category: 'Integrations', type: 'percentage', unit: '%' }
+        ];
+    }
+
+    static async getMetricsSeries(filters: MetricFilterDto & { kpi: string; range: string }) {
+        const { siteId, kpi, range } = filters;
+        // Mocking generic series data based on requested KPI and range
+        const labels = range === '1h' 
+            ? ['12:00', '12:10', '12:20', '12:30', '12:40', '12:50']
+            : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        
+        let avg = 100;
+        if (kpi === 'pageLoadTime') avg = getAvg(siteId, 'pageLoadTime') || 2500;
+        if (kpi === 'errorRatePct') avg = 2.5;
+
+        return labels.map((label) => ({
+            timestamp: label,
+            value: avg + (Math.random() * (avg * 0.2) - (avg * 0.1))
+        }));
     }
 }

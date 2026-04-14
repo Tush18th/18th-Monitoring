@@ -6,7 +6,8 @@ import { useAuth } from '../../context/AuthContext';
 
 const getNavItems = (projectId: string, role?: string) => {
   const prefix = `/project/${projectId}`;
-  const baseItems = [
+  
+  const observability = [
     { href: `${prefix}/overview`,     icon: '📊', label: 'Overview'      },
     { href: `${prefix}/performance`,  icon: '⚡', label: 'Performance'   },
     { href: `${prefix}/users`,        icon: '👥', label: 'Users'         },
@@ -14,14 +15,16 @@ const getNavItems = (projectId: string, role?: string) => {
     { href: `${prefix}/integrations`, icon: '🔗', label: 'Integrations'  },
   ];
 
-  if (role === 'CUSTOMER') return baseItems;
-
-  return [
-    ...baseItems,
-    { href: `${prefix}/alerts`,       icon: '🔔', label: 'Alerts'        },
-    { href: `${prefix}/settings`,     icon: '⚙️', label: 'Settings'      },
-    { href: `${prefix}/customers`,    icon: '👤', label: 'Customers'     },
+  const management = [
+    { href: `${prefix}/settings`,     icon: '⚙️', label: 'Project Settings' },
+    { href: `${prefix}/alerts`,       icon: '🔔', label: 'Alert Center'    },
   ];
+
+  if (role !== 'CUSTOMER') {
+    management.push({ href: `${prefix}/customers`, icon: '👤', label: 'Customers' });
+  }
+
+  return { observability, management };
 };
 
 export const Sidebar = ({ projectId }: { projectId: string }) => {
@@ -68,24 +71,16 @@ export const Sidebar = ({ projectId }: { projectId: string }) => {
         </Link>
       )}
 
-      <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        <div style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px', paddingLeft: '14px' }}>Monitoring</div>
-        {navItems.map((item) => {
-          const isActive = pathname === item.href;
-          return (
-            <Link key={item.href} href={item.href} style={{ textDecoration: 'none' }}>
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', borderRadius: '10px',
-                background: isActive ? 'var(--border-light)' : 'transparent',
-                color: isActive ? 'var(--accent-blue)' : 'var(--text-secondary)',
-                transition: 'all 0.2s ease', cursor: 'pointer', fontWeight: isActive ? '700' : '500', fontSize: '14px',
-              }}>
-                <span style={{ fontSize: '18px', filter: isActive ? 'none' : 'grayscale(100%) opacity(0.7)' }}>{item.icon}</span>
-                {item.label}
-              </div>
-            </Link>
-          );
-        })}
+      <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div>
+          <div style={navHeaderStyle}>Observability</div>
+          {navItems.observability.map((item) => <NavItem key={item.href} item={item} pathname={pathname} />)}
+        </div>
+
+        <div>
+          <div style={navHeaderStyle}>Management</div>
+          {navItems.management.map((item) => <NavItem key={item.href} item={item} pathname={pathname} />)}
+        </div>
       </nav>
 
       <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -100,4 +95,31 @@ export const Sidebar = ({ projectId }: { projectId: string }) => {
       </div>
     </aside>
   );
+};
+const NavItem = ({ item, pathname }: { item: any, pathname: string }) => {
+  const isActive = pathname === item.href;
+  return (
+    <Link href={item.href} style={{ textDecoration: 'none' }}>
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', borderRadius: '10px',
+        background: isActive ? 'rgba(37, 99, 235, 0.08)' : 'transparent',
+        color: isActive ? 'var(--accent-blue)' : 'var(--text-secondary)',
+        transition: 'all 0.2s ease', cursor: 'pointer', fontWeight: isActive ? '700' : '500', fontSize: '13px',
+        marginBottom: '2px'
+      }}>
+        <span style={{ fontSize: '16px', filter: isActive ? 'none' : 'grayscale(100%) opacity(0.7)' }}>{item.icon}</span>
+        {item.label}
+      </div>
+    </Link>
+  );
+};
+
+const navHeaderStyle: React.CSSProperties = {
+  fontSize: '10px', 
+  fontWeight: '800', 
+  color: 'var(--text-muted)', 
+  textTransform: 'uppercase', 
+  letterSpacing: '1.2px', 
+  marginBottom: '12px', 
+  paddingLeft: '14px'
 };

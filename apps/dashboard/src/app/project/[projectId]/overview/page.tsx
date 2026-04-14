@@ -21,6 +21,7 @@ export default function ProjectOverviewPage() {
   const [trends, setTrends] = useState<any[]>([]);
   const [alerts, setAlerts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const isExpired = outageStatus === 'expired';
 
@@ -33,6 +34,7 @@ export default function ProjectOverviewPage() {
 
     let isMounted = true;
     setLoading(true);
+    setErrorMsg(null);
 
     Promise.allSettled([
       apiFetch(`/api/v1/dashboard/summaries?siteId=${projectId}`),
@@ -41,15 +43,18 @@ export default function ProjectOverviewPage() {
     ]).then((results) => {
       if (!isMounted) return;
 
+      const errors = results.filter(r => r.status === 'rejected');
+      if (errors.length > 0) {
+        console.error('[Dashboard] Some endpoints failed:', errors);
+        const firstError = (errors[0] as PromiseRejectedResult).reason;
+        setErrorMsg(firstError?.message || 'Failed to fetch dashboard data. Please try again.');
+      }
+
       const [m, a, t] = results.map(r => r.status === 'fulfilled' ? r.value : []);
       
       setMetrics(Array.isArray(m) ? m : []);
       setAlerts(Array.isArray(a) ? a : []);
       setTrends(Array.isArray(t) ? t : []);
-      setLoading(false);
-    }).catch(e => {
-      if (!isMounted) return;
-      console.error('[Dashboard] Critical Data Fetch Failure:', e);
       setLoading(false);
     });
 
@@ -138,12 +143,25 @@ export default function ProjectOverviewPage() {
             <button style={{ padding: '10px 16px', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Settings size={16} /> Manage
             </button>
-            <button style={{ padding: '10px 16px', background: 'var(--accent-blue)', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button 
+              onClick={() => {
+                apiFetch('/api/v1/simulate', { method: 'POST', body: JSON.stringify({ siteId: projectId }) })
+                  .then(() => window.location.reload())
+                  .catch(e => alert('Simulation failed: ' + e.message));
+              }}
+              style={{ padding: '10px 16px', background: 'var(--accent-blue)', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <PlayCircle size={16} /> Simulate Traffic
             </button>
           </div>
         )}
       </header>
+
+      {errorMsg && (
+        <div style={{ padding: '16px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid var(--accent-red)', borderRadius: '12px', marginBottom: '24px', color: 'var(--accent-red)', fontWeight: '700' }}>
+          <AlertTriangle size={18} style={{ display: 'inline', marginRight: '8px', verticalAlign: 'text-bottom' }} />
+          {errorMsg}
+        </div>
+      )}
 
       {/* Main Grid: Metrics & Trend */}
       <div style={{ display: 'grid', gridTemplateColumns: '2.5fr 1fr', gap: '24px', marginBottom: '32px' }}>
@@ -152,20 +170,28 @@ export default function ProjectOverviewPage() {
           <div style={{
             display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px'
           }}>
-            {Array.isArray(metrics) && metrics.map((m: any) => {
-              const cfg = metricLabelMap[m?.kpiName] || { title: m?.kpiName || 'Unknown KPI', icon: '📈', unit: undefined };
-              return (
-                <MetricCard
-                  key={m?.kpiName || Math.random()}
-                  title={cfg.title}
-                  value={m?.value}
-                  unit={cfg.unit}
-                  state={m?.state || 'healthy'}
-                  icon={cfg.icon}
-                  trendPct={m?.trendPct}
-                />
-              );
-            })}
+             {Array.isArray(metrics) && metrics.length === 0 ? (
+               <div style={{ gridColumn: '1 / -1', padding: '40px', textAlign: 'center', background: 'var(--bg-surface)', borderRadius: '20px', border: '1px solid var(--border)' }}>
+                 <ShieldCheck size={48} color="rgba(148, 163, 184, 0.5)" style={{ margin: '0 auto 16px' }} />
+                 <h3 style={{ fontSize: '18px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '8px' }}>Waiting for Telemetry</h3>
+                 <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>No live events tracked yet. Click "Simulate Traffic" to generate synthetic data.</p>
+               </div>
+             ) : (
+               Array.isArray(metrics) && metrics.map((m: any) => {
+                 const cfg = metricLabelMap[m?.kpiName] || { title: m?.kpiName || 'Unknown KPI', icon: '📈', unit: undefined };
+                 return (
+                   <MetricCard
+                     key={m?.kpiName || Math.random()}
+                     title={cfg.title}
+                     value={m?.value}
+                     unit={cfg.unit}
+                     state={m?.state || 'healthy'}
+                     icon={cfg.icon}
+                     trendPct={m?.trendPct}
+                   />
+                 );
+               })
+             )}
           </div>
           
           <PerformanceChart data={trends || []} title="Global Latency Trend" />

@@ -51,7 +51,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsLoading(false);
     }, []);
 
-    const apiFetch = async (url: string, options: any = {}) => {
+    const logout = React.useCallback(() => {
+        setToken(null);
+        setUser(null);
+        setCurrentProject(null);
+        localStorage.clear();
+        router.push('/login');
+    }, [router]);
+
+    const apiFetch = React.useCallback(async (url: string, options: any = {}) => {
         const fetchUrl = url.startsWith('http') ? url : `${API_BASE}${url}`;
         const activeToken = token || localStorage.getItem('session-token');
         const cacheKey = `api_cache_${url.replace(/\W/g, '_')}`;
@@ -116,41 +124,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             throw new Error(error.response?.data?.message || error.message);
         }
-    };
+    }, [token, API_BASE, router, logout]);
 
-    const login = async (email: string, password: string) => {
+    const setProject = React.useCallback((id: string) => {
+        setCurrentProject(id);
+        localStorage.setItem('current-project', id);
+    }, []);
+
+    const login = React.useCallback(async (email: string, password: string) => {
         try {
             const res = await axios.post(`${API_BASE}/api/v1/auth/login`, { email, password });
-            const { token, user } = res.data;
+            const { token: newToken, user: newUser } = res.data;
             
-            setToken(token);
-        setUser(user);
-        localStorage.setItem('session-token', token);
-        localStorage.setItem('session-user', JSON.stringify(user));
+            setToken(newToken);
+            setUser(newUser);
+            localStorage.setItem('session-token', newToken);
+            localStorage.setItem('session-user', JSON.stringify(newUser));
 
-        if (user.assignedProjects.length === 1) {
-            setProject(user.assignedProjects[0]);
-            router.push('/');
-        } else {
-            router.push('/projects');
-        }
+            if (newUser.assignedProjects.length === 1) {
+                setProject(newUser.assignedProjects[0]);
+                router.push('/');
+            } else {
+                router.push('/projects');
+            }
         } catch (error: any) {
             throw new Error(error.response?.data?.message || 'Invalid credentials');
         }
-    };
-
-    const logout = () => {
-        setToken(null);
-        setUser(null);
-        setCurrentProject(null);
-        localStorage.clear();
-        router.push('/login');
-    };
-
-    const setProject = (id: string) => {
-        setCurrentProject(id);
-        localStorage.setItem('current-project', id);
-    };
+    }, [API_BASE, router, setProject]);
 
     return (
         <AuthContext.Provider value={{ 

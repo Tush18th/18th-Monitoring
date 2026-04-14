@@ -24,7 +24,7 @@ export const DelayedOrderTable = ({ data }: DelayedOrderTableProps) => {
             width: '100%'
         }}>
             <h3 style={{ fontSize: '14px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '20px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                Delayed Orders (>5s for demo)
+                Delayed Orders (&gt;5s for demo)
             </h3>
             <div style={{ width: '100%', overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>

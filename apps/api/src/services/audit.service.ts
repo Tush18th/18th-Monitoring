@@ -56,7 +56,7 @@ export class AuditService {
         // 1. Structured stdout — parsed by log aggregators
         console.log(`[AUDIT] ${JSON.stringify(entry)}`);
 
-        // 2. Persist to Postgres
+        // 2. Persist to Postgres with Memory Fallback
         try {
             await db.insert(auditLogs).values({
                 siteId:     event.siteId,
@@ -67,8 +67,13 @@ export class AuditService {
                 changes:    { ...event.changes, status: entry.status, meta: entry.meta },
             });
         } catch (err) {
-            // Non-blocking — never let audit write failure break the primary path
-            console.error('[AuditService] Failed to persist audit log to DB:', err);
+            // Fallback to GlobalMemoryStore if DB fails
+            console.error('[AuditService] Persistence failed, falling back to MemoryStore:', (err as any).message);
+            const { GlobalMemoryStore } = require('../../../../packages/db/src/adapters/in-memory.adapter');
+            GlobalMemoryStore.governanceAuditLogs.push({
+                ...entry,
+                logId
+            });
         }
     }
 }

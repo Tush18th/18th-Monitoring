@@ -1,4 +1,5 @@
 import { AggregationService } from './aggregation.service';
+import { GlobalMemoryStore } from '../../../../packages/db/src';
 
 /**
  * KPI Computation Service. Exposes clear APIs translating business logic inputs to metrics.
@@ -24,6 +25,21 @@ export class KpiEngine {
             await AggregationService.recordKpi(siteId, 'sessionsPerMinuteIncrement', 1);
         }
     }
+
+    static async updateSessionState(siteId: string, sessionId: string, metadata: any) {
+        const session = GlobalMemoryStore.sessions.get(sessionId) || { 
+            sessionId, 
+            siteId, 
+            createdAt: new Date().toISOString() 
+        };
+
+        GlobalMemoryStore.sessions.set(sessionId, {
+            ...session,
+            ...metadata,
+            lastActiveAt: new Date().toISOString()
+        });
+    }
+
 
     static async recordClick(siteId: string, sessionId: string, elementId: string) {
         await AggregationService.recordKpi(siteId, 'userClickCount', 1, { sessionId, elementId });

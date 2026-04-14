@@ -5,7 +5,15 @@ export class UserHandler {
         const { siteId, eventType, sessionId, metadata } = event.value;
         if (!sessionId) return; 
 
-                switch (eventType) {
+                // Update stateful session tracking
+        await KpiEngine.updateSessionState(siteId, sessionId, {
+            userId: metadata.userId,
+            isCustomer: !!metadata.userId,
+            deviceType: metadata.deviceType || 'desktop',
+            browser: metadata.browser || 'chrome'
+        });
+
+        switch (eventType) {
             case 'session_start':
                 await KpiEngine.recordSessionActivity(siteId, sessionId, 'start');
                 break;

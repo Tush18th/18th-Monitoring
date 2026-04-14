@@ -11,13 +11,15 @@ export class OrderHandler {
         if (eventType === 'order_placed') {
             const canonicalOrder = await orderNormalizationService.normalize(event.value, siteId);
             GlobalMemoryStore.orders.set(orderId, {
-                status: canonicalOrder.status,
-                placedAt: canonicalOrder.createdAt,
+                ...canonicalOrder,
                 siteId,
-                channel: canonicalOrder.channel,
-                source: canonicalOrder.orderSource
+                paymentStatus: metadata.paymentStatus || 'pending',
+                processingStatus: metadata.processingStatus || 'queued',
+                fulfillmentStatus: metadata.fulfillmentStatus || 'unfulfilled',
+                sku: metadata.sku || 'N/A',
+                paymentMethod: metadata.paymentMethod || 'Credit Card'
             });
-            await KpiEngine.recordOrder(siteId, orderId, true);
+            await KpiEngine.recordOrder(siteId, orderId, true, canonicalOrder.channel);
         } else if (eventType === 'order_processed') {
             const order = GlobalMemoryStore.orders.get(orderId);
             if (order) {

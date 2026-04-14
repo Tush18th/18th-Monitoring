@@ -10,9 +10,10 @@ interface SlowPage {
 
 interface SlowPageTableProps {
     data: SlowPage[];
+    title?: string;
 }
 
-export const SlowPageTable = ({ data }: SlowPageTableProps) => {
+export const SlowPageTable = ({ data, title = 'Slowest Pages' }: SlowPageTableProps) => {
     return (
         <div style={{
             background: 'var(--bg-surface)',
@@ -23,7 +24,7 @@ export const SlowPageTable = ({ data }: SlowPageTableProps) => {
             width: '100%'
         }}>
             <h3 style={{ fontSize: '14px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '20px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                Slowest Pages
+                {title}
             </h3>
             <div style={{ width: '100%', overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
