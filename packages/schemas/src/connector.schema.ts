@@ -70,10 +70,24 @@ export const ConnectorDefinitionSchema = z.discriminatedUnion('type', [
     ApiPollConnectorSchema,
     WebhookConnectorSchema,
     CsvConnectorSchema,
+    z.object({
+        type: z.literal('template'),
+        connectorId: z.string(),
+        label: z.string(),
+        category: z.string(),
+    })
 ]);
 
+export const ConnectorCategorySchema = z.object({
+    id: z.string(),
+    label: z.string(),
+    description: z.string(),
+    icon: z.string(),
+});
+
 export const ConnectorRegistrySchema = z.object({
-    connectors: z.array(ConnectorDefinitionSchema),
+    categories: z.array(ConnectorCategorySchema),
+    connectors: z.array(z.any()), // Allow loose validation for the catalog registry for now
 });
 
 export type ConnectorDefinition = z.infer<typeof ConnectorDefinitionSchema>;

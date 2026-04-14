@@ -225,14 +225,14 @@ export const GlobalMemoryStore = {
         this.users.set('admin@store001.com', {
             id: 'u2', email: 'admin@store001.com', name: 'Project Admin', 
             passwordHash: this._p('password123'),
-            role: 'ADMIN', status: 'active', assignedProjects: ['store_001'],
+            role: 'ADMIN', status: 'active', assignedProjects: ['store_001', 'tc_demo_004'],
             audit: { createdAt: now, updatedAt: now }
         });
 
         this.users.set('viewer@store001.com', {
             id: 'u3', email: 'viewer@store001.com', name: 'Customer Viewer', 
             passwordHash: this._p('password123'),
-            role: 'CUSTOMER', status: 'active', assignedProjects: ['store_001'],
+            role: 'CUSTOMER', status: 'active', assignedProjects: ['store_001', 'tc_demo_004'],
             audit: { createdAt: now, updatedAt: now }
         });
 

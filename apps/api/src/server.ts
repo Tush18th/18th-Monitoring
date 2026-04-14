@@ -94,7 +94,7 @@ export const bootstrapApi = async () => {
     // ── Auth & RBAC ────────────────────────────────────────────────────────
     server.post('/api/v1/auth/login', login);
     server.get('/api/v1/user/me',     { preHandler: [tenantAuthHandler] }, getMe);
-    server.get('/api/v1/projects',    { preHandler: [tenantAuthHandler, roleGuard(['ADMIN', 'SUPER_ADMIN'])] }, getProjects);
+    server.get('/api/v1/projects',    { preHandler: [tenantAuthHandler, roleGuard(['ADMIN', 'SUPER_ADMIN', 'CUSTOMER'])] }, getProjects);
 
     // Placeholder for management APIs
     server.get('/api/v1/admin/projects/:projectId/customers', { preHandler: [tenantAuthHandler, roleGuard(['ADMIN', 'SUPER_ADMIN'])] }, listProjectCustomers);

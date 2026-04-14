@@ -77,6 +77,10 @@ npm run dev
 
 # 4. (Optional) Start Synthetic Agent (in separate terminal)
 npm run dev:synthetic
+
+# 5. Boot Live Demo (Tushar's Creation)
+# This injects 140+ realistic events into the running system
+npm run demo:seed
 ```
 
 ### Environment Variables
@@ -98,33 +102,35 @@ AGENT_PASS=password123
 
 ---
 
-## 📡 Core API Endpoints
+## 📡 API Integration & Connectivity
 
-### Authentication
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/api/v1/auth/login` | Login, returns Bearer token |
-| GET | `/api/v1/user/me` | Authenticated user profile |
+The platform provides a production-grade API for high-throughput telemetry ingestion and cross-system monitoring.
 
-### Dashboard
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/v1/dashboard/performance/summary` | RUM metrics summary |
-| GET | `/api/v1/dashboard/performance/trends` | Web Vitals over time |
-| GET | `/api/v1/dashboard/performance/regional` | Regional latency comparison |
-| GET | `/api/v1/dashboard/performance/device` | Device segmentation |
-| GET | `/api/v1/dashboard/performance/resources` | Frontend resource weight |
-| GET | `/api/v1/dashboard/performance/slowest-pages` | Slowest page paths |
+### Available API Modules
+- **Authentication**: JWT Management tokens and Site API Keys.
+- **Ingestion**: Global REST endpoints for Browser (RUM) and Server (Transactional) events.
+- **Analytics**: Aggregated KPI summaries, Order RCA, and Sync health trends.
+- **Governance**: Audit logs, Access key rotation, and Connector configuration.
 
-### Synthetic Monitoring (NEW)
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/api/v1/dashboard/synthetic/run-results` | Ingest synthetic test run |
-| GET | `/api/v1/dashboard/synthetic/dashboard` | Journey success rate summary |
-| GET | `/api/v1/dashboard/synthetic/history` | Recent run history |
-| GET | `/api/v1/dashboard/synthetic/failures` | Failure log with error details |
+### 🚀 Quick Start: Your First API Call
+Authenticate and fetch your project list in seconds:
 
-All endpoints support query params: `siteId`, `timeRange`, `device`, `browser`.
+```bash
+# 1. Login to get your Bearer Token
+export TOKEN=$(curl -X POST http://localhost:4000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "superadmin@monitor.io", "password": "password123"}' | jq -r '.token')
+
+# 2. Call the Projects API
+curl -X GET http://localhost:4000/api/v1/projects \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### 🔗 Integration Onboarding
+- **E-Commerce Patterns**: Webhook templates for **Shopify**, **Magento**, and **Custom sites**.
+- **Supply Chain**: Polling connectors for **SAP ERP**, **IBM Sterling OMS**, and **Marketing APIs**.
+
+**[Read the Full API Integration Documentation →](./API_INTEGRATION.md)**
 
 ---
 
@@ -150,9 +156,30 @@ The alert engine triggers on:
 ---
 
 ## 📖 Extended Documentation
-- [API Synthetic Endpoints](./apps/api/README.md) - Full payload reference
+- **[API Integration Specification](./API_INTEGRATION.md)** - Full production reference
+- [API Synthetic Endpoints](./apps/api/README.md) - Payload reference
 - [Dashboard README](./apps/dashboard/README.md) - Component tree
 - [Synthetic Agent README](./apps/synthetic-agent/README.md) - Playwright setup
+
+---
+
+## 🚀 Live Demo Environment: "Tushar's Creation"
+
+The system comes pre-configured with a comprehensive demo environment named **"Tushar's Creation"**.
+
+### How to access:
+1. Start the system: `npm run dev`
+2. Run the seeder: `npm run demo:seed`
+3. Login at `http://localhost:3000/login` with:
+   - **Email:** `superadmin@monitor.io`
+   - **Password:** `password123`
+4. Select the **"Tushar's Creation"** project from the list.
+
+### What is simulated:
+- **E-Commerce Syncs:** Real-time order ingestion from Shopify and Magento.
+- **Supply Chain Issues:** Controlled OMS sync failures on IBM Sterling for Root Cause Analysis (RCA) demonstration.
+- **Performance Drift:** A simulated slow-loading checkout page (4.9s) triggering automated alerts.
+- **Traffic Patterns:** Varied traffic across Desktop, Mobile, and Tablet browsers.
 
 ---
 *Architecture: Antigravity Production Observability Platform · 2026*
