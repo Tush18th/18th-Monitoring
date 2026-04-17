@@ -1,0 +1,887 @@
+ 
+    
+     
+    <!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>Adobe Gold Solution Partner & eCommerce Agency in India | 18th Digitech</title>
+	
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+    <meta name="format-detection" content="telephone=no" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" /> 
+    <link href="images/favicon.ico" type="image/x-icon" rel="icon" />
+    		
+	<script type='application/ld+json'>
+	{
+		"@context": "http://www.schema.org",
+		"@type": "Organization",
+		"name": "18th Digitech",
+		"url": "https://www.18thdigitech.com",
+		"logo": "https://www.18thdigitech.com/images/logo-2.jpg",
+		"description": "18th Digitech",
+		"address": {
+			"@type": "PostalAddress",
+			"streetAddress": "B-56, Sector 57",
+			"addressLocality": "Noida",
+			"addressRegion": "Uttar Pradesh",
+			"postalCode": "201012",
+			"addressCountry": "India"
+		},
+		"contactPoint": {
+			"@type": "ContactPoint",
+			"contactType": "Sales Support",
+			"telephone": "+91 88001 81853",
+			"email": "sales@18thdigitech.com"
+			
+		}
+	}
+	</script>
+		<meta name="robots" content="index,follow" />
+    <!-- <meta name="robots" content="NOODP" /> -->
+    <meta name="description" content="We are an award-winning Adobe Gold Solution Partner in India, specializing in Adobe Experience Cloud, B2C, B2B, eCommerce stores, and marketplaces." />
+    <meta name="keywords" content="Adobe solution partner, adobe partner, adobe partners in india, adobe certified partner" />
+    
+   <!--<link rel="alternate" hreflang="x-default" href="https://www.18thdigitech.com">
+    <link rel="alternate" href="https://www.18thdigitech.com.au" hreflang="en-au"> -->
+    
+   <!-- <meta property="og:type" content="website" />
+    <meta property="og:title" content="Adobe Gold Solution Partner & eCommerce Agency in India | 18th Digitech" />
+    <meta property="og:description" content="We are an award-winning Adobe Gold Solution Partner in India, specializing in Adobe Experience Cloud, B2C, B2B, eCommerce stores, and marketplaces." />
+    <meta property="og:site_name" content="18th Digitech" />
+	<meta property="og:image" content="https://www.18thdigitech.com/images/logo-2.jpg" />
+	<meta property="og:url" content="https://www.18thdigitech.com" />  -->
+	    
+	<!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-PRX3WCN');</script>
+    <!-- End Google Tag Manager -->
+	<meta name="google-site-verification" content="GDnIVeg5UuivxVeCIKZKtvX51EwBGS4GoDKWgCVmdgw" />
+    <link rel="stylesheet" href="css/owl.carousel.min.css" />
+    <link rel="stylesheet" href="css/new-style.css" media="all" />
+    <link rel="stylesheet" href="css/new-responsive.css" />
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.7.2/animate.min.css" media="none" onload="if(media!='all')media='all'" />
+    <script src="js/offscreen-loader.js" type="text/javascript"></script>
+    <script src="js/lazyload.js" type="text/javascript"></script>
+
+<!-- javascript -->
+<script src="js/jquery.min.js" type="text/javascript"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/wow/1.1.2/wow.min.js" type="text/javascript"></script>
+<script src="js/owl.carousel.min.js" defer></script>
+<!--<script src="js/bootstrap.min.js"></script>-->
+<!--<script src="https://www.google.com/recaptcha/api.js?render=6Lcm47kUAAAAAOdGk20vxdsozA4tTjvnvaW1YESP" defer></script>-->
+
+<script src="https://www.google.com/recaptcha/api.js?render=6Le3InwqAAAAAJPbiq-kk7arJFHcasuo-VfkOdeU" defer></script>
+<script src="js/custom.js" type="text/javascript" defer></script>
+<!--<script src="js/jquery-validate.js" async></script>-->
+<script defer>new WOW().init();</script>
+<script src="js/form.js" async></script>
+
+ 
+<link rel="alternate" hreflang="x-default" href="https://www.18thdigitech.com">
+<link rel="alternate" href="https://www.18thdigitech.com.au" hreflang="en-au">
+<link rel="canonical" href="https://www.18thdigitech.com">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Adobe Gold Solution Partner & eCommerce Agency in India | 18th Digitech">
+<meta property="og:description" content="We are an award-winning Adobe Gold Solution Partner in India, specializing in Adobe Experience Cloud, B2C, B2B, eCommerce stores, and marketplaces.">
+<meta property="og:site_name" content="18th Digitech">
+<meta property="og:image" content="https://www.18thdigitech.com/images/logo-2.jpg">
+<meta property="og:url" content="https://www.18thdigitech.com">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Adobe Gold Solution Partner & eCommerce Agency in India | 18th Digitech">
+<meta name="twitter:description" content="We are an award-winning Adobe Gold Solution Partner in India, specializing in Adobe Experience Cloud, B2C, B2B, eCommerce stores, and marketplaces.">
+<meta name="twitter:site" content="@18thDigiTech">
+<meta name="twitter:image" content="https://www.18thdigitech.com/images/logo-2.jpg">
+<meta name="twitter:creator" content="@18thDigiTech">
+<meta name="msvalidate.01" content="1FD76DB5C73AE4C4CEEBE05327E1F2C4">
+<body>
+   <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PRX3WCN" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+   <div class="page-wrapper">
+<!-- header -->
+<header id="header">
+    <div class="header-content">
+        <div class="logo"><a href="/"><img src="images/logo.svg" alt="18th Digitech" title="18th Digitech" width="275px" height="71px"/></a></div>
+        <div class="logo sticky"><a href="/"><img src="images/logo.svg" alt="18th Digitech Magento eCommerce Solution"/ width="275px" height="71px"></a></div>
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+        </button>
+        <div class="header-right header_center">
+
+            <ul id="navbar" class="menu navbar-collapse collapse mobile-nav">
+                <li class="dropdown">
+                    <a href="#" 
+                       class="dropdown-toggle" 
+                       role="button" 
+                       aria-haspopup="true" 
+                       aria-expanded="false">Expertise</a>
+                    <span class="caret main-caret"></span>
+                    <ul class="dropdown-menu">
+                        <li><a class="" href="commerce.html"><span>Commerce</span></a></li>
+                         <li><a class="" href="content-supply-chain.html"><span>Content Supply Chain</span></a></li>
+                         <li><a class="" href="data-analytics-services.html"><span>Data & Analytics</span></a></li>
+                         <li><a class="" href="digital-marketing-services.html"><span>Digital Marketing</span></a></li>
+                         <li><a class="" href="generative-engine-optimisation.html"><span>Generative Engine Optimisation</span></a></li>
+                    </ul>
+                </li>
+                
+                <li class="dropdown">
+                    <a href="/platforms.html" 
+                       class="dropdown-toggle" 
+                       role="button" 
+                       aria-haspopup="true" 
+                       aria-expanded="false">Platforms</a>
+                    <span class="caret main-caret"></span>
+                     <ul class="dropdown-menu">
+                        <li><a class="" href="adobe-experience-cloud.html"><span>Adobe Experience Cloud</span></a>
+                            <ul class="dropdown-menu">
+                                <li><a class="" href="adobe-commerce.html"><span>Adobe Commerce</span></a></li>
+                                <li><a class="" href="adobe-experience-manager.html"><span>Adobe Experience Manager</span></a></li>
+                                <li><a class="" href="aem-sites.html">AEM Sites</a></li>
+                                <li><a class="" href="aem-assets.html">AEM Assets</a></li>
+                        </ul>
+                        <ul class="dropdown-menu">
+                                <li><a class="" href="adobe-analytics.html"><span>Adobe Analytics</span></a></li>
+                                <li><a class="" href="adobe-target.html"><span>Adobe Target</span></a></li>
+                        </ul>
+                        </li>
+                        <li class="dropdown">
+                        <ul class="dropdown-menu">
+                                <li><a class="" href="adobe-experience-platform.html"><span>Adobe Experience Platform</span></a></li>
+                                <li><a class="" href="real-time-cdp.html">Real-Time CDP</a></li>
+                                <li><a class="" href="customer-journey-analytics.html">Customer Journey Analytics</a></li>
+                                <li><a class="" href="customer-journey-optimizer.html">Customer Journey Optimizer</a></li>
+                        </ul>
+                        <ul class="dropdown-menu">
+                                <li><a class="" href="adobe-workflow.html"><span>Adobe Workflow</span></a></li>
+                                <li><a class="" href="adobe-campaign.html">Adobe Campaign</a></li>
+                                <li><a class="" href="marketo.html">Marketo</a></li>
+                                <li><a class="" href="adobe-workfront.html">Adobe Workfront</a></li>
+                        </ul>
+                        </li>
+                        
+                        <li class="dropdown">
+                        <ul class="dropdown-menu">
+                                <a class="" href="bigcommerce-development-services.html"><span>BigCommerce</span></a>
+                        </ul>
+                        </li>
+                        <li class="dropdown">
+                        <ul class="dropdown-menu">
+                        <a class="" href="shopify.html"><span>Shopify</span></a>
+                        </ul>
+                        </li>
+                    </ul>
+                </li>
+                
+                
+                   <li class="dropdown">
+                    <a href="#" 
+                       class="dropdown-toggle" 
+                       role="button" 
+                       aria-expanded="false">Work</a>
+                    <span class="caret main-caret"></span>
+                    <ul class="dropdown-menu">
+                        <li><a class="" href="portfolio.html">Portfolio</a></li>
+                        <li><a class="" href="our-clientele.html">Clientele</a></li>
+                        <li><a class="" href="testimonials.html">Testimonials</a></li>
+                    </ul>
+                </li>
+                
+                
+                <li class="dropdown">
+                    <a href="#" 
+                       class="dropdown-toggle" 
+                       role="button" 
+                       aria-haspopup="true" 
+                       aria-expanded="false">About </a>
+                    <span class="caret main-caret"></span>
+                    <ul class="dropdown-menu">
+                        <li><a class="" href="about-us.html">About 18th Digitech</a></li>
+                        <li><a class="" href="awards-and-credentials.html">Awards and Credentials</a></li>
+                        <li><a class="" href="our-partners.html">Our Partners</a></li>
+                        <li><a class="" href="press-and-events.html">Press/Events</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a class="dropdown-toggle" href="/blog/">Blog</a>
+                </li>
+                <li>
+                    <a class="dropdown-toggle" href="/contact-us.html">Contact</a>
+                </li>
+                <li class="talk-to-expert">
+                    <!--<a href="tel:+91 7049441884" target="_blank">-->
+                    <!--    <span class="contact-content">-->
+                    <!--        <img src="images/phone-icon.png" alt= "Call 18thDigitech">-->
+                    <!--    </span>+91 7049 44 1884-->
+                    <!--</a>-->
+                    <a href="mailto:sales@18thdigitech.com">
+                        <span class="contact-content">
+                            <img src="images/email-icon.png" alt="Mail 18thDigitech">
+                        </span>sales@18thdigitech.com
+                    </a>
+                </li>
+            </ul>
+            
+<!--####################### Desktop Navigation  ######################-->
+            
+             <ul id="navbar" class="menu navbar-collapse desktop-nav">
+                
+                <li class="dropdown small-menu">
+                    <a href="#" 
+                       class="dropdown-toggle " 
+                       role="button" 
+                       aria-haspopup="true" 
+                       aria-expanded="false">Expertise <span class="caret main-caret"></span></a>
+                    <div class="dropdown-menu hover_dropdown-menu small-menu">
+                    <ul class="dropdown-menu new-dropdown-menu">
+                         <li class="dropdown new-dropdown box"><h3><a class="" href="commerce.html"><img src="images/ecommerce.svg" alt= "E- Commerce"><span>Commerce</span></a></h3></li>
+                         <li class="dropdown new-dropdown box"><h3><a class="" href="content-supply-chain.html"><img src="images/content.svg" alt= "Content Supply Chain"><span>Content Supply Chain</span></a></h3></li>
+                         <li class="dropdown new-dropdown box"><h3><a class="" href="data-analytics-services.html"><img src="images/analytics.svg" alt= "Data & Analytics"><span>Data & Analytics</span></a></h3></li>
+                         <li class="dropdown new-dropdown box"><h3><a class="" href="digital-marketing-services.html"><img src="images/marketing.svg" alt= "Digital Marketing"><span>Digital Marketing</span></a></h3></li>
+                         <li class="dropdown new-dropdown box"><h3><a class="" href="generative-engine-optimisation.html"><img src="images/events.svg" alt= "Generative Engine Optimisation"><span>Generative Engine Optimisation</span></a></h3></li>
+                    </ul>
+                    </div>
+                </li>
+                
+                <li class="dropdown">
+                    <a href="/platforms.html" 
+                       class="dropdown-toggle " 
+                       role="button" 
+                       aria-haspopup="true" 
+                       aria-expanded="false">Platforms <span class="caret main-caret"></span></a>
+                    <div class="dropdown-menu hover_dropdown-menu">
+                        <ul class="dropdown-menu new-dropdown-menu menu-main">
+                            <li class="dropdown new-dropdown">
+                                <h3><a class="" href="adobe-experience-cloud.html"><img src="images/aec-icon.png" alt= "Adobe Experience Cloud"><span>Adobe Experience Cloud</span></a></h3>
+                            </li>
+                        </ul>
+                    <ul class="dropdown-menu new-dropdown-menu">
+                        <li class="dropdown new-dropdown">
+                            
+                            <ul class="dropdown-menu">
+                                <li><a class="" href="adobe-commerce.html"><span>Adobe Commerce</span></a></li>
+                                <li><a class="" href="adobe-experience-manager.html"><span>Adobe Experience Manager</span></a></li>
+                                <li><a class="" href="aem-sites.html">AEM Sites</a></li>
+                                <li><a class="" href="aem-assets.html">AEM Assets</a></li>
+                        </ul>
+                        <ul class="dropdown-menu">
+                                    <li><a class="" href="adobe-experience-platform.html"><span>Adobe Experience Platform</span></a></li>
+                                    <li><a class="" href="real-time-cdp.html">Real-Time CDP</a></li>
+                                    <li><a class="" href="customer-journey-analytics.html">Customer Journey Analytics</a></li>
+                                    <li><a class="" href="customer-journey-optimizer.html">Customer Journey Optimizer</a></li>
+                            </ul>
+                        </li>
+                        <li class="dropdown new-dropdown">
+                        <ul class="dropdown-menu">
+                                <li><a class="" href="adobe-workflow.html"><span>Adobe Workflow</span></a></li>
+                                <li><a class="" href="adobe-campaign.html">Adobe Campaign</a></li>
+                                <li><a class="" href="marketo.html">Marketo</a></li>
+                                <li><a class="" href="adobe-workfront.html">Adobe Workfront</a></li>
+                        </ul>
+                            <ul class="dropdown-menu">
+                                    <li><a class="" href="adobe-analytics.html"><span>Adobe Analytics</span></a></li>
+                                    <li><a class="" href="adobe-target.html"><span>Adobe Target</span></a></li>
+                            </ul>
+                        </li>
+                        <li class="dropdown new-dropdown">
+                             <ul class="dropdown-menu new-dropdown-menu menu-main">
+                            <li class="dropdown new-dropdown">
+                                <h3><a class="" href="bigcommerce-development-services.html"><img src="images/big-icon.png" alt= "BigCommerce"><span>BigCommerce</span></a></h3>
+                            </li>
+                            <li class="dropdown new-dropdown">
+                                <h3><a class="" href="shopify.html"><img src="images/shop-icon.png" alt= "Shopify"><span>Shopify</span></a></h3>
+                            </li>
+                        </ul>
+                        </li>
+                        </ul>
+                        <br>
+                       
+                    </div>
+                </li>
+                
+                <li class="dropdown small-menu">
+                    <a href="#" 
+                       class="dropdown-toggle " 
+                       role="button" 
+                       aria-haspopup="true" 
+                       aria-expanded="false">Work <span class="caret main-caret"></span></a>
+                       <div class="dropdown-menu hover_dropdown-menu small-menu">
+                        <ul class="dropdown-menu new-dropdown-menu">
+                             <li class="dropdown new-dropdown box"><h3><a class="" href="portfolio.html"><img src="images/portfolio.svg" alt= "Our Portfolio"><span>Our Portfolio</span></a></h3></li>
+                             <li class="dropdown new-dropdown box"><h3><a class="" href="testimonials.html"><img src="images/testimonial-icons.svg" alt= "Our Clientele"><span>Testimonials</span></a></h3></li>
+                             <li class="dropdown new-dropdown box"><h3><a class="" href="our-clientele.html"><img src="images/clients.svg" alt= "Our Clientele"><span>Our Clientele</span></a></h3></li>
+                        </ul>
+                    </div>
+                </li>
+                
+                
+                <li class="dropdown small-menu">
+                    <a href="#" 
+                       class="dropdown-toggle " 
+                       role="button" 
+                       aria-haspopup="true" 
+                       aria-expanded="false">Company <span class="caret main-caret"></span></a>
+                    <div class="dropdown-menu hover_dropdown-menu small-menu">
+                    <ul class="dropdown-menu new-dropdown-menu">
+                        <li class="dropdown new-dropdown box"><h3><a class="" href="/about-us.html"><img src="images/about.svg" alt= "About 18th Digitech">About 18th Digitech</a></h3></li>
+                        <li class="dropdown new-dropdown box"><h3><a class="" href="/awards-and-credentials.html"><img src="images/awards.svg" alt= "Awards and Credentials">Awards and Credentials</a></h3></li>
+                        <li class="dropdown new-dropdown box"><h3><a class="" href="/our-partners.html"><img src="images/partner.svg" alt= "Our Partners">Our Partners</a></h3></li>
+                        <li class="dropdown new-dropdown box"><h3><a class="" href="/press-and-events.html"><img src="images/events.svg" alt= "Events">Press/Events</a></h3></li>
+                    </ul>
+                    </div>
+                </li>
+                <li>
+                    <a class="dropdown-toggle" href="/blog/">Blog</a>
+                </li>
+                <li>
+                    <a class="dropdown-toggle" href="/contact-us.html">Contact</a>
+                </li>
+                
+            </ul>
+            
+        </div>
+        <div class="header_right_last">
+            <ul>
+            <li class="talk-to-expert">
+     <!--           <a href="tel:+91 7049441884" target="_blank">-->
+     <!--               <span class="contact-content">-->
+     <!--                   <img src="images/phone-icon.png" width="21px" height="21px" alt="phone">-->
+     <!--           </span><div class="phone-header phone-rotate">-->
+					<!--+91 7049 -->
+     <!--                   <span>44 1884</span>-->
+					<!--	<span>HI 18TH</span>-->
+					<!--	<span>44 1884</span>-->
+					<!--	<span>HI 18TH</span>-->
+					<!--	<span>44 1884</span>-->
+					<!--	<span>HI 18TH</span>-->
+					<!--</div>-->
+     <!--           </a>-->
+                <a href="mailto:sales@18thdigitech.com">
+                    <span class="contact-content">
+                        <img src="images/email-icon.png" width="21px" height="21px" alt="email">
+                    </span>sales@18thdigitech.com
+                </a>
+            </li>
+            </ul>
+        </div>
+    </div>
+</header>
+ 
+   <div class="main-slider">
+      <div class="slider-inner">
+         <div class="home-main-slider owl-carousel owl-theme">
+             <div class="item large_banner">
+                 <picture>
+                    <video width="100%" height="100%" autoplay loop muted>
+                        <source media="(min-width:768px)" src="https://18thlivesitemedia.s3.ap-south-1.amazonaws.com/welcome-video.mp4" type="video/mp4">
+                        <source media="(max-width:767px)" src="https://18thlivesitemedia.s3.ap-south-1.amazonaws.com/welcome-video-mobile.mp4" type="video/mp4">
+                        <source src="https://18thlivesitemedia.s3.ap-south-1.amazonaws.com/welcome-video.mp4" type="video/mp4">
+                    </video>
+                </picture>
+            </div>
+         </div>
+      </div>
+   </div>
+   <div class="clr"></div>
+    <!--<section class="adobe-strip">-->
+    <!--    <picture>-->
+    <!--      <source media="(min-width:768px)" srcset="images/adobe-summit-strip.jpg">-->
+    <!--      <source media="(max-width:767px)" srcset="images/adobe-summit-strip-mobile.jpg">-->
+    <!--      <img src="images/adobe-summit-strip.jpg" alt="Adobe Summit2">-->
+    <!--    </picture>-->
+    <!--</section>-->
+   <section class="ecommarce-sol-sec adobe-ecommarce-sol-sec home-usps">
+        <div class="container">
+            <div class="ecommarce-sol-content">
+                <h2>Driving Digital Excellence, Together.<br>Beyond eCommerce – We Build Immersive Digital Journeys!</h2>
+                  <p>18th Digitech, an award-winning digital transformation agency, empowers B2C and B2B enterprises to excel in the digital era. With expertise in Digital Experience Platforms, we craft tailored strategies that drive growth, enhance engagement, and optimize every touchpoint of the customer journey.</p>
+                <ul class="company-usp" id="counter">
+                    <li><span class="count percent" data-count="14">0</span>Years of Experience</li>
+                    <li><span class="count percent" data-count="250">0</span>Projects Delivered</li>
+                    <li><span class="count percent" data-count="75">0</span>Certified & Experienced Developers</li>
+                    <li><span class="count percent" data-count="100">0</span>Global Customers</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+   <div class="light-blue-bg-home wow fadeInUpBig">
+      <div class="main-container">
+        <h2><span>14 Years of Success– See the Difference We Make!</span></h2>
+        <div class="discover">
+            <div class="columns one wow fadeInLeft">
+                <h3>More than a Decade of Experience</h3>
+                <p>With 14+ years of experience, 18th Digitech has built a strong reputation for delivering excellence to global commerce businesses across diverse industries.</p>
+                <h3>Complete and reliable solutions</h3>
+                <p>Our project delivery process is customized to meet your project's needs, ensuring results that exceed your expectations.</p>
+                <h3>Result Driven Campaigns</h3>
+                <p>Our team of seasoned & certified experts plans, executes, and evaluates campaigns that deliver impactful results and rewarding returns.</p>
+            </div>
+            <div class="columns three wow fadeInRight">
+                <h3>Customer Centric Experiences</h3>
+                <p>Tailored to your niche, we create solutions that engage your customers, making their shopping experience seamless and confident on your storefront.</p>
+                <h3>State-Of-The-Art Martech</h3>
+                <p>We integrate cutting-edge tech and tools to craft high-quality marketing strategies that drive engagement, boost conversions, and deliver results</p>
+                <h3>Systematic Approach</h3>
+                <p>We develop a cohesive and well-structured approach to provide you with a clear roadmap, ensuring full transparency and understanding of our deliverables.</p>
+            </div>
+        </div>
+      </div>
+   </div>
+   <div class="light-orange-bg-home wow fadeInUpBig">
+      <div class="main-container">
+         <h2><span>Our Playground</span></h2>
+         <h3>Fostering Growth with Expert Solutions</h3>
+            <div class="playground-section">
+                <div class="column-left wow fadeInLeft">
+                    <div class="right-section">
+                        <h3>eCommerce</h3>
+                        <p>Transforming E-Commerce, Elevating Experiences</p>
+                    </div>
+                    <div class="right-section">
+                      <div class="logo-section">
+                          <ul class="logo-list">
+                              <li><img src="images/adobe-c-logo.png" alt="Adobe Commerce" class="lazy" data-src="images/adobe-c-logo.png"></li>
+                              <li><img src="images/big-c-logo.png" alt="BigCommerce" class="lazy" data-src="images/big-c-logo.png"></li>
+                              <li><img src="images/shopify-c-logo.png" alt="Shopify Plus" class="lazy" data-src="images/shopify-c-logo.png"></li>
+                          </ul>
+                      </div>
+                       <ul class="service-list">
+                        <li><strong>eCommerce Development</strong></li>
+                        <li><strong>Migration Services</strong></li>
+                        <li><strong>PWA Implementation</strong></li>
+                        <li><strong>Mobile App development</strong></li>
+                        <li><strong>Omnichannel management</strong></li>
+                        <li><strong>eCommerce Consulting Services</strong></li>
+                       </ul>
+                    </div>
+                    <br>
+                    <a href="/commerce.html" class="cta">Know more<span></span></a><br><br>
+                </div>
+                <div class="column-right wow fadeInRight">
+                    <div class="right-section">
+                  <h3>Content Supply Chain</h3>
+                  <p>Streamline Content, Amplify Engagement</p>
+                </div>
+                <div class="right-section">
+                    <div class="service-section">
+                        <div class="service">
+                            <img src="images/aem-icon.png" alt="BigCommerce" class="lazy" data-src="images/aem-icon.png">
+                            <p><strong>Adobe <br>Experience Manager Assets</strong></p>
+                        </div>
+                        <div class="service">
+                            <img src="images/aem-icon.png" alt="BigCommerce" class="lazy" data-src="images/aem-icon.png">
+                            <p><strong>Adobe <br>Experience Manager Sites</strong></p>
+                        </div>
+                        <div class="service">
+                            <img src="images/aem-icon.png" alt="BigCommerce" class="lazy" data-src="images/aem-icon.png">
+                            <p><strong>Adobe Workfront</strong></p>
+                        </div>
+                    </div>
+                    <br><br>
+                    <a href="/content-supply-chain.html" class="cta">Know more<span></span></a>
+                    <br><br>
+                </div>
+                </div>
+            </div>
+            <div class="playground-section wow fadeInUpBig">
+                <div class="column-left wow fadeInLeft">
+                    <div class="right-section">
+                      <h3>Data & Analytics</h3>
+                      <p>Data-Driven Insights, Real-Time Impact</p>
+                    </div>
+                    <div class="right-section">
+                        <div class="logo-section">
+                            <ul class="logo-list">
+                              <li><img src="images/adobe-analytic.png" alt="" class="lazy" data-src="images/adobe-analytic.png"></li>
+                              <li><img src="images/google-analytic.png" alt="" class="lazy" data-src="images/google-analytic.png"></li>
+                              <li><img src="images/customer-analytic.png" alt="" class="lazy" data-src="images/customer-analytic.png"></li>
+                          </ul>
+                      </div>
+                    </div>
+                    <a href="/data-analytics-services.html" class="cta">Know more<span></span></a><br><br>
+                </div>
+                <div class="column-right wow fadeInRight">
+                    <div class="right-section">
+                      <h3>Digital marketing</h3>
+                      <p>Smart Strategies, Tangible Results</p>
+                    </div>
+                    <div class="right-section">
+                        <div class="logo-section">
+                            <ul class="logo-list">
+                              <li><img src="images/adobe-target.png" alt="" class="lazy" data-src="images/adobe-target.png"></li>
+                              <li><img src="images/google-ads-2.png" alt="" class="lazy" data-src="images/google-ads-2.png"></li>
+                              <li><img src="images/meta-ads-2.png" alt="" class="lazy" data-src="images/meta-ads-2.png"></li>
+                              <li><img src="images/linkedin-ads.png" alt="" class="lazy" data-src="images/linkedin-ads.png"></li>
+                          </ul>
+                      </div>
+                    </div>
+                    <br>
+                    <a href="/digital-marketing-services.html" class="cta">Know more<span></span></a><br><br>
+                </div>
+            </div>
+      </div>
+   </div>
+   <div class="clr"></div>
+   <div class="connecting-people call-to-action wow fadeInUpBig">
+      <div class="main-container">
+         <h2><span>Unlock the Full Potential of Your Digital Business</span></h2>
+            <h3>From seamless platform migration to continuous optimization, <br>we help you scale, engage customers, and drive revenue growth effortlessly.</h3>
+            <h3><strong>Let’s transform your digital journey—Contact Us Today!</strong></h3>
+            <br><a href="/contact-us.html" class="cta">Send Your Query<span></span></a>
+      </div>
+   </div>
+   
+   <div class="clr"></div>
+   <div class="main-container-testimonial-col testimonial-bg  wow fadeInUpBig" id="testimonial-section">
+      <div class="container">
+         <h3>Customer Satisfaction Conveyed in Words</h3>
+         <div class="testimonial-items">
+            <div class="testimonial-home owl-carousel owl-theme">
+               <div class="item">
+                  <div class="testimonial-content">
+                      <div class="testimonial-logo"><img src="images/testimonial-logo-1.png" class="lazy" data-src="images/testimonial-logo-1.png" alt="Sleepyhead testimonial"></div>
+                     <div class="testimonial-caption">
+                        <p>Working with 18th Digitech has been an absolute pressure and a game-changer for our business. Their expertise, dedication and clarity of thoughts have taken our online presence to new heights and I couldn't be happier with the results. What sets them apart is their technical expertise and their responsiveness.</p>
+                     </div>
+                  </div>
+               </div>
+               <div class="item">
+                  <div class="testimonial-content">
+                     <div class="testimonial-logo"><img src="images/testimonial-logo-2.png" class="lazy" data-src="images/testimonial-logo-2.png" alt="wildcraft testimonial"></div>
+                     <div class="testimonial-caption">
+                        <p>18thDigiTech brings to the table a highly spirited team. With their active participation, we were able to develop a scalable platform in a very short period of time. Their excellent customer requirements understanding, execution speed and customer service makes them a one stop shop for Magento and PWA.</p>
+                        <p>Sachin, Varun Khanna and their solid solutioning & engineering teams have proved that physical distance is not an issue. Being 2000Kms away, they have seamlessly turned around our requirements in the fastest time possible, which makes them extremely reliable and score high on project delivery.</p>
+                     </div>
+                  </div>
+               </div>
+               <div class="item">
+                  <div class="testimonial-content">
+                     <div class="testimonial-logo"><img src="images/testimonial-logo-3.png" class="lazy" data-src="images/testimonial-logo-3.png" alt="Crocs testimonial"></div>
+                     <div class="testimonial-caption">
+                        <p>After an extensive search and review of proposals from web design agencies we decided to go with 18th DigiTech for a complete redesign and restructuring of our website.</p>
+                        <p>We are extremely happy to have found 18th DigiTech! They have been an amazing web development partner and had solid understanding of our vision and work flow. They were proactive with communications and updates throughout the development process.</p>
+                     </div>
+                  </div>
+               </div>
+               <div class="item">
+                  <div class="testimonial-content">
+                     <div class="testimonial-logo"><img src="images/testimonial-logo-4.png" class="lazy" data-src="images/testimonial-logo-4.png" alt="TTK testimonial"></div>
+                     <div class="testimonial-caption">
+                        <p>From the moment we engaged with 18th Digitech in the year 2022 for our Magento Commerce software development needs, it was clear that we had partnered with a team of dedicated professionals and experts.</p>
+                        <p>Their commitment to our project's success was evident throughout every phase of solution development.</p>
+                     </div>
+                  </div>
+               </div>
+               <div class="item">
+                  <div class="testimonial-content">
+                     <div class="testimonial-logo"><img src="images/testimonial-logo-5.png" alt="Ritu Kumar testimonial" class="lazy" data-src="images/testimonial-logo-5.png"></div>
+                     <div class="testimonial-caption">
+                        <p>We have had a great experience working with Sachin and the attentive 18th Digitech team. They provided us with an optimised eCommerce solution that matches our brand identity and has robust functionality. Approachable and experienced, they guided us in our eCommerce journey.</p>
+                     </div>
+                  </div>
+               </div>
+               <div class="item">
+                  <div class="testimonial-content">
+                     <div class="testimonial-logo"><img src="images/testimonial-logo-6.png" alt="Shyaway testimonial" class="lazy" data-src="images/testimonial-logo-6.png"></div>
+                     <div class="testimonial-caption">
+                        <p>With a growing customer base and rising eCommerce traffic, we needed a sturdy eCommerce platform for Shyaway, and 18th DigiTech delivered that as expected. Sachin and his team are attentive and carefully understood our needs, priorities, and vision for the new Shyaway eCommerce website. Through their experience and knowledge, 18th DigiTech developed our fully customized eCommerce website on the Adobe Commerce platform, backed by ERP API implementation.</p>
+                     </div>
+                  </div>
+               </div>
+               <div class="item">
+                  <div class="testimonial-content">
+                     <div class="testimonial-logo"><img src="images/testimonial-logo-7.png" alt="Arkswimwear testimonial" class="lazy" data-src="images/testimonial-logo-7.png"></div>
+                     <div class="testimonial-caption">
+                        <p>The team is extremely trustworthy and honest. They respond extremely quickly and make you feel like you're always their priority.</p>
+                     </div>
+                  </div>
+               </div>
+               <div class="item">
+                  <div class="testimonial-content">
+                     <div class="testimonial-logo"><img src="images/testimonial-logo-8.png" alt="Winedirect testimonial" class="lazy" data-src="images/testimonial-logo-8.png"></div>
+                     <div class="testimonial-caption">
+                        <p>18th Tech worked tirelessly to deliver the project and addressed issues that were outside of initial scoping well.</p>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      <div class="clr"></div>
+   </div>
+   <div class="main-container-client-col client-bg  wow fadeInUpBig fine-folks-sec">
+      <div class="container">
+         <div class="txt-part text-right client-heading">Fine Folks We've Worked With</div>
+         <ul class="client-logo cli-logo">
+            <li><img src="images/clients/logo-36.jpg" alt="" class="lazy" data-src="images/clients/logo-36.jpg"></li>
+            <li><img src="images/clients/logo-33.jpg" alt="" class="lazy" data-src="images/clients/logo-33.jpg"></li>
+            <li><img src="images/clients/logo-34.jpg" alt="" class="lazy" data-src="images/clients/logo-34.jpg"></li>
+            <li><img src="images/clients/logo-35.jpg" alt="" class="lazy" data-src="images/clients/logo-35.jpg"></li>
+            <li><img src="images/clients/logo-1.jpg" alt="" class="lazy" data-src="images/clients/logo-1.jpg"></li>
+            <li><img src="images/clients/logo-2.jpg" alt="" class="lazy" data-src="images/clients/logo-2.jpg"></li>
+            <li><img src="images/clients/logo-3.jpg" alt="" class="lazy" data-src="images/clients/logo-3.jpg"></li>
+            <li><img src="images/clients/logo-14.jpg" alt="" class="lazy" data-src="images/clients/logo-14.jpg"></li>
+            <li><img src="images/clients/logo-5.jpg" alt="" class="lazy" data-src="images/clients/logo-5.jpg"></li>
+            <li><img src="images/clients/logo-6.jpg" alt="" class="lazy" data-src="images/clients/logo-6.jpg"></li>
+            <li><img src="images/clients/logo-7.jpg" alt="" class="lazy" data-src="images/clients/logo-7.jpg"></li>
+            <li><img src="images/clients/logo-8.jpg" alt="" class="lazy" data-src="images/clients/logo-8.jpg"></li>
+            <li><img src="images/clients/logo-9.jpg" alt="" class="lazy" data-src="images/clients/logo-9.jpg"></li>
+            <li><img src="images/clients/logo-10.jpg" alt="" class="lazy" data-src="images/clients/logo-10.jpg"></li>
+            <li><img src="images/clients/logo-11.jpg" alt="" class="lazy" data-src="images/clients/logo-11.jpg"></li>
+            <li><img src="images/clients/logo-12.jpg" alt="" class="lazy" data-src="images/clients/logo-12.jpg"></li>
+            <li><img src="images/clients/logo-13.jpg" alt="" class="lazy" data-src="images/clients/logo-13.jpg"></li>
+            <li><img src="images/clients/logo-4.jpg" alt="" class="lazy" data-src="images/clients/logo-4.jpg"></li>
+            <li><img src="images/clients/logo-15.jpg" alt="" class="lazy" data-src="images/clients/logo-15.jpg"></li>
+            <li><img src="images/clients/logo-16.jpg" alt="" class="lazy" data-src="images/clients/logo-16.jpg"></li>
+            <li><img src="images/clients/logo-17.jpg" alt="" class="lazy" data-src="images/clients/logo-17.jpg"></li>
+            <li><img src="images/clients/logo-18.jpg" alt="" class="lazy" data-src="images/clients/logo-18.jpg"></li>
+            <li><img src="images/clients/logo-19.jpg" alt="" class="lazy" data-src="images/clients/logo-19.jpg"></li>
+            <li><img src="images/clients/logo-20.jpg" alt="" class="lazy" data-src="images/clients/logo-20.jpg"></li>
+            <li><img src="images/clients/logo-21.jpg" alt="" class="lazy" data-src="images/clients/logo-21.jpg"></li>
+            <li><img src="images/clients/logo-22.jpg" alt="" class="lazy" data-src="images/clients/logo-22.jpg"></li>
+            <li><img src="images/clients/logo-23.jpg" alt="" class="lazy" data-src="images/clients/logo-23.jpg"></li>
+            <li><img src="images/clients/logo-24.jpg" alt="" class="lazy" data-src="images/clients/logo-24.jpg"></li>
+            <li><img src="images/clients/logo-31.jpg" alt="" class="lazy" data-src="images/clients/logo-31.jpg"></li>
+            <li><img src="images/clients/logo-32.jpg" alt="" class="lazy" data-src="images/clients/logo-32.jpg"></li>
+            <li><img src="images/clients/logo-26.jpg" alt="" class="lazy" data-src="images/clients/logo-26.jpg"></li>
+            <li><img src="images/clients/logo-27.jpg" alt="" class="lazy" data-src="images/clients/logo-27.jpg"></li>
+            <li><img src="images/clients/logo-28.jpg" alt="" class="lazy" data-src="images/clients/logo-28.jpg"></li>
+            <li><img src="images/clients/logo-29.jpg" alt="" class="lazy" data-src="images/clients/logo-29.jpg"></li>
+         </ul>
+         <div class="clr"></div>
+      </div>
+   </div>
+    
+   <div class="main-container-new-sec-col new-sec-bg  wow fadeInUpBig">
+      <div class="container">
+          <h2>Latest Blogs</h2>
+         <div class="new-sec-row">
+             
+            <div class="new-press-item">
+               <a href="https://www.18thdigitech.com/blog/why-attribution-models-are-lying-to-you-and-what-to-do-about-it/">
+                  <img src="https://www.18thdigitech.com/blog/wp-content/uploads/2026/04/attribution-models-marketing-misleading-data-1024x512.jpg" class="lazy" data-src="https://www.18thdigitech.com/blog/wp-content/uploads/2026/04/attribution-models-marketing-misleading-data-1024x512.jpg" alt="Featured image">
+                  <div class="new-press-content">
+                     <h2>Why Attribution Models Are Lying to You (And What To Do About It)</h2>
+                  </div>
+               </a>
+            </div>
+             
+            <div class="new-press-item">
+               <a href="https://www.18thdigitech.com/blog/why-personalisation-programs-fail-without-organisational-alignment/">
+                  <img src="https://www.18thdigitech.com/blog/wp-content/uploads/2026/03/personalisation-programs-team-alignmen-1024x512.jpeg" class="lazy" data-src="https://www.18thdigitech.com/blog/wp-content/uploads/2026/03/personalisation-programs-team-alignmen-1024x512.jpeg" alt="Featured image">
+                  <div class="new-press-content">
+                     <h2>Why Personalisation Programs Fail Without Organisational Alignment</h2>
+                  </div>
+               </a>
+            </div>
+             
+            <div class="new-press-item">
+               <a href="https://www.18thdigitech.com/blog/the-post-cookie-era-is-not-the-end-of-measurement/">
+                  <img src="https://www.18thdigitech.com/blog/wp-content/uploads/2026/03/post-cookie-era-measurement-future-1024x512.jpeg" class="lazy" data-src="https://www.18thdigitech.com/blog/wp-content/uploads/2026/03/post-cookie-era-measurement-future-1024x512.jpeg" alt="Featured image">
+                  <div class="new-press-content">
+                     <h2>The Post Cookie Era Is Not the End of Measurement</h2>
+                  </div>
+               </a>
+            </div>
+             
+         </div>
+         <h5 style="margin: 0 auto; margin-top: 50px;"><a href="/blog">View all blogs<span></span></a></h5>
+      </div>
+   </div>
+   <footer>
+
+    <div class="footer-content clr">
+        <div class="footer-info-sec">
+        <div class="footer-top-sec">
+            <div class="footer-top-logo">
+               <img src="images/logo-footer.svg" alt="18th Digitech" class="footer-logo" width="248px" height="64px"/>
+            </div>
+            <div class="footer-top-info">
+                <ul>
+                    <li><a href="mailto:sales@18thdigitech.com" target="_blank"><span class="mail_to"><img src="images/flaticon-email.png" width="21px" height="21px" alt="email"></span>sales@18thdigitech.com</a></li>
+                    <!--<li> <a href="tel:+91 7049441884" target="_blank"><span class="tel_no"><img src="images/flaticon-phone.png"  width="21px" height="21px" alt="phone"></span>+91 7049 44 1884</a> </li>-->
+                </ul>
+                <ul class="footer-social">
+
+                    <li><a href="https://www.linkedin.com/company/18thdigitech/" target="_blank" class="linkedin"></a></li>
+                    <li><a href="https://www.facebook.com/18thDigiTecheCommerce/" target="_blank" class="facebook"></a></li>
+                    <li><a href="https://www.instagram.com/18thdigi_tech/" target="_blank" class="instagram"></a></li>
+                    <li><a href="https://twitter.com/18thDigiTech" target="_blank" style="padding: 5px 10px;"><img src="images/twitter-icon.svg"  width="14px" height="14px" alt="twitter"></a></li>
+                </ul>
+            </div>
+        </div>
+        </div>
+        <div class="page-content-wrapper clr">
+            
+            <div class="col col2 col2a">
+                <h3>Expertise</h3>
+                <ul class="quick-links">
+                    <li><a href="commerce.html">Commerce</a></li>
+                    <li><a href="content-supply-chain.html">Content Supply Chain</a></li>
+                    <li><a href="data-analytics-services.html">Data & Analytics</a></li>
+                    <li><a href="digital-marketing-services.html">Digital Marketing</a></li>
+                    <li><a href="generative-engine-optimisation.html">Generative Engine Optimisation</a></li>
+                </ul>
+            </div>
+            <div class="col col2 col2b">
+                <h3>Adobe</h3>
+                <ul class="quick-links">
+                    <li><a href="adobe-commerce.html">Adobe Commerce</a></li>
+                    <li><a href="adobe-experience-manager.html">Adobe Experience Manager</a></li>
+                    <li><a href="adobe-experience-platform.html">Adobe Experience Platform</a></li>
+                    <li><a href="adobe-workflow.html">Adobe Workflow</a></li>
+                    <li><a href="adobe-analytics.html">Adobe Analytics</a></li>
+                    <li><a href="adobe-target.html">Adobe Target</a></li>
+                </ul>
+            </div>
+            <div class="col col2 col2c">
+                <h4><a href="bigcommerce-development-services.html">BigCommerce</a></h4>
+                <h4><a href="shopify.html">Shopify</a></h4>
+                <h3>About Company</h3>
+                <ul class="quick-links">
+                    <li><a href="about-us.html">About us</a></li>
+                    <li><a href="privacy-policy.html">Privacy Policy</a></li>
+                    <li><a href="contact-us.html">Contact us</a></li>
+                </ul>
+                </div>
+            <!--<div class="col col3">-->
+            <!--    <h4>Contact Info</h4>-->
+            <!--    <ul class="footer-touch">-->
+            <!--        <li>-->
+            <!--            <p>-->
+            <!--            <strong>Head Office: <br> 18th DigiTech Pvt. Ltd.</strong><br>-->
+            <!--            B-56, Sector-57, <br>Noida, Uttar Pradesh - <br>201301, India-->
+            <!--            </p>-->
+            <!--        </li>-->
+            <!--    </ul>-->
+            <!--    <div class="copyright-col"></div>-->
+            <!--</div>-->
+        </div>
+    </div>
+    <div class="footer-copyright clr">
+        <div class="page-content-wrapper clr">
+            <div class="copyright-col">
+                2026 &copy; 18th DigiTech All Rights Reserved.
+            </div>
+        </div>
+    </div>
+    <div id="backto-top">
+        <img src="images/top-arrow-icon.png" width="45px" height="45px">
+    </div>
+	<a href="https://wa.me/917049441884?text=Could you please provide me with an overview of the services your company offers?" class="float-whatsapp" target="_blank">
+		<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+	</a>
+</footer>
+
+</div>
+
+<aside class="popup popup-quickform">
+    <form class="enquiry-form" id="enquiry-form" action="QuoteRequest.php" method="post">
+        <div class="col col-left">
+			            <h2>REQUEST A QUOTE</h2>
+            <p>Please complete this form and we’ll get back to you.</p>
+            <input type="hidden" name="checkfield" id="checkfield" value="VUdGemMzY3djbVJBTVRJeg==" />
+            <input type="hidden" name="source" id="source" value="https://www.18thdigitech.com/" />
+            <div class="form-row">
+                <input type="text" placeholder="Your name" name="fullname" id="fullname" required>
+            </div>
+            <div class="form-row">
+                <input type="tel" placeholder="Your Phone" name="phone" id="phone" required>
+            </div>
+            <div class="form-row">
+                <input type="email" placeholder="Your e-mail" name="email" id="email" required>
+            </div>
+            <div class="form-row">
+                <input type="text" placeholder="Subject" name="subject" id="subject">
+            </div>
+            <div class="form-row">
+                <textarea placeholder="Message" name="message" id="message"></textarea>
+            </div>
+            <p class="error-section"></p>
+            <div class="form-row">
+                <button type="submit" id="enquiry-submit" value="Let's GET STARTED!" class="submit-btn"> Submit</button>
+            </div>
+        </div>
+        <button class="close-popup" type="button"></button>
+    </form>
+</aside>
+
+<!--
+<script>
+$(document).ready(function () {
+    /* Recaptcha: Start here */
+    grecaptcha.ready(function() {		// needs for recaptacha ready
+        // do request for recaptcha token
+        // response is promise with passed token
+        grecaptcha.execute('6Lcm47kUAAAAAOdGk20vxdsozA4tTjvnvaW1YESP', {action: 'homepage'}).then(function(token) {
+
+            // add token to form										
+            var captchaElement =  document.getElementById('g-recaptcha-response');
+            if (typeof(captchaElement) != 'undefined' && captchaElement != null) {
+                var childInput = document.getElementById("g-recaptcha-response");
+                childInput.value = token;
+            }
+            else {
+
+                var formElement = document.getElementById('enquiry-form');
+                var childInput = document.createElement("INPUT");
+                childInput.setAttribute("type", "hidden");
+                childInput.setAttribute("id", "g-recaptcha-response");
+                childInput.setAttribute("name", "g-recaptcha-response");
+                childInput.setAttribute("value", token);
+
+                // Prepend it
+                formElement.insertBefore(childInput, formElement.firstChild);
+            }
+        });
+    }); 
+    /* Recaptcha: Ends here */
+    
+});
+
+//validation rules
+$("#enquiry-form").validate({
+    rules : {
+        "fullname" : {
+            required : true
+        },						
+        "email" : {
+            required : true,
+            email : true
+        }
+    }, 
+    messages : {
+        fullname : {
+            required : "Required"
+        },						
+        email : {
+            required : "Required"
+        }
+    },
+    submitHandler : function() {
+
+        $("#enquiry-submit").val("Submitting..");
+        $("input,select,textarea,button").attr('readonly', true);
+
+        $.post('helpers/QuoteRequest.php', $('form#enquiry-form').serialize(), function(data) {
+            $("#enquiry-submit").val("Let's GET STARTED!");
+            $("input,select,textarea,button").attr('readonly', false);
+            if(data.status == "success"){
+                window.location.href='thank-you.html';
+            }
+            else {
+                $('.error-section').text(data.msg);
+            }
+        }, "json");
+    }
+});
+</script>
+-->
+
+ 
+</body>
+</html>

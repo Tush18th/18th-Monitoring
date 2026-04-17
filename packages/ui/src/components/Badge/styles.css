@@ -1,0 +1,100 @@
+.ui-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  font-weight: var(--font-semibold);
+  white-space: nowrap;
+}
+
+.size-sm {
+  padding: 0 var(--space-2);
+  height: 18px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.size-md {
+  padding: var(--space-0-5) var(--space-3);
+  height: 24px;
+  font-size: var(--text-xs);
+}
+
+.variant-default {
+  background-color: var(--bg-muted);
+  color: var(--text-secondary);
+}
+
+.variant-success {
+  background-color: var(--success-bg);
+  color: var(--success-text);
+}
+
+.variant-warning {
+  background-color: var(--warning-bg);
+  color: var(--warning-text);
+}
+
+.variant-error {
+  background-color: var(--error-bg);
+  color: var(--error-text);
+}
+
+.variant-info {
+  background-color: var(--info-bg);
+  color: var(--info-text);
+}
+
+/* Status Indicator */
+.ui-status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  position: relative;
+}
+
+.status-dot::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 50%;
+  animation: pulse 2s ease-in-out infinite;
+  opacity: 0.6;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 0.8; }
+  70% { transform: scale(3); opacity: 0; }
+  100% { transform: scale(1); opacity: 0; }
+}
+
+.status-success { background-color: var(--success); }
+.status-success::after { background-color: var(--success); }
+
+.status-warning { background-color: var(--warning); }
+.status-warning::after { background-color: var(--warning); }
+
+.status-error { background-color: var(--error); }
+.status-error::after { background-color: var(--error); }
+
+.status-info { background-color: var(--info); }
+.status-info::after { background-color: var(--info); }
+
+.status-inactive { background-color: var(--text-muted); }
+.status-inactive::after { display: none; }
+
+.status-label {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--text-secondary);
+}

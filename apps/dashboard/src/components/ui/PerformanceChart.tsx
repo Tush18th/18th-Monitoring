@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { memo } from 'react';
 import { 
   LineChart, 
   Line, 
@@ -24,7 +24,7 @@ interface PerformanceChartProps {
     title: string;
 }
 
-export const PerformanceChart = ({ data, title }: PerformanceChartProps) => {
+export const PerformanceChart = memo(({ data, title }: PerformanceChartProps) => {
     if (!data || data.length === 0) return null;
 
     return (
@@ -74,15 +74,19 @@ export const PerformanceChart = ({ data, title }: PerformanceChartProps) => {
                             name="Page Load" 
                             stroke="var(--accent-blue)" 
                             strokeWidth={3} 
-                            dot={{ r: 4 }} 
-                            activeDot={{ r: 6 }} 
+                            dot={data.length > 30 ? false : { r: 4 }} 
+                            activeDot={data.length > 100 ? false : { r: 6 }} 
+                            isAnimationActive={data.length < 50}
                         />
-                        <Line type="monotone" dataKey="lcp" name="LCP" stroke="var(--accent-orange)" strokeWidth={2} strokeDasharray="5 5" />
-                        <Line type="monotone" dataKey="fcp" name="FCP" stroke="var(--accent-green)" strokeWidth={2} strokeDasharray="5 5" />
-                        <Line type="monotone" dataKey="ttfb" name="TTFB" stroke="var(--accent-red)" strokeWidth={2} strokeDasharray="5 5" />
+                        <Line type="monotone" dataKey="lcp" name="LCP" stroke="var(--accent-orange)" strokeWidth={2} strokeDasharray="5 5" dot={false} isAnimationActive={data.length < 50} />
+                        <Line type="monotone" dataKey="fcp" name="FCP" stroke="var(--accent-green)" strokeWidth={2} strokeDasharray="5 5" dot={false} isAnimationActive={data.length < 50} />
+                        <Line type="monotone" dataKey="ttfb" name="TTFB" stroke="var(--accent-red)" strokeWidth={2} strokeDasharray="5 5" dot={false} isAnimationActive={data.length < 50} />
                     </LineChart>
                 </ResponsiveContainer>
             </div>
         </div>
     );
-};
+}, (prev, next) => {
+    // Only re-render if the title changes or the actual underlying data payload length updates.
+    return prev.title === next.title && prev.data?.length === next.data?.length;
+});

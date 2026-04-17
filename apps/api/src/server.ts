@@ -7,13 +7,19 @@ import { KafkaStreamConsumer } from '../../../services/processor/src/consumer/ka
 import { TOPICS } from './config/topics';
 import { dashboardRoutes } from './routes/dashboard';
 import { login, getMe, getProjects } from './controllers/auth.controller';
-import { listProjectCustomers, createCustomer, updateCustomerStatus } from './controllers/admin.controller';
+import { listPlatformUsers, createPlatformUser, updatePlatformUserStatus } from './controllers/admin.controller';
 import { tenantAuthHandler } from './middlewares/auth.middleware';
 import { viewOnlyGuard, roleGuard } from './middlewares/rbac.middleware';
 import { rateLimiter } from './middlewares/rate-limiter.middleware';
 import { secureHeaders } from './middlewares/secure-headers.middleware';
 import { tenantIsolationGuard } from './middlewares/tenant-isolation.middleware';
 import { idempotencyGuard } from './middlewares/idempotency.middleware';
+
+declare module 'fastify' {
+  interface FastifyRequest {
+    user: any;
+  }
+}
 
 // ─── Boot the in-process stream consumer ──────────────────────────────────────
 
@@ -50,7 +56,8 @@ export const bootstrapApi = async () => {
     
     // Inject Correlation ID
     server.addHook('onRequest', async (req, reply) => {
-        const reqId = req.headers['x-correlation-id'] || crypto.randomUUID();
+        const headerId = req.headers['x-correlation-id'];
+        const reqId = (Array.isArray(headerId) ? headerId[0] : headerId) || crypto.randomUUID();
         req.id = reqId; // Fastify attaches this gracefully
         reply.header('X-Correlation-ID', reqId);
     });
@@ -61,7 +68,7 @@ export const bootstrapApi = async () => {
     });
 
     server.addHook('onResponse', async (req, reply) => {
-        const time = Math.round(reply.getResponseTime());
+        const time = Math.round((reply as any).getResponseTime?.() || 0);
         // Structured log for CloudWatch/Datadog metrics extraction
         console.log(`[METRIC] event=http_request siteId=${(req.params as any).siteId || 'global'} status=${reply.statusCode} latency_ms=${time} path=${req.url}`);
     });
@@ -96,10 +103,15 @@ export const bootstrapApi = async () => {
     server.get('/api/v1/user/me',     { preHandler: [tenantAuthHandler] }, getMe);
     server.get('/api/v1/projects',    { preHandler: [tenantAuthHandler, roleGuard(['ADMIN', 'SUPER_ADMIN', 'CUSTOMER'])] }, getProjects);
 
-    // Placeholder for management APIs
-    server.get('/api/v1/admin/projects/:projectId/customers', { preHandler: [tenantAuthHandler, roleGuard(['ADMIN', 'SUPER_ADMIN'])] }, listProjectCustomers);
-    server.post('/api/v1/admin/projects/:projectId/customers', { preHandler: [tenantAuthHandler, roleGuard(['ADMIN', 'SUPER_ADMIN'])] }, createCustomer);
-    server.patch('/api/v1/admin/customers/:userId/status', { preHandler: [tenantAuthHandler, roleGuard(['ADMIN', 'SUPER_ADMIN'])] }, updateCustomerStatus);
+    // System Access Management APIs
+    server.get('/api/v1/admin/projects/:projectId/users',   { preHandler: [tenantAuthHandler, roleGuard(['ADMIN', 'SUPER_ADMIN'])] }, listPlatformUsers);
+    server.post('/api/v1/admin/projects/:projectId/users',  { preHandler: [tenantAuthHandler, roleGuard(['ADMIN', 'SUPER_ADMIN'])] }, createPlatformUser);
+    server.patch('/api/v1/admin/users/:userId/status',      { preHandler: [tenantAuthHandler, roleGuard(['ADMIN', 'SUPER_ADMIN'])] }, updatePlatformUserStatus);
+
+    // Legacy Aliases (Compatibility for customers -> users migration)
+    server.get('/api/v1/admin/projects/:projectId/customers',   { preHandler: [tenantAuthHandler, roleGuard(['ADMIN', 'SUPER_ADMIN'])] }, listPlatformUsers);
+    server.post('/api/v1/admin/projects/:projectId/customers',  { preHandler: [tenantAuthHandler, roleGuard(['ADMIN', 'SUPER_ADMIN'])] }, createPlatformUser);
+    server.patch('/api/v1/admin/customers/:userId/status',      { preHandler: [tenantAuthHandler, roleGuard(['ADMIN', 'SUPER_ADMIN'])] }, updatePlatformUserStatus);
 
     // ── Health & Readiness Probes (K8s / LB) ───────────────────────────────
     server.get('/health', async (_req, reply) => {

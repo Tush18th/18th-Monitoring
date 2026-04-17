@@ -53,6 +53,15 @@ The performance page fetches 8 endpoints in parallel via `Promise.allSettled`:
 
 All requests carry `Authorization: Bearer <token>` injected by `AuthContext.apiFetch()`.
 
+### 📜 Auth Module (Refactored)
+
+| Component | File | Description |
+|-----------|------|-------------|
+| `LoginHeader` | `LoginHeader.tsx` | Fixed sticky header with brand identity + Theme Toggle |
+| `DemoRoleSelector` | `DemoRoleSelector.tsx` | Segmented selectable role cards with hover states |
+| `RoleCard` | `RoleCard.tsx` | **NEW** — Reusable card for quick access roles |
+| `LoginFooter` | `LoginFooter.tsx` | Subtle legal + security trust anchors |
+
 ---
 
 ## 🚀 Running
@@ -83,9 +92,15 @@ NEXT_PUBLIC_API_URL=http://localhost:4000
 
 ---
 
-## 💡 Design System
+## 💡 Design System & Aesthetic
 
-- Variables defined in `globals.css`: `--bg-surface`, `--accent-blue`, `--text-primary`, etc.
-- All components use inline styles with CSS variables for theme consistency
-- Micro-animations via `transition: all 0.2s ease` + `transform: translateY(-Xpx)` on hover
-- Color-coded states: `#10b981` (healthy) · `#f59e0b` (warning) · `#ef4444` (critical)
+- **Elite Layout**: 8px strict vertical rhythm and horizontal spacing system.
+- **Premium Mesh Gradients**: Subtle background blur effects and animated mesh gradients for depth.
+- **Glassmorphism**: Backdrop blur effects (`backdrop-blur-xl`) for high-end card aesthetics.
+- **Theme Awareness**: Built on a dual-theme core using `[data-theme='dark']` and CSS variables.
+- **Micro-animations**: Smooth transitions (`cubic-bezier(0.16, 1, 0.3, 1)`) for hover states, scale transforms, and fade-ins.
+- **Typography**: Optimized Inter-stack with tight tracking and line-height for an enterprise-grade feel.
+- **Color Pillars**: 
+  - **Light Mode**: Off-white `#fcfcfd`, subtle slate borders.
+  - **Dark Mode**: Deep Navy `#020617`, ethereal blue borders.
+  - **Accents**: Dynamic blue-indigo gradients (`#2563eb` to `#7c3aed`).

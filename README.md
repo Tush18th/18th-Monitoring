@@ -44,6 +44,14 @@ High-throughput event streaming and normalization.
 - **Revenue Monitoring**: Real-time sales tracking with anomaly detection.
 - **Customer Intelligence**: Dynamic segmentation of active user sessions.
 
+### 5. ✨ Premium Enterprise UI (NEW)
+A modernized, high-conversion interface designed for focus and productivity.
+
+- **Redesigned Auth Experience**: 2-column responsive layout with premium typography, mesh gradients, and role-based quick access.
+- **Full Theme Support**: Native Light and Dark mode support across the entire platform.
+- **Design System**: Built on a modular component library (`@kpi-platform/ui`) with strict 8px vertical rhythm and optimized accessibility.
+- **Glassmorphism**: Subtle blur and transparency effects for a high-end, professional SaaS aesthetic.
+
 ---
 
 ## 🏗️ Technical Architecture
@@ -52,6 +60,8 @@ High-throughput event streaming and normalization.
 Browser/Mobile → Playwright Agent → POST /synthetic/run-results
                                           ↓
 Source: Shopify/SAP → Ingestion Layer → Stream Processor → KPI Aggregation → API Layer → Next.js Dashboard
+                                                                                  ↑            ↑
+                                                              Shared UI Kit (@kpi-platform/ui) + ThemeProvider
                                                                                   ↑
                                                               In-Memory Store (GlobalMemoryStore)
 ```

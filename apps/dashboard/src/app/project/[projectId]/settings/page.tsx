@@ -15,6 +15,8 @@ import {
   Database,
   Info
 } from 'lucide-react';
+import { PageLayout } from '@kpi-platform/ui';
+import { FormSection, FormGroup, FormLabel, FormHelper, FormInput } from '../../../../components/ui/FormPrimitives';
 
 export default function SettingsPage() {
     const params = useParams();
@@ -24,16 +26,11 @@ export default function SettingsPage() {
 
     return (
         <RoleGuard allowedRoles={['ADMIN', 'SUPER_ADMIN']}>
-            <div className="animate-fade-in" style={{ paddingBottom: '80px' }}>
-                <header style={{ marginBottom: '32px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                        <div style={{ padding: '8px', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '10px' }}>
-                            <Shield size={20} color="var(--accent-blue)" />
-                        </div>
-                        <h2 style={{ fontSize: '24px', fontWeight: '900', color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>Project Governance & Configuration</h2>
-                    </div>
-                    <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Master control center for security policies, third-party connectors, and system-wide SLAs for {projectId}.</p>
-                </header>
+            <PageLayout
+                title="Project Governance & Configuration"
+                subtitle={`Master control center for security policies, third-party connectors, and system-wide SLAs for ${projectId}`}
+            >
+                <div className="animate-fade-in" style={{ paddingBottom: '80px' }}>
 
                 <div style={{ display: 'flex', gap: '32px', marginBottom: '40px', borderBottom: '1px solid var(--border)' }}>
                     {[
@@ -61,25 +58,29 @@ export default function SettingsPage() {
                 <div style={{ minHeight: '600px' }}>
                     {activeTab === 'general' && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-                             <div style={sectionStyle}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-                                    <Settings size={20} color="var(--accent-blue)" />
-                                    <h3 style={{ fontSize: '18px', fontWeight: '800' }}>Baseline Monitoring Thresholds</h3>
-                                </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                                    {[
-                                        { label: 'Project-Level Rate Limit Ceiling (RPM)', value: 5000, color: 'var(--accent-blue)' },
-                                        { label: 'LCP Critical Threshold (ms)', value: 4000, color: 'var(--accent-red)' },
-                                        { label: 'Sync Timeout SLA (secs)', value: 300, color: 'var(--accent-orange)' }
-                                    ].map(item => (
-                                        <div key={item.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '16px', borderBottom: '1px solid var(--border-light)' }}>
-                                            <div>
-                                                <div style={{ fontSize: '14px', fontWeight: '700' }}>{item.label}</div>
-                                                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Baseline policy enforced across all unprivileged keys</div>
-                                            </div>
-                                            <input type="number" defaultValue={item.value} style={miniInputStyle} />
-                                        </div>
-                                    ))}
+                             <FormSection 
+                                title="Baseline Monitoring Thresholds" 
+                                description="Configure core thresholds that govern alerting logic globally."
+                                icon={<Settings size={20} color="var(--accent-blue)" />}
+                             >
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
+                                    <FormGroup>
+                                        <FormLabel required>Project-Level Rate Limit Ceiling (RPM)</FormLabel>
+                                        <FormHelper error={true}>Value must be greater than 1000 RPM.</FormHelper>
+                                        <FormInput type="number" defaultValue={5000} error={true} />
+                                    </FormGroup>
+
+                                    <FormGroup>
+                                        <FormLabel>LCP Critical Threshold (ms)</FormLabel>
+                                        <FormHelper>The maximum allowed baseline loading state before a global alert triggers.</FormHelper>
+                                        <FormInput type="number" defaultValue={4000} rightElement={<span style={{ color: 'var(--text-muted)', fontSize: '13px', fontWeight: '800' }}>ms</span>} />
+                                    </FormGroup>
+                                    
+                                    <FormGroup>
+                                        <FormLabel>Sync Timeout SLA (secs)</FormLabel>
+                                        <FormHelper>Maximum duration an integration thread can hang before it drops.</FormHelper>
+                                        <FormInput type="number" defaultValue={300} rightElement={<span style={{ color: 'var(--text-muted)', fontSize: '13px', fontWeight: '800' }}>s</span>} />
+                                    </FormGroup>
                                 </div>
                                 
                                 <div style={infoBanner}>
@@ -87,17 +88,21 @@ export default function SettingsPage() {
                                     <span>Global ceilings act as a secondary hard-block for standard keys, while VIP-tagged tokens may bypass these thresholds.</span>
                                 </div>
 
-                                <button style={primaryBtnStyle}>Commit Calibration</button>
-                            </div>
-
-                            <div style={dangerSectionStyle}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                                    <Trash2 size={20} color="var(--accent-red)" />
-                                    <h3 style={{ fontSize: '18px', fontWeight: '800', color: 'var(--accent-red)' }}>Security Deprecation</h3>
+                                <div>
+                                    <button className="btn-core" style={primaryBtnStyle}>Commit Calibration</button>
                                 </div>
-                                <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '32px' }}>Permanent actions that impact project scope, data retention, or connector legacy mapping.</p>
-                                <button style={dangerBtnStyle}>Archive Managed Scope</button>
-                            </div>
+                            </FormSection>
+
+                            <FormSection
+                                dangerouslyRed={true}
+                                title="Security Deprecation"
+                                description="Permanent actions that impact project scope, data retention, or connector legacy mapping in an irreversible way."
+                                icon={<Trash2 size={20} color="var(--accent-red)" />}
+                            >
+                                <div>
+                                    <button className="btn-core" style={dangerBtnStyle}>Archive Managed Scope</button>
+                                </div>
+                            </FormSection>
                         </div>
                     )}
 
@@ -113,7 +118,8 @@ export default function SettingsPage() {
                         </div>
                     )}
                 </div>
-            </div>
+                </div>
+            </PageLayout>
         </RoleGuard>
     );
 }
@@ -123,21 +129,12 @@ const sectionStyle: React.CSSProperties = {
 };
 
 const infoBanner: React.CSSProperties = {
-    marginTop: '24px', padding: '16px', background: 'var(--bg-app)', border: '1px solid var(--border)', borderRadius: '12px',
+    padding: '16px', background: 'var(--bg-app)', border: '1px solid var(--border)', borderRadius: '12px',
     display: 'flex', gap: '12px', alignItems: 'center', fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.4'
 };
 
-const dangerSectionStyle: React.CSSProperties = {
-    background: 'rgba(239, 68, 68, 0.03)', border: '1px solid rgba(239, 68, 68, 0.1)', borderRadius: '24px', padding: '32px', marginTop: '32px'
-};
-
-const miniInputStyle: React.CSSProperties = {
-    padding: '10px 16px', background: 'var(--bg-app)', border: '1px solid var(--border)', borderRadius: '10px',
-    color: 'var(--text-primary)', width: '120px', textAlign: 'right', fontWeight: '800'
-};
-
 const primaryBtnStyle: React.CSSProperties = {
-    marginTop: '32px', padding: '12px 32px', background: 'var(--accent-blue)', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: '800', cursor: 'pointer', boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+    padding: '12px 32px', background: 'var(--accent-blue)', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: '800', cursor: 'pointer', boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
 };
 
 const dangerBtnStyle: React.CSSProperties = {

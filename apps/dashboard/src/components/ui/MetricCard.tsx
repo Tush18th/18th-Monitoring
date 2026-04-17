@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 
 interface MetricCardProps {
   title: string;
@@ -9,9 +9,10 @@ interface MetricCardProps {
   icon: string;
   trendPct?: number;
   gradient?: string;
+  loading?: boolean;
 }
 
-export const MetricCard = ({ title, value, state, unit = '', icon, trendPct, gradient }: MetricCardProps) => {
+export const MetricCard = memo(({ title, value, state, unit = '', icon, trendPct, gradient, loading = false }: MetricCardProps) => {
   const [hovered, setHovered] = useState(false);
 
   const stateColor =
@@ -64,46 +65,55 @@ export const MetricCard = ({ title, value, state, unit = '', icon, trendPct, gra
           }}>{icon}</div>
         </div>
 
-        {/* Value Area */}
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '16px' }}>
-          <span style={{
-            fontSize: '36px', fontWeight: '800', color: 'var(--text-primary)',
-            letterSpacing: '-1px', fontVariantNumeric: 'tabular-nums', lineHeight: '1',
-          }}>
-            {value === null || value === undefined || value === 'N/A' ? '—' : value}
-          </span>
-          {unit && <span style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: '600' }}>{unit}</span>}
-        </div>
-
-        {/* Status Indicator Row */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
-          <div style={{ 
-            display: 'flex', alignItems: 'center', gap: '8px',
-            padding: '4px 8px', borderRadius: '20px',
-            background: `${stateColor}08`
-          }}>
-            <div style={{
-              width: '6px', height: '6px', borderRadius: '50%',
-              background: stateColor,
-              boxShadow: `0 0 6px ${stateColor}66`,
-            }} />
-            <span style={{
-              fontSize: '10px', fontWeight: '800', color: stateColor,
-              textTransform: 'uppercase', letterSpacing: '0.5px',
-            }}>{state}</span>
+        {loading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', minHeight: '66px' }}>
+             <div className="skeleton" style={{ height: '36px', width: '60%', borderRadius: '8px' }}></div>
+             <div className="skeleton" style={{ height: '14px', width: '40%', borderRadius: '4px' }}></div>
           </div>
-          
-          {trendPct !== undefined && trendPct !== 0 && (
-            <div style={{
-              fontSize: '13px', fontWeight: '700',
-              color: trendPct > 0 ? 'var(--accent-red)' : 'var(--accent-green)',
-              display: 'flex', alignItems: 'center', gap: '2px'
-            }}>
-              {trendPct > 0 ? '↑' : '↓'} {Math.abs(trendPct)}%
+        ) : (
+          <>
+            {/* Value Area */}
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '16px' }}>
+              <span style={{
+                fontSize: '36px', fontWeight: '800', color: 'var(--text-primary)',
+                letterSpacing: '-1px', fontVariantNumeric: 'tabular-nums', lineHeight: '1',
+              }}>
+                {value === null || value === undefined || value === 'N/A' ? '—' : value}
+              </span>
+              {unit && <span style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: '600' }}>{unit}</span>}
             </div>
-          )}
-        </div>
+
+            {/* Status Indicator Row */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
+              <div style={{ 
+                display: 'flex', alignItems: 'center', gap: '8px',
+                padding: '4px 8px', borderRadius: '20px',
+                background: `${stateColor}08`
+              }}>
+                <div style={{
+                  width: '6px', height: '6px', borderRadius: '50%',
+                  background: stateColor,
+                  boxShadow: `0 0 6px ${stateColor}66`,
+                }} />
+                <span style={{
+                  fontSize: '10px', fontWeight: '800', color: stateColor,
+                  textTransform: 'uppercase', letterSpacing: '0.5px',
+                }}>{state}</span>
+              </div>
+              
+              {trendPct !== undefined && trendPct !== 0 && (
+                <div style={{
+                  fontSize: '13px', fontWeight: '700',
+                  color: trendPct > 0 ? 'var(--accent-red)' : 'var(--accent-green)',
+                  display: 'flex', alignItems: 'center', gap: '2px'
+                }}>
+                  {trendPct > 0 ? '↑' : '↓'} {Math.abs(trendPct)}%
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
-};
+});

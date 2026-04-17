@@ -31,6 +31,11 @@ Built on **Fastify** for high-throughput JSON routing, with strict tenant isolat
 | GET | `/api/v1/dashboard/synthetic/history` | Bearer | Last 50 run records |
 | GET | `/api/v1/dashboard/synthetic/failures` | Bearer | Failed runs with error logs + screenshot URLs |
 
+### Development & Simulation *(NEW)*
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/api/v1/simulate` | Bearer + ADMIN | Dispatch a comprehensive E2E monitoring scenario (Perf, User, Order, Sync) |
+
 #### POST `/api/v1/dashboard/synthetic/run-results` — Payload
 ```json
 {

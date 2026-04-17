@@ -3,7 +3,7 @@ import { AuthService } from '../services/auth.service';
 
 const db = new InMemoryRelationalAdapter();
 
-export const listProjectCustomers = async (req: any, reply: any) => {
+export const listPlatformUsers = async (req: any, reply: any) => {
     const { projectId } = req.params;
     
     // Additional security for non-SuperAdmins
@@ -22,7 +22,7 @@ export const listProjectCustomers = async (req: any, reply: any) => {
     return scrubbed;
 };
 
-export const createCustomer = async (req: any, reply: any) => {
+export const createPlatformUser = async (req: any, reply: any) => {
     const { projectId } = req.params;
     const { email, name, password } = req.body;
 
@@ -62,7 +62,7 @@ export const createCustomer = async (req: any, reply: any) => {
     }
 };
 
-export const updateCustomerStatus = async (req: any, reply: any) => {
+export const updatePlatformUserStatus = async (req: any, reply: any) => {
     const { userId } = req.params;
     const { status } = req.body;
 

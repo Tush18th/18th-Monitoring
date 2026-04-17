@@ -47,12 +47,19 @@ export const dashboardRoutes = async (fastify: any) => {
     fastify.get('/performance/device', getDeviceSegmentation);
     fastify.get('/performance/resources', getResourceBreakdown);
     
-    // User Activity Endpoints
-    fastify.get('/users/summary', getUserActivitySummary);
-    fastify.get('/users/trends', getUserTrends);
+    // Customer Analytics (End-User Experience)
+    fastify.get('/customers/summary',   getUserActivitySummary);
+    fastify.get('/customers/trends',    getUserTrends);
+    fastify.get('/customers/analytics', getUserAnalytics);
+    fastify.get('/customers/top-pages', getTopPages);
+    fastify.get('/customers/funnel',    getFunnelData);
+
+    // Legacy Aliases (Compatibility for user-analytics -> customer-analytics migration)
+    fastify.get('/users/summary',   getUserActivitySummary);
+    fastify.get('/users/trends',    getUserTrends);
     fastify.get('/users/analytics', getUserAnalytics);
     fastify.get('/users/top-pages', getTopPages);
-    fastify.get('/users/funnel', getFunnelData);
+    fastify.get('/users/funnel',    getFunnelData);
     
     // Order Activity Endpoints
     fastify.get('/orders/summary', getOrderSummary);

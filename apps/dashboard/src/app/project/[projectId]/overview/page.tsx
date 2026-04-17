@@ -8,15 +8,23 @@ import {
   AlertTriangle, 
   Settings, 
   PlayCircle, 
-  ChevronRight 
+  ChevronRight,
+  TrendingUp,
+  Clock,
+  CheckCircle2
 } from 'lucide-react';
+import { PageLayout, Grid, Col, Card, Button, Typography, StatusIndicator, Badge } from '@kpi-platform/ui';
 import { PerformanceChart } from '../../../../components/ui/PerformanceChart';
 import { MetricCard } from '../../../../components/ui/MetricCard';
+import { MonitoringFilterBar } from '../../../../components/ui/MonitoringFilterBar';
+import { SectionHeader } from '../../../../components/ui/SectionHeader';
+import { SortableTable, TableColumn } from '../../../../components/ui/SortableTable';
 
 export default function ProjectOverviewPage() {
   const params = useParams();
   const projectId = params.projectId as string;
   const { token, apiFetch, user, outageStatus, lastUpdated } = useAuth();
+  
   const [metrics, setMetrics] = useState<any[]>([]);
   const [trends, setTrends] = useState<any[]>([]);
   const [alerts, setAlerts] = useState<any[]>([]);
@@ -26,7 +34,6 @@ export default function ProjectOverviewPage() {
   const isExpired = outageStatus === 'expired';
 
   useEffect(() => {
-    // Proactive Guard: If token or projectId are missing, wait for AuthProvider/Routing to stabilize.
     if (!token || !projectId) {
       setLoading(false);
       return;
@@ -45,9 +52,8 @@ export default function ProjectOverviewPage() {
 
       const errors = results.filter(r => r.status === 'rejected');
       if (errors.length > 0) {
-        console.error('[Dashboard] Some endpoints failed:', errors);
         const firstError = (errors[0] as PromiseRejectedResult).reason;
-        setErrorMsg(firstError?.message || 'Failed to fetch dashboard data. Please try again.');
+        setErrorMsg(firstError?.message || 'Failed to fetch dashboard data.');
       }
 
       const [m, a, t] = results.map(r => r.status === 'fulfilled' ? r.value : []);
@@ -61,8 +67,6 @@ export default function ProjectOverviewPage() {
     return () => { isMounted = false; };
   }, [projectId, token, apiFetch]);
 
-  if (loading) return <div style={{ color: 'var(--text-secondary)', padding: '40px', textAlign: 'center' }}>Gathering project context...</div>;
-
   const activeAlerts = (alerts || []).filter((a: any) => a.status === 'active');
 
   const metricLabelMap: Record<string, { title: string, icon: string, unit?: string }> = {
@@ -74,180 +78,303 @@ export default function ProjectOverviewPage() {
     'syncSuccessRate':    { title: 'Integrations Sync', icon: '🔗', unit: '%' },
   };
 
+  const PageActions = (
+    <>
+      <Button variant="outline" icon={Settings}>Manage</Button>
+      <Button 
+        variant="primary" 
+        icon={PlayCircle}
+        onClick={() => {
+          apiFetch('/api/v1/simulate', { method: 'POST', body: JSON.stringify({ siteId: projectId }) })
+            .then(() => window.location.reload());
+        }}
+      >
+        Simulate Traffic
+      </Button>
+    </>
+  );
+
   return (
-    <div className="animate-fade-in" style={{ paddingBottom: '60px', position: 'relative' }}>
+    <PageLayout
+      title="Project Overview"
+      subtitle={`Viewing real-time telemetry for platform ID: ${projectId}`}
+      actions={user?.role !== 'CUSTOMER' ? PageActions : undefined}
+      className={isExpired ? 'is-expired' : ''}
+    >
       {isExpired && (
-        <div style={{
-          position: 'absolute',
-          top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(15, 23, 42, 0.4)',
-          backdropFilter: 'blur(4px)',
-          zIndex: 50,
-          borderRadius: '24px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '40px',
-          textAlign: 'center',
-          border: '1px solid rgba(239, 68, 68, 0.2)'
-        }}>
-           <div style={{
-             width: '80px', height: '80px', borderRadius: '30px',
-             background: 'rgba(239, 68, 68, 0.1)',
-             display: 'flex', alignItems: 'center', justifyContent: 'center',
-             marginBottom: '24px',
-             border: '1px solid rgba(239, 68, 68, 0.2)'
-           }}>
-             <AlertTriangle size={40} color="var(--accent-red)" />
-           </div>
-           <h2 style={{ fontSize: '28px', fontWeight: '800', color: '#fff', marginBottom: '16px' }}>Data Lifecycle Expired</h2>
-           <p style={{ maxWidth: '400px', color: 'rgba(255,255,255,0.7)', lineHeight: '1.6', marginBottom: '32px' }}>
-             The dashboard has been disconnected from live services for more than 24 hours. 
-             Last successful sync: <strong style={{ color: '#fff' }}>{lastUpdated ? new Date(lastUpdated).toLocaleString() : 'Unknown'}</strong>.
-           </p>
-           <button 
-             onClick={() => window.location.reload()}
-             style={{
-               padding: '12px 32px',
-               background: 'var(--accent-red)',
-               color: '#fff',
-               border: 'none',
-               borderRadius: '12px',
-               fontWeight: '800',
-               cursor: 'pointer',
-               boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)'
-             }}
-           >
-             Attempt Reconnection
-           </button>
+        <div className="expired-overlay">
+           <Card className="expired-card">
+              <div className="expired-icon-wrapper">
+                <AlertTriangle size={32} color="var(--error)" />
+              </div>
+              <Typography variant="h2" align="center">Data Lifecycle Expired</Typography>
+              <Typography variant="body" align="center" color="muted">
+                Last successful sync: <strong>{lastUpdated ? new Date(lastUpdated).toLocaleString() : 'Unknown'}</strong>.
+              </Typography>
+              <Button variant="primary" onClick={() => window.location.reload()} fullWidth>
+                Attempt Reconnection
+              </Button>
+           </Card>
         </div>
       )}
-
-      <header style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', opacity: isExpired ? 0.3 : 1 }}>
-        <div>
-          <h2 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '8px', letterSpacing: '-0.4px' }}>
-            Project Dashboard
-          </h2>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>PROJECT ID: <code style={{ color: 'var(--accent-blue)', fontWeight: '700' }}>{projectId}</code></span>
-            <span style={{ width: '4px', height: '4px', background: 'var(--border)', borderRadius: '50%' }} />
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', color: 'var(--accent-green)', fontWeight: '700' }}>
-              <ShieldCheck size={14} /> System Operational
-            </div>
-          </div>
-        </div>
-        
-        {user?.role !== 'CUSTOMER' && (
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <button style={{ padding: '10px 16px', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Settings size={16} /> Manage
-            </button>
-            <button 
-              onClick={() => {
-                apiFetch('/api/v1/simulate', { method: 'POST', body: JSON.stringify({ siteId: projectId }) })
-                  .then(() => window.location.reload())
-                  .catch(e => alert('Simulation failed: ' + e.message));
-              }}
-              style={{ padding: '10px 16px', background: 'var(--accent-blue)', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <PlayCircle size={16} /> Simulate Traffic
-            </button>
-          </div>
-        )}
-      </header>
 
       {errorMsg && (
-        <div style={{ padding: '16px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid var(--accent-red)', borderRadius: '12px', marginBottom: '24px', color: 'var(--accent-red)', fontWeight: '700' }}>
-          <AlertTriangle size={18} style={{ display: 'inline', marginRight: '8px', verticalAlign: 'text-bottom' }} />
-          {errorMsg}
-        </div>
+        <Card className="error-card" variant="outline">
+          <Badge variant="error" icon={AlertTriangle}>{errorMsg}</Badge>
+        </Card>
       )}
 
-      {/* Main Grid: Metrics & Trend */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2.5fr 1fr', gap: '24px', marginBottom: '32px' }}>
-        
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          <div style={{
-            display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px'
-          }}>
-             {Array.isArray(metrics) && metrics.length === 0 ? (
-               <div style={{ gridColumn: '1 / -1', padding: '40px', textAlign: 'center', background: 'var(--bg-surface)', borderRadius: '20px', border: '1px solid var(--border)' }}>
-                 <ShieldCheck size={48} color="rgba(148, 163, 184, 0.5)" style={{ margin: '0 auto 16px' }} />
-                 <h3 style={{ fontSize: '18px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '8px' }}>Waiting for Telemetry</h3>
-                 <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>No live events tracked yet. Click "Simulate Traffic" to generate synthetic data.</p>
-               </div>
-             ) : (
-               Array.isArray(metrics) && metrics.map((m: any) => {
-                 const cfg = metricLabelMap[m?.kpiName] || { title: m?.kpiName || 'Unknown KPI', icon: '📈', unit: undefined };
-                 return (
-                   <MetricCard
-                     key={m?.kpiName || Math.random()}
-                     title={cfg.title}
-                     value={m?.value}
-                     unit={cfg.unit}
-                     state={m?.state || 'healthy'}
-                     icon={cfg.icon}
-                     trendPct={m?.trendPct}
-                   />
-                 );
-               })
-             )}
-          </div>
-          
-          <PerformanceChart data={trends || []} title="Global Latency Trend" />
-        </div>
-
-        {/* Sidebar: Alerts & Activity */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          
-          <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '20px', padding: '24px' }}>
-             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <h3 style={{ fontSize: '14px', fontWeight: '800', color: 'var(--text-secondary)' }}>ACTIVE ALERTS</h3>
-                <span style={{ fontSize: '10px', padding: '2px 8px', background: activeAlerts.length > 0 ? 'var(--accent-red)' : 'var(--border)', color: '#fff', borderRadius: '10px' }}>
-                  {activeAlerts.length}
-                </span>
-             </div>
-             
-             {activeAlerts.length === 0 ? (
-               <div style={{ textAlign: 'center', padding: '24px 0' }}>
-                 <ShieldCheck size={32} color="var(--accent-green)" style={{ opacity: 0.5, marginBottom: '8px' }} />
-                 <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>No critical breaches detected</p>
-               </div>
-             ) : (
-               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {activeAlerts.slice(0, 3).map((a: any) => (
-                    <div key={a?.alertId || Math.random()} style={{ padding: '12px', background: 'rgba(220, 38, 38, 0.05)', border: '1px solid rgba(220, 38, 38, 0.1)', borderRadius: '12px' }}>
-                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                          <span style={{ fontSize: '12px', fontWeight: '800', color: 'var(--accent-red)' }}>{a?.kpiName}</span>
-                          <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>2m ago</span>
-                       </div>
-                       <p style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>{a?.message}</p>
-                    </div>
-                  ))}
-                  <a href={`/project/${projectId}/alerts`} style={{ marginTop: '8px', fontSize: '12px', fontWeight: '700', color: 'var(--accent-blue)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    View all alerts <ChevronRight size={14} />
-                  </a>
-               </div>
-             )}
-          </div>
-
-          <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '20px', padding: '24px' }}>
-             <h3 style={{ fontSize: '14px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '16px' }}>GOVERNANCE</h3>
-             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <li style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '12px' }}>
-                  <Zap size={14} color="var(--accent-orange)" />
-                  Trend Ingestion: <span style={{ fontWeight: '700', marginLeft: 'auto' }}>Active</span>
-                </li>
-                <li style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '12px' }}>
-                  <AlertTriangle size={14} color="var(--accent-red)" />
-                  Auto-Recovery: <span style={{ fontWeight: '700', marginLeft: 'auto' }}>Enabled</span>
-                </li>
-             </ul>
-          </div>
-
-        </div>
-
+      <div style={{ paddingBottom: '24px' }}>
+         <MonitoringFilterBar lastRefreshed={new Date()} />
       </div>
-    </div>
+
+      <Grid gap={6}>
+        {/* Main Content Area */}
+        <Col span={12} lg={8}>
+          <Grid gap={4}>
+            {/* KPI Section */}
+            <Col span={12}>
+              <SectionHeader title="Platform KPIs" subtitle="Live aggregate metrics across all monitoring dimensions" icon="📊" />
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-4)' }}>
+                {loading ? (
+                  Array.from({ length: 4 }).map((_, i: number) => (
+                    <MetricCard key={`loader-${i}`} title="Computing" value="—" state="healthy" icon="🔄" loading={true} />
+                  ))
+                ) : metrics.length === 0 ? (
+                  <Card variant="outline" className="empty-state">
+                    <ShieldCheck size={48} className="empty-icon" />
+                    <Typography variant="h3">Waiting for Telemetry</Typography>
+                    <Typography variant="body" color="muted">No live events tracked yet.</Typography>
+                  </Card>
+                ) : (
+                  metrics.map((m: any) => {
+                    const cfg = metricLabelMap[m?.kpiName] || { title: m?.kpiName || 'Unknown KPI', icon: '📈' };
+                    return (
+                      <MetricCard
+                        key={m?.kpiName}
+                        title={cfg.title}
+                        value={m?.value}
+                        unit={cfg.unit}
+                        state={m?.state || 'healthy'}
+                        icon={cfg.icon}
+                        trendPct={m?.trendPct}
+                        loading={false}
+                      />
+                    );
+                  })
+                )}
+              </div>
+            </Col>
+
+            {/* Chart Section */}
+            <Col span={12}>
+              <SectionHeader title="Latency Trend" subtitle="Rolling performance profile over the selected timeframe" icon="📈" />
+              <Card title="">
+                {loading ? (
+                  <div className="skeleton" style={{ height: '300px', width: '100%', borderRadius: '12px' }} />
+                ) : (
+                  <PerformanceChart data={trends || []} title="" />
+                )}
+              </Card>
+            </Col>
+
+            {/* Events Summary Table */}
+            <Col span={12}>
+              <SectionHeader title="Events Summary" subtitle="Detailed breakdown of each tracked KPI metric" icon="📋" />
+              <SortableTable
+                columns={[
+                  { key: 'kpiName', label: 'Metric', sortable: true, render: (v, row) => <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{metricLabelMap[v]?.title || v}</span> },
+                  { key: 'value', label: 'Value', sortable: true, align: 'right', render: (v, row) => <span style={{ fontWeight: 800 }}>{v ?? '—'}{metricLabelMap[row.kpiName]?.unit ? ` ${metricLabelMap[row.kpiName].unit}` : ''}</span> },
+                  { key: 'state', label: 'Status', sortable: true, width: '110px', render: (v) => {
+                    const statusColor = v === 'healthy' ? 'var(--success)' : v === 'warning' ? 'var(--warning)' : 'var(--error)';
+                    const statusBg = v === 'healthy' ? 'var(--success-bg)' : v === 'warning' ? 'var(--warning-bg)' : 'var(--error-bg)';
+                    return (
+                      <span style={{ 
+                        padding: '4px 10px', 
+                        background: statusBg, 
+                        color: statusColor, 
+                        border: `1px solid ${statusColor}15`,
+                        borderRadius: '20px', 
+                        fontSize: '11px', 
+                        fontWeight: 800, 
+                        textTransform: 'capitalize' 
+                      }}>
+                        {v || 'unknown'}
+                      </span>
+                    );
+                  }},
+                  { key: 'trendPct', label: 'Trend', sortable: true, align: 'right', render: (v) => {
+                    if (v === undefined || v === null) return <span style={{ color: 'var(--text-muted)' }}>—</span>;
+                    const up = v >= 0;
+                    return <span style={{ color: up ? '#ef4444' : '#10b981', fontWeight: 800, fontSize: '13px' }}>{up ? '↑' : '↓'} {Math.abs(v).toFixed(1)}%</span>;
+                  }},
+                ]}
+                data={metrics}
+                loading={loading}
+                emptyMessage="No KPI data available for this session"
+              />
+            </Col>
+          </Grid>
+        </Col>
+
+        {/* Sidebar Area */}
+        <Col span={12} lg={4}>
+          <Grid gap={6}>
+            {/* Alerts Section */}
+            <Col span={12}>
+              <Card 
+                title="Active Alerts" 
+                extra={<Badge variant={activeAlerts.length > 0 ? 'error' : 'success'}>{activeAlerts.length}</Badge>}
+              >
+                {activeAlerts.length === 0 ? (
+                  <div className="empty-alerts">
+                    <CheckCircle2 size={32} color="var(--success)" style={{ opacity: 0.5 }} />
+                    <Typography variant="body" color="muted">No critical breaches detected</Typography>
+                  </div>
+                ) : (
+                  <div className="alerts-list">
+                    {activeAlerts.slice(0, 3).map((a: any) => (
+                      <div key={a.alertId} className="alert-item">
+                        <div className="alert-item-header">
+                          <Typography variant="body" weight="bold" color="error">{a.kpiName}</Typography>
+                          <Typography variant="caption" color="muted">2m ago</Typography>
+                        </div>
+                        <Typography variant="caption" color="secondary">{a.message}</Typography>
+                      </div>
+                    ))}
+                    <Button variant="ghost" size="sm" icon={ChevronRight} className="view-all-alerts">
+                      View all alerts
+                    </Button>
+                  </div>
+                )}
+              </Card>
+            </Col>
+
+            {/* Governance Section */}
+            <Col span={12}>
+              <Card title="Governance">
+                <div className="governance-list">
+                  <div className="gov-item">
+                    <div className="gov-info">
+                      <TrendingUp size={14} color="var(--warning)" />
+                      <Typography variant="caption">Trend Ingestion</Typography>
+                    </div>
+                    <StatusIndicator status="success" label="Active" />
+                  </div>
+                  <div className="gov-item">
+                    <div className="gov-info">
+                      <Clock size={14} color="var(--error)" />
+                      <Typography variant="caption">Auto-Recovery</Typography>
+                    </div>
+                    <StatusIndicator status="success" label="Enabled" />
+                  </div>
+                </div>
+              </Card>
+            </Col>
+          </Grid>
+        </Col>
+      </Grid>
+
+      <style jsx>{`
+        .is-expired .ui-page-layout > header,
+        .is-expired .ui-page-layout > .page-content {
+          opacity: 0.3;
+          pointer-events: none;
+        }
+        
+        .expired-overlay {
+          position: absolute;
+          inset: 0;
+          z-index: 100;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: var(--space-10);
+          backdrop-filter: blur(4px);
+        }
+
+        :global(.expired-card) {
+          max-width: 440px;
+          display: flex !important;
+          flex-direction: column;
+          align-items: center;
+          gap: var(--space-6);
+          padding: var(--space-8) !important;
+          background: var(--bg-surface) !important;
+          box-shadow: var(--shadow-2xl) !important;
+        }
+
+        .expired-icon-wrapper {
+          width: 80px;
+          height: 80px;
+          border-radius: var(--radius-2xl);
+          background: rgba(239, 68, 68, 0.1);
+          border: 1px solid rgba(239, 68, 68, 0.2);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .empty-state {
+          grid-column: 1 / -1;
+          display: flex !important;
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+          padding: var(--space-10) !important;
+        }
+
+        .empty-icon {
+          color: var(--text-muted);
+          opacity: 0.5;
+          margin-bottom: var(--space-4);
+        }
+
+        .empty-alerts {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: var(--space-2);
+          padding: var(--space-6) 0;
+        }
+
+        .alerts-list {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-3);
+        }
+
+        .alert-item {
+          padding: var(--space-3);
+          background: rgba(var(--error-rgb), 0.05);
+          border: 1px solid rgba(var(--error-rgb), 0.1);
+          border-radius: var(--radius-lg);
+        }
+
+        .alert-item-header {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: var(--space-1);
+        }
+
+        .governance-list {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-4);
+        }
+
+        .gov-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .gov-info {
+          display: flex;
+          align-items: center;
+          gap: var(--space-3);
+        }
+      `}</style>
+    </PageLayout>
   );
 }

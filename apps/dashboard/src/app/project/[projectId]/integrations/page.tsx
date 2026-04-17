@@ -2,6 +2,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../../../context/AuthContext';
 import { useParams } from 'next/navigation';
+import { PageLayout } from '@kpi-platform/ui';
+import { MonitoringFilterBar } from '../../../../components/ui/MonitoringFilterBar';
+import { SectionHeader } from '../../../../components/ui/SectionHeader';
 import { MetricCard } from '../../../../components/ui/MetricCard';
 import { SyncTrendChart } from '../../../../components/ui/SyncTrendChart';
 import { SystemStatusList } from '../../../../components/ui/SystemStatusList';
@@ -59,8 +62,6 @@ export default function IntegrationsPage() {
         }
     };
 
-    if (loading) return <div style={{ padding: '40px', color: 'var(--text-secondary)' }}>Probing integration health...</div>;
-
     const mapSystems = systems.map(s => ({
         name: s.name,
         status: s.status === 'Active' ? 'Active' as const : 'Degraded' as const,
@@ -69,72 +70,88 @@ export default function IntegrationsPage() {
     }));
 
     return (
-        <div className="animate-fade-in" style={{ paddingBottom: '80px', position: 'relative' }}>
-            {isExpired && (
-                <div style={outageOverlayStyle}>
-                    <div style={outageContentStyle}>
-                        <div style={outageIconStyle}><AlertCircle size={40} color="var(--accent-red)" /></div>
-                        <h2 style={{ fontSize: '28px', fontWeight: '800', marginBottom: '16px' }}>Integration State Expired</h2>
-                        <p style={{ color: 'var(--text-secondary)', marginBottom: '32px', lineHeight: '1.6' }}>
-                            Connectivity to back-office services has been lost for over 24 hours. 
-                            Last heartbeat: <strong>{lastUpdated ? new Date(lastUpdated).toLocaleString() : 'Unknown'}</strong>.
-                        </p>
-                        <button onClick={() => window.location.reload()} style={primaryBtnStyle}>Force System Probing</button>
-                    </div>
-                </div>
-            )}
-
-            <div style={{ opacity: isExpired ? 0.3 : 1 }}>
-                <header style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
-                        <h2 style={{ fontSize: '24px', fontWeight: '900', color: 'var(--text-primary)', marginBottom: '8px' }}>Integrations Monitoring</h2>
-                        <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Real-time health of ERP, OMS, and 3rd party API dependencies for {projectId}</p>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '20px' }}>
-                        <div style={{ width: '8px', height: '8px', background: 'var(--accent-green)', borderRadius: '50%', boxShadow: '0 0 8px var(--accent-green)' }} />
-                        <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Ingestion Active</span>
-                    </div>
-                </header>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '20px', marginBottom: '32px' }}>
-                    <MetricCard title="Sync Success Rate" value={summary?.successRate} unit="%" state={summary?.successRate < 95 ? 'warning' : 'healthy'} icon="🔗" />
-                    <MetricCard title="Failures (24h)" value={summary?.failureCount24h} state={summary?.failureCount24h > 10 ? 'critical' : 'healthy'} icon="⚠️" />
-                    <MetricCard title="Avg Latency" value={summary?.avgOmsLatency} unit="ms" state="healthy" icon="⏱️" />
-                    <MetricCard title="Health Score" value={summary?.healthScore} unit="%" state="healthy" icon="💖" />
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '24px', marginBottom: '32px' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-                        <SystemConnectivityMap systems={mapSystems} />
-                        <SyncTrendChart data={trends || []} title="Sync Success Trend (24h)" />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                        <SystemStatusList 
-                            data={systems.map(s => ({ 
-                                ...s, 
-                                id: s.connectorId || s.name.toLowerCase().replace(' ', '_'),
-                                status: s.status as any,
-                                latency: s.latency || 'N/A',
-                                health: s.health || 100,
-                                lastSync: s.lastSyncAt || 'Never'
-                            }))} 
-                            onResync={handleResync} 
-                        />
-                        
-                        <div style={logCardStyle}>
-                            <h4 style={logTitleStyle}>Configuration Governance</h4>
-                            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
-                                To update authentication credentials (API Keys, OAuth2) or toggle environment modes (Staging/Prod), please visit the <strong>Project Settings</strong> section.
+        <PageLayout
+            title="Integrations Monitoring"
+            subtitle={`Real-time health of ERP, OMS, and 3rd party API dependencies for ${projectId}`}
+        >
+            <div className={`animate-fade-in ${isExpired ? 'is-expired' : ''}`} style={{ paddingBottom: '80px', position: 'relative' }}>
+                {isExpired && (
+                    <div style={outageOverlayStyle}>
+                        <div style={outageContentStyle}>
+                            <div style={outageIconStyle}><AlertCircle size={40} color="var(--accent-red)" /></div>
+                            <h2 style={{ fontSize: '28px', fontWeight: '800', marginBottom: '16px' }}>Integration State Expired</h2>
+                            <p style={{ color: 'var(--text-secondary)', marginBottom: '32px', lineHeight: '1.6' }}>
+                                Connectivity to back-office services has been lost for over 24 hours. 
+                                Last heartbeat: <strong>{lastUpdated ? new Date(lastUpdated).toLocaleString() : 'Unknown'}</strong>.
                             </p>
+                            <button onClick={() => window.location.reload()} style={primaryBtnStyle}>Force System Probing</button>
                         </div>
                     </div>
-                </div>
+                )}
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px' }}>
-                    <FailedSyncTable data={failedSyncs || []} title="Critical Errors: Integration Sync Failures" />
+                <div style={{ opacity: isExpired ? 0.3 : 1 }}>
+                    <MonitoringFilterBar lastRefreshed={lastUpdated ? new Date(lastUpdated) : new Date()} />
+
+                    <SectionHeader title="Integration Health" subtitle="Real-time KPI status for external systems" icon="🔗" />
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '20px', marginBottom: '32px' }}>
+                        {loading ? (
+                            Array.from({ length: 4 }).map((_, i) => (
+                                <MetricCard key={`loader-${i}`} title="Computing" value="-" state="healthy" icon="🔄" loading={true} />
+                            ))
+                        ) : (
+                            <>
+                                <MetricCard title="Sync Success Rate" value={summary?.successRate} unit="%" state={summary?.successRate < 95 ? 'warning' : 'healthy'} icon="🔗" loading={false} />
+                                <MetricCard title="Failures (24h)" value={summary?.failureCount24h} state={summary?.failureCount24h > 10 ? 'critical' : 'healthy'} icon="⚠️" loading={false} />
+                                <MetricCard title="Avg Latency" value={summary?.avgOmsLatency} unit="ms" state="healthy" icon="⏱️" loading={false} />
+                                <MetricCard title="Health Score" value={summary?.healthScore} unit="%" state="healthy" icon="💖" loading={false} />
+                            </>
+                        )}
+                    </div>
+
+                    <SectionHeader title="Connectivity Analytics" subtitle="System mapping and data transfer trends" icon="🌍" />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '24px', marginBottom: '32px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                            {loading ? (
+                                <>
+                                    <div className="skeleton" style={{ height: '140px', width: '100%', borderRadius: '16px' }} />
+                                    <div className="skeleton" style={{ height: '300px', width: '100%', borderRadius: '16px' }} />
+                                </>
+                            ) : (
+                                <>
+                                    <SystemConnectivityMap systems={mapSystems} />
+                                    <SyncTrendChart data={trends || []} title="Sync Success Trend (24h)" />
+                                </>
+                            )}
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                            <SystemStatusList 
+                                data={systems.map(s => ({ 
+                                    ...s, 
+                                    id: s.connectorId || s.name.toLowerCase().replace(' ', '_'),
+                                    status: s.status as any,
+                                    latency: s.latency || 'N/A',
+                                    health: s.health || 100,
+                                    lastSync: s.lastSyncAt || 'Never'
+                                }))} 
+                                onResync={handleResync} 
+                            />
+                            
+                            <div style={logCardStyle}>
+                                <h4 style={logTitleStyle}>Configuration Governance</h4>
+                                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                                    To update authentication credentials (API Keys, OAuth2) or toggle environment modes (Staging/Prod), please visit the <strong>Project Settings</strong> section.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <SectionHeader title="Failed Sync Logs" subtitle="Detailed audit logs of data transfer errors" icon="❌" />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px' }}>
+                        <FailedSyncTable data={failedSyncs || []} title="Critical Errors: Integration Sync Failures" loading={loading} />
+                    </div>
                 </div>
             </div>
-        </div>
+        </PageLayout>
     );
 }
 

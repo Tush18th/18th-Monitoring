@@ -1,27 +1,22 @@
 'use client';
-import { useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { useRouter } from 'next/navigation';
+import React from 'react';
+import MonitoringLandingPage from '../components/landing/LandingSections';
 
-export default function RootPage() {
-  const { user, isLoading } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!isLoading) {
-      if (!user) {
-        router.push('/login');
-      } else if (user.role === 'CUSTOMER') {
-        router.push(`/project/${user.assignedProjects[0]}/overview`);
-      } else {
-        router.push('/projects');
-      }
-    }
-  }, [user, isLoading, router]);
-
+export default function LandingPage() {
   return (
-    <div style={{ height: '100vh', background: 'var(--bg-base)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
-      Verifying session...
-    </div>
+    <>
+      <MonitoringLandingPage />
+      <style jsx global>{`
+        .landing-page {
+          background-color: var(--bg-base);
+          min-height: 100vh;
+        }
+
+        /* Prevent layout shift when header becomes sticky */
+        body {
+          padding-top: 0;
+        }
+      `}</style>
+    </>
   );
 }

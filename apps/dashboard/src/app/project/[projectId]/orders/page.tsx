@@ -7,6 +7,10 @@ import {
     IntelligentRcaPanel, 
     IngestionControlPanel 
 } from '../../../../components/ui/OrderAnalyticsWidgets';
+import { PageLayout } from '@kpi-platform/ui';
+import { MonitoringFilterBar } from '../../../../components/ui/MonitoringFilterBar';
+import { SectionHeader } from '../../../../components/ui/SectionHeader';
+import { SortableTable } from '../../../../components/ui/SortableTable';
 
 export default function OrdersPage() {
     const params = useParams();
@@ -72,50 +76,47 @@ export default function OrdersPage() {
     if (loading && !stats) return <div style={{ padding: '40px' }}>Loading Command Center...</div>;
 
     return (
-        <div className="animate-fade-in" style={{ paddingBottom: '100px' }}>
-            <header style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                    <h2 style={{ fontSize: '28px', fontWeight: '900', color: 'var(--text-primary)', marginBottom: '8px' }}>Orders Monitoring & Intelligence</h2>
-                    <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Centralized oversight of online, offline, and integrated system flow</p>
-                </div>
+        <PageLayout 
+            title="Orders Monitoring & Intelligence"
+            subtitle="Centralized oversight of online, offline, and integrated system flow"
+            actions={
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <div style={{ width: '12px', height: '12px', background: rca?.status === 'alert' ? 'var(--accent-red)' : '#10b981', borderRadius: '50%', boxShadow: `0 0 10px ${rca?.status === 'alert' ? 'var(--accent-red)' : '#10b981'}` }} />
-                    <span style={{ fontWeight: '700', fontSize: '14px' }}>System Status: {rca?.status === 'alert' ? 'CRITICAL' : 'HEALHTY'}</span>
+                    <span style={{ fontWeight: '700', fontSize: '14px' }}>System Status: {rca?.status === 'alert' ? 'CRITICAL' : 'HEALTHY'}</span>
                 </div>
-            </header>
+            }
+        >
+            <div className="animate-fade-in" style={{ paddingBottom: '40px' }}>
+                <MonitoringFilterBar lastRefreshed={new Date()} />
 
+            <SectionHeader title="RCA Intelligence" subtitle="Automated root-cause analysis and actionable recommendations" icon="🧠" />
             <IntelligentRcaPanel rca={rca} recommendations={recommendations} />
 
+            <SectionHeader title="Order Telemetry" subtitle="Aggregated processing KPIs and ingestion stats" icon="📦" style={{ marginTop: '32px' }} />
             <OrderStatsGrid stats={stats} />
 
-            <div style={{ marginBottom: '40px' }}>
-                <h3 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '20px' }}>Ingestion & Integration Management</h3>
+            <div style={{ marginTop: '32px', marginBottom: '40px' }}>
+                <SectionHeader title="Ingestion Control" subtitle="Manage integrations and offline sync manually" icon="🔌" />
                 <IngestionControlPanel onUpload={handleUpload} onSync={handleSync} />
             </div>
 
-            <div style={{ background: 'var(--bg-surface)', padding: '24px', borderRadius: '24px', border: '1px solid var(--border)' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: '800', marginBottom: '20px' }}>Recent Sync History</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {logs.length === 0 ? (
-                        <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-secondary)' }}>No integration logs found for this period.</div>
-                    ) : (
-                        logs.slice(0, 5).map((log, i) => (
-                            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', borderBottom: '1px solid var(--border)' }}>
-                                <div style={{ display: 'flex', gap: '16px' }}>
-                                    <span style={{ fontWeight: '700' }}>{log.system}</span>
-                                    <span style={{ color: 'var(--text-secondary)' }}>{new Date(log.timestamp).toLocaleTimeString()}</span>
-                                </div>
-                                <span style={{ 
-                                    color: log.status === 'success' ? 'var(--accent-green)' : 'var(--accent-red)',
-                                    fontWeight: '800',
-                                    textTransform: 'uppercase',
-                                    fontSize: '11px'
-                                }}>{log.status}</span>
-                            </div>
-                        ))
-                    )}
-                </div>
+            <div style={{ marginTop: '32px' }}>
+                <SectionHeader title="Recent Sync History" subtitle="Integration job statuses and outcomes" icon="📝" />
+                <SortableTable
+                    columns={[
+                        { key: 'system', label: 'System', sortable: true, render: v => <span style={{ fontWeight: 700 }}>{v}</span> },
+                        { key: 'timestamp', label: 'Time', sortable: true, align: 'right', render: v => <span style={{ color: 'var(--text-secondary)' }}>{v ? new Date(v).toLocaleTimeString() : '—'}</span> },
+                        { key: 'status', label: 'Status', sortable: true, align: 'right', render: v => {
+                            const isSuccess = v === 'success';
+                            return <span style={{ color: isSuccess ? '#10b981' : '#ef4444', fontWeight: 800, textTransform: 'uppercase', fontSize: '11px', padding: '4px 10px', background: isSuccess ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', borderRadius: '20px' }}>{v}</span>;
+                        }}
+                    ]}
+                    data={logs}
+                    pageSize={5}
+                    emptyMessage="No integration logs found for this period"
+                />
             </div>
-        </div>
+          </div>
+        </PageLayout>
     );
 }

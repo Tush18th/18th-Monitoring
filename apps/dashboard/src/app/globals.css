@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import "@kpi-platform/ui/styles";
 @import "tailwindcss";
 
 * {
@@ -7,37 +7,24 @@
   padding: 0;
 }
 
+/* Theme mappings for dashboard-specific aliases */
 :root {
-  /* Premium Light Theme Palette */
-  --bg-base: #f8fafc;        /* Slate 50 */
-  --bg-surface: #ffffff;     /* White */
-  --bg-card: #ffffff;        /* White */
-  --border: #e2e8f0;         /* Slate 200 */
-  --border-light: #f1f5f9;   /* Slate 100 */
+  /* Legend: --dashboard-alias: var(--ui-package-token) */
+  --border: var(--border-subtle);
+  --border-light: var(--bg-muted);
   
-  --accent-blue: #2563eb;    /* Blue 600 */
-  --accent-cyan: #0891b2;    /* Cyan 600 */
-  --accent-green: #10b981;   /* Green 500 */
-  --accent-orange: #d97706;  /* Amber 600 */
-  --accent-red: #dc2626;     /* Red 600 */
-  
-  --text-primary: #0f172a;   /* Slate 900 */
-  --text-secondary: #475569; /* Slate 600 */
-  --text-muted: #94a3b8;     /* Slate 400 */
-  
-  /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --shadow-premium: 0 20px 25px -5px rgb(0 0 0 / 0.05), 0 8px 10px -6px rgb(0 0 0 / 0.05);
+  --accent-blue: var(--primary);
+  --accent-cyan: var(--info);
+  --accent-green: var(--success);
+  --accent-orange: var(--warning);
+  --accent-red: var(--error);
 }
 
 html, body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background-color: var(--bg-base);
   color: var(--text-primary);
-  height: 100%;
-  overflow: hidden;
+  min-height: 100%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -87,4 +74,102 @@ html, body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
+}
+
+/* ========================================================================= */
+/* --- Micro-Interactions & UI Utilities --- */
+
+/* Interactive Table Rows */
+.table-row {
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+.table-row:hover {
+  background: var(--bg-muted);
+}
+.table-row:active {
+  background: rgba(37, 99, 235, 0.05); /* very light blue hint */
+}
+
+/* Core Button Interactions */
+.btn-core {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+.btn-core:hover:not(:disabled) {
+  transform: translateY(-2px);
+  filter: brightness(1.05);
+  box-shadow: 0 12px 24px -10px rgba(0,0,0,0.15);
+}
+.btn-core:active:not(:disabled) {
+  transform: translateY(0);
+  filter: brightness(0.95);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.btn-core:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Skeleton Loaders */
+@keyframes skeleton-shimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: calc(200px + 100%) 0; }
+}
+
+.skeleton {
+  background: var(--bg-muted);
+  background-image: linear-gradient(
+    90deg, 
+    var(--bg-muted) 0px, 
+    var(--border-subtle) 40px, 
+    var(--bg-muted) 80px
+  );
+  background-size: 200px 100%;
+  animation: skeleton-shimmer 1.5s infinite linear;
+  border-radius: 4px;
+}
+
+/* Auth Specific Utilities */
+.auth-gradient-text {
+  background: linear-gradient(90deg, #2563eb, #7c3aed);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.auth-card-shadow {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.auth-input-focus {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.auth-input-focus:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+  background-color: white;
+}
+
+[data-theme='dark'] .auth-input-focus:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+  background-color: rgba(15, 23, 42, 0.8);
+}
+
+.premium-btn {
+  background: linear-gradient(90deg, #2563eb, #4f46e5);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.premium-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
+  filter: brightness(1.05);
+}
+
+.premium-btn:active:not(:disabled) {
+  transform: translateY(0);
+  filter: brightness(0.95);
 }

@@ -2,6 +2,9 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../../../context/AuthContext';
 import { useParams } from 'next/navigation';
+import { PageLayout } from '@kpi-platform/ui';
+import { MonitoringFilterBar } from '../../../../components/ui/MonitoringFilterBar';
+import { SectionHeader } from '../../../../components/ui/SectionHeader';
 import { MetricCard } from '../../../../components/ui/MetricCard';
 import { PerformanceChart } from '../../../../components/ui/PerformanceChart';
 import { RegionalBreakdown } from '../../../../components/ui/RegionalBreakdown';
@@ -72,14 +75,13 @@ export default function PerformancePage() {
         return () => { isMounted = false; };
     }, [projectId, token, apiFetch]);
 
-    if (loading) return (
-        <div style={{ padding: '40px', color: 'var(--text-secondary)' }}>
-            Gathering performance intelligence...
-        </div>
-    );
 
     return (
-        <div className="animate-fade-in" style={{ paddingBottom: '80px', position: 'relative' }}>
+        <PageLayout 
+            title="Performance Analytics" 
+            subtitle={`Real-time Core Web Vitals, synthetic journey validation, and multi-device observability for ${projectId}`}
+        >
+            <div className={`animate-fade-in ${isExpired ? 'is-expired' : ''}`} style={{ paddingBottom: '40px', position: 'relative' }}>
             {isExpired && (
                 <div style={{
                     position: 'absolute',
@@ -129,34 +131,42 @@ export default function PerformancePage() {
             )}
 
             <div style={{ opacity: isExpired ? 0.3 : 1 }}>
-                <header style={{ marginBottom: '32px' }}>
-                    <h2 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '8px' }}>
-                        Performance Analytics
-                    </h2>
-                    <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
-                        Real-time Core Web Vitals, synthetic journey validation, and multi-device observability for {projectId}
-                    </p>
-                </header>
+                
+                <MonitoringFilterBar lastRefreshed={lastUpdated ? new Date(lastUpdated) : new Date()} />
 
-                {/* ── SECTION 1: Synthetic Journey Health ─────────────────── */}
-                <section style={{ marginBottom: '32px' }}>
-                    <SyntheticJourneyWidget data={syntheticSummary} />
-                </section>
-
-                {/* ── SECTION 2: RUM Top-Level KPIs ───────────────────────── */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px', marginBottom: '32px' }}>
-                    <MetricCard title="Avg Load Time" value={summary?.avgLoadTime ?? 0} unit="ms" state={summary?.avgLoadTime > 3000 ? 'critical' : 'healthy'} icon="⚡" />
-                    <MetricCard title="LCP" value={summary?.lcp ?? 0} unit="ms" state={summary?.lcp > 2500 ? 'critical' : summary?.lcp > 1800 ? 'warning' : 'healthy'} icon="🖼️" />
-                    <MetricCard title="TTFB" value={summary?.ttfb ?? 0} unit="ms" state={summary?.ttfb > 600 ? 'critical' : summary?.ttfb > 400 ? 'warning' : 'healthy'} icon="🌐" />
-                    <MetricCard title="CLS" value={summary?.cls ?? 0} state={summary?.cls > 0.25 ? 'critical' : summary?.cls > 0.1 ? 'warning' : 'healthy'} icon="🔳" />
-                    <MetricCard title="FID / INP" value={summary?.fid ?? 0} unit="ms" state={summary?.fid > 300 ? 'critical' : summary?.fid > 100 ? 'warning' : 'healthy'} icon="🖱️" />
-                    <MetricCard title="Uptime (24h)" value={summary?.uptime ?? '—'} unit="%" state="healthy" icon="🛡️" />
+                {/* ── SECTION 1: RUM Top-Level KPIs ───────────────────────── */}
+                <SectionHeader title="Performance Vitals" subtitle="Real-time Core Web Vitals and Top-Level KPIs" icon="🏎️" />
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '32px' }}>
+                    {loading ? (
+                        Array.from({ length: 6 }).map((_, i) => (
+                            <MetricCard key={`loader-${i}`} title="Computing" value="-" state="healthy" icon="🔄" loading={true} />
+                        ))
+                    ) : (
+                        <>
+                            <MetricCard title="Avg Load Time" value={summary?.avgLoadTime ?? 0} unit="ms" state={summary?.avgLoadTime > 3000 ? 'critical' : 'healthy'} icon="⚡" loading={false} />
+                            <MetricCard title="LCP" value={summary?.lcp ?? 0} unit="ms" state={summary?.lcp > 2500 ? 'critical' : summary?.lcp > 1800 ? 'warning' : 'healthy'} icon="🖼️" loading={false} />
+                            <MetricCard title="TTFB" value={summary?.ttfb ?? 0} unit="ms" state={summary?.ttfb > 600 ? 'critical' : summary?.ttfb > 400 ? 'warning' : 'healthy'} icon="🌐" loading={false} />
+                            <MetricCard title="CLS" value={summary?.cls ?? 0} state={summary?.cls > 0.25 ? 'critical' : summary?.cls > 0.1 ? 'warning' : 'healthy'} icon="🔳" loading={false} />
+                            <MetricCard title="FID / INP" value={summary?.fid ?? 0} unit="ms" state={summary?.fid > 300 ? 'critical' : summary?.fid > 100 ? 'warning' : 'healthy'} icon="🖱️" loading={false} />
+                            <MetricCard title="Uptime (24h)" value={summary?.uptime ?? '—'} unit="%" state="healthy" icon="🛡️" loading={false} />
+                        </>
+                    )}
                 </div>
 
-                {/* ── SECTION 3: Trend Chart + Device Segmentation ────────── */}
+                {/* ── SECTION 2: Trend Chart + Device Segmentation ────────── */}
+                <SectionHeader title="Metrics Distribution" subtitle="Trends and segment breakdowns across devices" icon="📊" />
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px', marginBottom: '32px' }}>
-                    <PerformanceChart data={trends || []} title="Web Vitals Trend" />
-                    <DeviceSegmentation data={devices || []} title="Device Distribution" />
+                    {loading ? (
+                        <>
+                            <div className="skeleton" style={{ height: '380px', width: '100%', borderRadius: '16px' }} />
+                            <div className="skeleton" style={{ height: '380px', width: '100%', borderRadius: '16px' }} />
+                        </>
+                    ) : (
+                        <>
+                            <PerformanceChart data={trends || []} title="Web Vitals Trend" />
+                            <DeviceSegmentation data={devices || []} title="Device Distribution" />
+                        </>
+                    )}
                 </div>
 
                 {/* ── SECTION 4: Desktop vs Mobile + Browser Matrix ───────── */}
@@ -166,17 +176,32 @@ export default function PerformancePage() {
                 </div>
 
                 {/* ── SECTION 5: Regional + Resource ──────────────────────── */}
+                <SectionHeader title="Geography & Assets" subtitle="Latency by region and frontend resource weight" icon="🌍" />
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '32px' }}>
-                    <RegionalBreakdown data={regional || []} title="Regional Latency Comparison" />
-                    <ResourceBreakdown data={resources || []} title="Frontend Resource Weight" />
+                    {loading ? (
+                        <>
+                            <div className="skeleton" style={{ height: '340px', width: '100%', borderRadius: '16px' }} />
+                            <div className="skeleton" style={{ height: '340px', width: '100%', borderRadius: '16px' }} />
+                        </>
+                    ) : (
+                        <>
+                            <RegionalBreakdown data={regional || []} title="Regional Latency Comparison" />
+                            <ResourceBreakdown data={resources || []} title="Frontend Resource Weight" />
+                        </>
+                    )}
                 </div>
+
+                {/* ── SECTION 6: Synthetic Journey ────────────────────────── */}
+                <SectionHeader title="Synthetic Tests" subtitle="Simulated user journeys and failure logs" icon="🤖" />
+                <section style={{ marginBottom: '32px' }}>
+                    <SyntheticJourneyWidget data={syntheticSummary} />
+                </section>
 
                 {/* ── SECTION 6: Slowest Pages ─────────────────────────────── */}
                 <div style={{ marginBottom: '32px' }}>
-                    <SlowPageTable data={slowPages || []} title="Critical Path: Slowest User Pages" />
+                    <SlowPageTable data={slowPages || []} title="Critical Path: Slowest User Pages" loading={loading} />
                 </div>
 
-                {/* ── SECTION 7: Historical Trend (7 days) ─────────────────── */}
                 <div style={{ marginBottom: '32px' }}>
                     <SyntheticHistoryChart />
                 </div>
@@ -186,6 +211,7 @@ export default function PerformancePage() {
                     <SyntheticFailureLog data={syntheticFailures || []} title="Synthetic Failure Log" />
                 </div>
             </div>
-        </div>
+            </div>
+        </PageLayout>
     );
 }

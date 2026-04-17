@@ -21,9 +21,9 @@ import {
     Code,
     Share2,
     Monitor,
-    Server,
     Globe
 } from 'lucide-react';
+import { FormSection, FormGroup, FormLabel, FormHelper, FormInput, FormSelect, FormCheckboxItem } from './FormPrimitives';
 
 export const IntegrationCatalog = ({ projectId, apiFetch }: { projectId: string, apiFetch: any }) => {
     const [categories, setCategories] = useState<any[]>([]);
@@ -314,50 +314,60 @@ const CategoryProviderView = ({ projectId, apiFetch, category, catalog, instance
 
             <h3 style={{ fontSize: '16px', fontWeight: '800', marginBottom: '16px' }}>Active Configured Systems</h3>
             
-            {/* Enterprise Data Table */}
-            <div style={{ border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
-                    <thead>
-                        <tr style={{ background: 'var(--bg-app)', borderBottom: '1px solid var(--border)' }}>
-                            <th style={thStyle}>Provider Identity</th>
-                            <th style={thStyle}>Environment</th>
-                            <th style={thStyle}>Status</th>
-                            <th style={thStyle}>Health</th>
-                            <th style={thStyle}>Last Sync</th>
-                            <th style={thStyle}>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {instances.length === 0 ? (
-                            <tr><td colSpan={6} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>No active {category.label} connections mapped to this project.</td></tr>
-                        ) : (
-                            instances.map((inst: any) => (
-                                <tr key={inst.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                                    <td style={tdStyle}>
-                                        <div style={{ fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <Globe size={14} color="var(--accent-blue)" /> {inst.label}
-                                        </div>
-                                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{inst.connectorId}</div>
-                                    </td>
-                                    <td style={tdStyle}>
-                                        <span style={{ padding: '2px 8px', background: 'var(--bg-app)', border: '1px solid var(--border)', borderRadius: '10px', fontSize: '11px', fontWeight: '700' }}>Hybrid</span>
-                                    </td>
-                                    <td style={tdStyle}>{inst.enabled ? <span style={{ color: 'var(--accent-green)', fontWeight: '800' }}>Active</span> : <span style={{ color: 'var(--text-muted)' }}>Paused</span>}</td>
-                                    <td style={tdStyle}>
-                                        {inst.health > 90 ? <span style={{ color: 'var(--accent-green)', fontWeight: '800' }}>{inst.health}% Optimal</span> : <span style={{ color: 'var(--accent-orange)', fontWeight: '800' }}>{inst.health}% Degraded</span>}
-                                    </td>
-                                    <td style={tdStyle}>{inst.lastSyncAt ? new Date(inst.lastSyncAt).toLocaleTimeString() : 'Pending'}</td>
-                                    <td style={tdStyle}>
-                                        <div style={{ display: 'flex', gap: '12px' }}>
-                                            <button onClick={() => handleEditInstance(inst)} style={linkBtn}>Configure</button>
-                                            <button onClick={() => handleDelete(inst.id)} style={{ ...linkBtn, color: 'var(--accent-red)' }}>Disconnect</button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
+            {/* Enterprise Grid Layout */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
+                {instances.length === 0 ? (
+                    <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)', gridColumn: '1 / -1', background: 'var(--bg-app)', borderRadius: '20px', border: '1px dashed var(--border)' }}>
+                        No active {category.label} connections mapped to this project.
+                    </div>
+                ) : (
+                    instances.map((inst: any) => (
+                        <div key={inst.id} style={{ background: 'white', border: '1px solid var(--border)', borderRadius: '20px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: 'var(--shadow-sm)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <div style={{ width: '40px', height: '40px', background: 'rgba(59, 130, 246, 0.08)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <Globe size={20} color="var(--accent-blue)" />
+                                    </div>
+                                    <div>
+                                        <div style={{ fontWeight: '800', fontSize: '16px' }}>{inst.label}</div>
+                                        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{inst.connectorId}</div>
+                                    </div>
+                                </div>
+                                <div>
+                                    {inst.enabled ? (
+                                        <span style={{ padding: '4px 12px', background: 'rgba(16, 185, 129, 0.1)', color: 'var(--accent-green)', borderRadius: '20px', fontSize: '10px', fontWeight: '900', letterSpacing: '0.5px', textTransform: 'uppercase' }}>Active Flow</span>
+                                    ) : (
+                                        <span style={{ padding: '4px 12px', background: 'var(--bg-app)', color: 'var(--text-muted)', borderRadius: '20px', fontSize: '10px', fontWeight: '900', letterSpacing: '0.5px', textTransform: 'uppercase' }}>Paused</span>
+                                    )}
+                                </div>
+                            </div>
+                            
+                            <div style={{ display: 'flex', justifyContent: 'space-between', background: 'var(--bg-app)', padding: '16px', borderRadius: '12px' }}>
+                                <div>
+                                    <div style={{ fontSize: '10px', fontWeight: '900', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>Connection State</div>
+                                    <div style={{ fontSize: '14px', fontWeight: '800', color: inst.health > 90 ? 'var(--accent-green)' : 'var(--accent-orange)' }}>
+                                        {inst.health}% Standard SLA
+                                    </div>
+                                </div>
+                                <div style={{ textAlign: 'right' }}>
+                                    <div style={{ fontSize: '10px', fontWeight: '900', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>Pipeline Ingestion</div>
+                                    <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>
+                                        {inst.lastSyncAt ? new Date(inst.lastSyncAt).toLocaleTimeString() : 'Holding Pattern'}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '12px', marginTop: 'auto' }}>
+                                <button onClick={() => handleEditInstance(inst)} style={{ flex: 1, padding: '12px', background: 'white', border: '1px solid var(--border)', borderRadius: '10px', fontWeight: '800', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '13px', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                                    Manage Map
+                                </button>
+                                <button onClick={() => handleDelete(inst.id)} style={{ flex: 0.5, padding: '12px', background: 'transparent', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '10px', fontWeight: '800', color: 'var(--accent-red)', cursor: 'pointer', fontSize: '13px' }}>
+                                    Unlink
+                                </button>
+                            </div>
+                        </div>
+                    ))
+                )}
             </div>
 
             {/* Right Sliding Drawer */}
@@ -379,73 +389,102 @@ const CategoryProviderView = ({ projectId, apiFetch, category, catalog, instance
                                 ))}
                             </div>
 
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                                <div>
-                                    <label style={labelStyle}>Instance Assignment Name</label>
-                                    <input style={inputStyle} value={editConfig.label} onChange={e => setEditConfig({...editConfig, label: e.target.value})} />
+                            <FormSection title="Integration Profile">
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                                    <FormGroup>
+                                        <FormLabel>Instance Assignment Name</FormLabel>
+                                        <FormHelper>The unique system name used to identify this pipeline within logs.</FormHelper>
+                                        <FormInput value={editConfig.label} onChange={(e: any) => setEditConfig({...editConfig, label: e.target.value})} />
+                                    </FormGroup>
+                                    
+                                    <FormGroup>
+                                        <FormLabel>Target Website / Store Scope</FormLabel>
+                                        <FormHelper>Determine which platform scope applies.</FormHelper>
+                                        <FormSelect>
+                                            <option value="all">All Stores in Project</option>
+                                            <option value="s1">US Main Storefront</option>
+                                        </FormSelect>
+                                    </FormGroup>
                                 </div>
-                                
-                                <div>
-                                    <label style={labelStyle}>Target Website / Store Scope</label>
-                                    <select style={inputStyle}>
-                                        <option value="all">All Stores in Project</option>
-                                        <option value="s1">US Main Storefront</option>
-                                    </select>
-                                </div>
+                            </FormSection>
 
-                                <div style={{ borderTop: '1px solid var(--border)', margin: '8px 0' }}></div>
-                                <h4 style={{ fontSize: '14px', fontWeight: '800' }}>API Connectivity</h4>
-                                
-                                <div>
-                                    <label style={labelStyle}>Endpoint URL ({env})</label>
-                                    <input style={inputStyle} value={editConfig.config[env]?.endpoint || ''} onChange={e => setEditConfig({...editConfig, config: {...editConfig.config, [env]: {...editConfig.config[env], endpoint: e.target.value}}})} placeholder="https://api.system.com/..." />
-                                </div>
+                            <FormSection title="API Authentication">
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                                    <FormGroup>
+                                        <FormLabel>Endpoint URL ({env})</FormLabel>
+                                        <FormHelper error={!editConfig.config[env]?.endpoint || !editConfig.config[env]?.endpoint.startsWith('http')}>
+                                            {(!editConfig.config[env]?.endpoint || !editConfig.config[env]?.endpoint.startsWith('http')) 
+                                                ? 'Requires a valid HTTP/HTTPS protocol mapping.' 
+                                                : `Fully qualified URI for ingestion targeting (${env} tier).`}
+                                        </FormHelper>
+                                        <FormInput 
+                                            error={!editConfig.config[env]?.endpoint || !editConfig.config[env]?.endpoint.startsWith('http')}
+                                            value={editConfig.config[env]?.endpoint || ''} 
+                                            onChange={(e: any) => setEditConfig({...editConfig, config: {...editConfig.config, [env]: {...editConfig.config[env], endpoint: e.target.value}}})} 
+                                            placeholder="https://api.system.com/..." 
+                                        />
+                                    </FormGroup>
 
-                                <div style={{ display: 'flex', gap: '16px' }}>
-                                    <div style={{ flex: 1 }}>
-                                        <label style={labelStyle}>Client ID / Token Username</label>
-                                        <input style={inputStyle} value={editConfig.config[env]?.clientId || ''} onChange={e => setEditConfig({...editConfig, config: {...editConfig.config, [env]: {...editConfig.config[env], clientId: e.target.value}}})} />
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                                        <FormGroup>
+                                            <FormLabel>Client ID Username</FormLabel>
+                                            <FormInput 
+                                                value={editConfig.config[env]?.clientId || ''} 
+                                                onChange={(e: any) => setEditConfig({...editConfig, config: {...editConfig.config, [env]: {...editConfig.config[env], clientId: e.target.value}}})} 
+                                            />
+                                        </FormGroup>
+                                        <FormGroup>
+                                            <FormLabel>Secret Credential</FormLabel>
+                                            <FormInput 
+                                                type="password" 
+                                                value={editConfig.config[env]?.apiKey || ''} 
+                                                onChange={(e: any) => setEditConfig({...editConfig, config: {...editConfig.config, [env]: {...editConfig.config[env], apiKey: e.target.value}}})} 
+                                                placeholder="••••••••" 
+                                            />
+                                        </FormGroup>
                                     </div>
-                                    <div style={{ flex: 1 }}>
-                                        <label style={labelStyle}>Secret Credential</label>
-                                        <input style={inputStyle} type="password" value={editConfig.config[env]?.apiKey || ''} onChange={e => setEditConfig({...editConfig, config: {...editConfig.config, [env]: {...editConfig.config[env], apiKey: e.target.value}}})} placeholder="••••••••" />
-                                    </div>
                                 </div>
+                            </FormSection>
 
-                                <div style={{ borderTop: '1px solid var(--border)', margin: '8px 0' }}></div>
-                                <h4 style={{ fontSize: '14px', fontWeight: '800' }}>Orchestration Rules</h4>
-
-                                <div style={{ display: 'flex', gap: '16px' }}>
-                                    <div style={{ flex: 1 }}>
-                                        <label style={labelStyle}>Sync Polling Interval</label>
-                                        <select style={inputStyle} value={editConfig.syncSettings.frequency} onChange={e => setEditConfig({...editConfig, syncSettings: {...editConfig.syncSettings, frequency: e.target.value}})}>
+                            <FormSection title="Orchestration Rules">
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+                                    <FormGroup>
+                                        <FormLabel>Sync Polling Interval</FormLabel>
+                                        <FormHelper>Scheduled CRON pattern pace.</FormHelper>
+                                        <FormSelect 
+                                            value={editConfig.syncSettings.frequency} 
+                                            onChange={(e: any) => setEditConfig({...editConfig, syncSettings: {...editConfig.syncSettings, frequency: e.target.value}})}
+                                        >
                                             <option value="5m">Aggressive (5m)</option>
                                             <option value="15m">Standard (15m)</option>
                                             <option value="1h">Relaxed (1h)</option>
-                                        </select>
-                                    </div>
-                                    <div style={{ flex: 1 }}>
-                                        <label style={labelStyle}>Timeout SLA</label>
-                                        <input style={inputStyle} type="number" value={editConfig.syncSettings.timeout || 30} onChange={e => setEditConfig({...editConfig, syncSettings: {...editConfig.syncSettings, timeout: parseInt(e.target.value)}})} />
-                                    </div>
+                                        </FormSelect>
+                                    </FormGroup>
+                                    <FormGroup>
+                                        <FormLabel>Timeout SLA Requirement</FormLabel>
+                                        <FormHelper>Drop ceiling in seconds.</FormHelper>
+                                        <FormInput 
+                                            type="number" 
+                                            value={editConfig.syncSettings.timeout || 30} 
+                                            onChange={(e: any) => setEditConfig({...editConfig, syncSettings: {...editConfig.syncSettings, timeout: parseInt(e.target.value)}})} 
+                                        />
+                                    </FormGroup>
                                 </div>
 
-                                <div style={{ padding: '16px', background: 'var(--bg-app)', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '12px', border: '1px solid var(--border)' }}>
-                                    <input type="checkbox" checked={editConfig.enabled} onChange={e => setEditConfig({...editConfig, enabled: e.target.checked})} style={{ width: '18px', height: '18px' }} />
-                                    <div>
-                                        <div style={{ fontSize: '14px', fontWeight: '800' }}>Activate Connection in {env.toUpperCase()}</div>
-                                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>If enabled, the monitoring engine will immediately begin data flow tasks.</div>
-                                    </div>
-                                </div>
-
-                            </div>
+                                <FormCheckboxItem 
+                                    checked={editConfig.enabled}
+                                    onChange={(checked: boolean) => setEditConfig({...editConfig, enabled: checked})}
+                                    title={`Activate Connection in ${env.toUpperCase()}`}
+                                    description="If enabled, the monitoring engine will immediately begin autonomous data flows."
+                                />
+                            </FormSection>
                         </div>
 
                         <footer style={{ padding: '24px 32px', borderTop: '1px solid var(--border)', display: 'flex', gap: '16px', background: 'var(--bg-surface)' }}>
-                            <button onClick={handleTest} style={{ padding: '12px 24px', background: 'white', border: '1px solid var(--border)', borderRadius: '10px', fontWeight: '800', cursor: 'pointer', flex: 0.5 }} disabled={testing}>
+                            <button onClick={handleTest} className="btn-core" style={{ padding: '12px 24px', background: 'white', border: '1px solid var(--border)', borderRadius: '10px', fontWeight: '800', cursor: 'pointer', flex: 0.5 }} disabled={testing}>
                                 {testing ? 'Testing...' : 'Probe Target'}
                             </button>
-                            <button onClick={handleSave} style={{ padding: '12px 24px', background: 'var(--accent-blue)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '800', cursor: 'pointer', flex: 1 }}>
+                            <button onClick={handleSave} className="btn-core" style={{ padding: '12px 24px', background: 'var(--accent-blue)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '800', cursor: 'pointer', flex: 1 }}>
                                 Commit Map & Save
                             </button>
                         </footer>
@@ -479,7 +518,7 @@ const ConnectionHealthDashboard = ({ instances }: { instances: any[] }) => (
                 </thead>
                 <tbody>
                     {instances.map(inst => (
-                        <tr key={inst.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                        <tr key={inst.id} className="table-row">
                             <td style={tdStyle}>
                                 <div style={{ fontWeight: '800' }}>{inst.label}</div>
                                 <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{inst.category}</div>
@@ -532,5 +571,3 @@ const statLabel: React.CSSProperties = { fontSize: '12px', fontWeight: '800', co
 const thStyle: React.CSSProperties = { padding: '16px 24px', fontWeight: '800', color: 'var(--text-secondary)', textTransform: 'uppercase', fontSize: '11px', letterSpacing: '0.5px' };
 const tdStyle: React.CSSProperties = { padding: '16px 24px', verticalAlign: 'middle' };
 const linkBtn: React.CSSProperties = { background: 'none', border: 'none', color: 'var(--accent-blue)', fontWeight: '800', cursor: 'pointer', fontSize: '13px', padding: 0 };
-const labelStyle: React.CSSProperties = { fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '6px', display: 'block' };
-const inputStyle: React.CSSProperties = { padding: '14px', background: 'var(--bg-app)', border: '1px solid var(--border)', borderRadius: '10px', fontSize: '14px', fontWeight: '600', width: '100%', outline: 'none' };

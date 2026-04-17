@@ -16,6 +16,7 @@ import {
     Eye,
     EyeOff
 } from 'lucide-react';
+import { FormSection, FormGroup, FormLabel, FormHelper, FormInput, FormSelect, FormCheckboxItem, MaskedRevealInput } from './FormPrimitives';
 
 export const AccessControlTab = ({ projectId, apiFetch }: { projectId: string, apiFetch: any }) => {
     const [keys, setKeys] = useState<any[]>([]);
@@ -107,6 +108,7 @@ export const AccessControlTab = ({ projectId, apiFetch }: { projectId: string, a
                 </div>
                 <div style={{ display: 'flex', gap: '12px' }}>
                     <button 
+                        className="btn-core"
                         onClick={() => setActiveSecurityTab(activeSecurityTab === 'inventory' ? 'audit' : 'inventory')}
                         style={{ padding: '10px 18px', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '12px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
                         {activeSecurityTab === 'inventory' ? <FileText size={16} /> : <Shield size={16} />}
@@ -114,6 +116,7 @@ export const AccessControlTab = ({ projectId, apiFetch }: { projectId: string, a
                     </button>
                     {activeSecurityTab === 'inventory' && (
                         <button 
+                            className="btn-core"
                             onClick={() => { setGeneratedKey(null); setIsCreateModalOpen(true); }}
                             style={{ padding: '10px 18px', background: 'var(--accent-blue)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
                             <Plus size={16} /> Create Service Key
@@ -138,19 +141,21 @@ export const AccessControlTab = ({ projectId, apiFetch }: { projectId: string, a
                                             <Key size={20} color={key.status === 'active' ? 'var(--accent-blue)' : 'var(--text-muted)'} />
                                         </div>
                                         <div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                <h4 style={{ fontSize: '15px', fontWeight: '800' }}>{key.label}</h4>
-                                                {key.isVip && <span style={vipBadgeStyle}>VIP</span>}
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                                <h4 style={{ fontSize: '16px', fontWeight: '800', color: 'var(--text-primary)' }}>{key.label}</h4>
+                                                {key.isVip && <span style={vipBadgeStyle}>VIP Engine</span>}
                                                 <span style={envBadgeStyle(key.environment)}>{key.environment}</span>
                                             </div>
-                                            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                                                {key.prefix}••••••••••••• | Created {new Date(key.createdAt).toLocaleDateString()}
-                                            </div>
+                                            <MaskedRevealInput label="" value={`${key.prefix}.${key.status === 'active' ? '••••••••••••••••' : 'REVOKED'}`} />
                                         </div>
                                     </div>
                                     <div style={{ display: 'flex', gap: '8px' }}>
-                                        <button onClick={() => handleRotate(key.id)} style={iconBtnStyle} title="Rotate Secret"><RefreshCcw size={14} /></button>
-                                        <button onClick={() => handleRevoke(key.id)} style={iconBtnStyleRed} title="Revoke Key"><Trash2 size={14} /></button>
+                                        <button onClick={() => handleRotate(key.id)} className="btn-core" style={actionBtnStyle}>
+                                            <RefreshCcw size={14} color="var(--accent-blue)" /> <span style={{ color: 'var(--accent-blue)' }}>Rotate Token</span>
+                                        </button>
+                                        <button onClick={() => handleRevoke(key.id)} className="btn-core" style={actionBtnStyleRed}>
+                                            <Trash2 size={14} color="var(--accent-red)" />
+                                        </button>
                                     </div>
                                 </div>
                                 
@@ -190,7 +195,7 @@ export const AccessControlTab = ({ projectId, apiFetch }: { projectId: string, a
                         </thead>
                         <tbody>
                             {auditLogs.map(log => (
-                                <tr key={log.id} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                                <tr key={log.id} className="table-row">
                                     <td style={tdStyle}><span style={logTypeBadgeStyle(log.type)}>{log.type}</span></td>
                                     <td style={tdStyle}>{log.message}</td>
                                     <td style={tdStyle}>{new Date(log.timestamp).toLocaleString()}</td>
@@ -210,54 +215,57 @@ export const AccessControlTab = ({ projectId, apiFetch }: { projectId: string, a
                             <>
                                 <h3 style={{ fontSize: '20px', fontWeight: '900', marginBottom: '8px' }}>Generate Scoped Access Key</h3>
                                 <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '32px' }}>Define permissions and security constraints for the new service token.</p>
-                                
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
-                                    <div style={fieldGroupStyle}>
-                                        <label style={labelStyle}>Key Label</label>
-                                        <input style={inputStyle} value={newKeyParams.label} onChange={e => setNewKeyParams({...newKeyParams, label: e.target.value})} placeholder="e.g. Jenkins Ingestion" />
+                                <FormSection title="Identity & Scoping">
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+                                        <FormGroup>
+                                            <FormLabel>Key Label Identifier</FormLabel>
+                                            <FormHelper>Display name in logging tools.</FormHelper>
+                                            <FormInput value={newKeyParams.label} onChange={(e: any) => setNewKeyParams({...newKeyParams, label: e.target.value})} placeholder="e.g. Jenkins Ingestion" />
+                                        </FormGroup>
+                                        <FormGroup>
+                                            <FormLabel>Execution Tier</FormLabel>
+                                            <FormHelper>Determines rate allocations.</FormHelper>
+                                            <FormSelect value={newKeyParams.environment} onChange={(e: any) => setNewKeyParams({...newKeyParams, environment: e.target.value})}>
+                                                <option value="production">Production Level</option>
+                                                <option value="staging">Staging Platform</option>
+                                                <option value="sandbox">Sandbox Testbed</option>
+                                            </FormSelect>
+                                        </FormGroup>
                                     </div>
-                                    <div style={fieldGroupStyle}>
-                                        <label style={labelStyle}>Environment</label>
-                                        <select style={inputStyle} value={newKeyParams.environment} onChange={e => setNewKeyParams({...newKeyParams, environment: e.target.value as any})}>
-                                            <option value="production">Production</option>
-                                            <option value="staging">Staging</option>
-                                            <option value="sandbox">Sandbox</option>
-                                        </select>
-                                    </div>
-                                </div>
+                                    <FormGroup>
+                                        <FormLabel>Compliance Purpose String</FormLabel>
+                                        <FormHelper>Provide reasoning to attach to strict audit trails for Enterprise Compliance.</FormHelper>
+                                        <FormInput value={newKeyParams.purpose} onChange={(e: any) => setNewKeyParams({...newKeyParams, purpose: e.target.value})} placeholder="Service context..." />
+                                    </FormGroup>
+                                </FormSection>
 
-                                <div style={fieldGroupStyle}>
-                                    <label style={labelStyle}>Purpose</label>
-                                    <input style={inputStyle} value={newKeyParams.purpose} onChange={e => setNewKeyParams({...newKeyParams, purpose: e.target.value})} placeholder="Describe use case for audit compliance" />
-                                </div>
-
-                                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px', marginTop: '20px', marginBottom: '32px' }}>
-                                    <div style={fieldGroupStyle}>
-                                        <label style={labelStyle}>IP Allowlist (CIDR)</label>
-                                        <div style={{ display: 'flex', gap: '8px' }}>
-                                            <input style={inputStyle} value={newKeyParams.allowedIps} onChange={e => setNewKeyParams({...newKeyParams, allowedIps: e.target.value})} placeholder="0.0.0.0/0" />
-                                            <div style={infoBox}><Globe size={14} /></div>
-                                        </div>
+                                <FormSection title="Constraint Orchestration">
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px', marginBottom: '20px' }}>
+                                        <FormGroup>
+                                            <FormLabel>Fixed IP Allowlist (CIDR)</FormLabel>
+                                            <FormHelper error={newKeyParams.allowedIps === '0.0.0.0/0'}>
+                                                {newKeyParams.allowedIps === '0.0.0.0/0' ? 'Global Allow: Not recommended for Production' : 'Restricts physical network handshakes.'}
+                                            </FormHelper>
+                                            <FormInput error={newKeyParams.allowedIps === '0.0.0.0/0'} value={newKeyParams.allowedIps} onChange={(e: any) => setNewKeyParams({...newKeyParams, allowedIps: e.target.value})} placeholder="0.0.0.0/0" />
+                                        </FormGroup>
+                                        <FormGroup>
+                                            <FormLabel>Pipeline Rate Limit</FormLabel>
+                                            <FormHelper>Volume ceiling RPM (Req/Min).</FormHelper>
+                                            <FormInput type="number" value={newKeyParams.limit} onChange={(e: any) => setNewKeyParams({...newKeyParams, limit: parseInt(e.target.value)})} />
+                                        </FormGroup>
                                     </div>
-                                    <div style={fieldGroupStyle}>
-                                        <label style={labelStyle}>Rate Limit (RPM)</label>
-                                        <input style={inputStyle} type="number" value={newKeyParams.limit} onChange={e => setNewKeyParams({...newKeyParams, limit: parseInt(e.target.value)})} />
-                                    </div>
-                                </div>
-
-                                <div style={{ padding: '20px', background: 'rgba(37, 99, 235, 0.04)', border: '1px solid rgba(37, 99, 235, 0.1)', borderRadius: '16px', marginBottom: '32px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                        <div>
-                                            <div style={{ fontSize: '14px', fontWeight: '800' }}>Mark as VIP Key</div>
-                                            <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Bypasses project-level fallback limits for business continuity</div>
-                                        </div>
-                                        <input type="checkbox" checked={newKeyParams.isVip} onChange={e => setNewKeyParams({...newKeyParams, isVip: e.target.checked})} style={{ width: '20px', height: '20px' }} />
-                                    </div>
-                                </div>
+                                    
+                                    <FormCheckboxItem 
+                                        checked={newKeyParams.isVip}
+                                        onChange={(checked: boolean) => setNewKeyParams({...newKeyParams, isVip: checked})}
+                                        title="Mark as VIP Access Token"
+                                        description="Bypasses Global Baseline Project Threshold Drop policies during excessive load bursts."
+                                    />
+                                </FormSection>
 
                                 <div style={{ display: 'flex', gap: '12px' }}>
-                                    <button onClick={() => setIsCreateModalOpen(false)} style={cancelBtnStyle}>Cancel</button>
-                                    <button onClick={handleCreateKey} style={saveBtnStyle}>Generate Identity</button>
+                                    <button onClick={() => setIsCreateModalOpen(false)} className="btn-core" style={cancelBtnStyle}>Cancel</button>
+                                    <button onClick={handleCreateKey} className="btn-core" style={saveBtnStyle}>Generate Identity</button>
                                 </div>
                             </>
                         ) : (
@@ -270,7 +278,7 @@ export const AccessControlTab = ({ projectId, apiFetch }: { projectId: string, a
                                     <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '12px' }}>COMPOSITE ACCESS KEY</div>
                                     <div style={keyRevealBox}>
                                         <code>{generatedKey.prefix}.{generatedKey.secret}</code>
-                                        <button onClick={() => navigator.clipboard.writeText(`${generatedKey.prefix}.${generatedKey.secret}`)} style={copyBtnStyle}><Copy size={14} /> Copy</button>
+                                        <button onClick={() => navigator.clipboard.writeText(`${generatedKey.prefix}.${generatedKey.secret}`)} className="btn-core" style={copyBtnStyle}><Copy size={14} /> Copy</button>
                                     </div>
                                 </div>
 
@@ -279,7 +287,7 @@ export const AccessControlTab = ({ projectId, apiFetch }: { projectId: string, a
                                     <span>If you lose this secret, you must rotate the key to restore access.</span>
                                 </div>
 
-                                <button onClick={() => setIsCreateModalOpen(false)} style={doneBtnStyle}>I have saved the key</button>
+                                <button onClick={() => setIsCreateModalOpen(false)} className="btn-core" style={doneBtnStyle}>I have saved the key</button>
                             </div>
                         )}
                     </div>
@@ -354,3 +362,11 @@ const logTypeBadgeStyle = (type: string): React.CSSProperties => ({
     background: type.includes('ERROR') || type.includes('BREACH') ? 'rgba(239,68,68,0.1)' : 'rgba(37,99,235,0.1)',
     color: type.includes('ERROR') || type.includes('BREACH') ? 'var(--accent-red)' : 'var(--accent-blue)'
 });
+
+const actionBtnStyle: React.CSSProperties = {
+    padding: '8px 12px', borderRadius: '10px', border: '1px solid var(--border)', background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '800', fontSize: '12px'
+};
+
+const actionBtnStyleRed: React.CSSProperties = {
+    ...actionBtnStyle, background: 'rgba(239, 68, 68, 0.04)', borderColor: 'rgba(239, 68, 68, 0.2)'
+};
