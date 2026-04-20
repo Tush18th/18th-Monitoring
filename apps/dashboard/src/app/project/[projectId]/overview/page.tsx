@@ -180,7 +180,7 @@ export default function ProjectOverviewPage() {
         </div>
       }
     >
-      <div className="space-y-8 pb-12">
+      <div className="dashboard-page-body">
         {/* 1. Global System Health */}
         <SystemHealthOverview 
           modules={moduleHealths}
@@ -190,147 +190,149 @@ export default function ProjectOverviewPage() {
         />
 
         {/* 2. Intelligence Area: Critical Anomalies & Alerts */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-           <div className="lg:col-span-2">
-              <Card className="p-0 overflow-hidden border-error/20">
-                <div className="p-4 bg-error-bg/30 border-b border-error/10 flex justify-between items-center">
-                   <div className="flex items-center gap-2 text-error">
-                      <Bell size={18} />
-                      <Typography variant="body" weight="bold" noMargin>Active Intelligence Alerts</Typography>
-                   </div>
-                   <Badge variant="error" size="sm">{activeAlerts.length} ISSUES</Badge>
-                </div>
-                <OperationalTable 
-                  columns={alertColumns} 
-                  data={activeAlerts.slice(0, 5)} 
-                  isDense 
-                  isEmpty={activeAlerts.length === 0}
-                  emptyTitle="No active anomalies detected"
-                />
-              </Card>
-           </div>
-           
-           <Card className="p-6 flex flex-col justify-between">
+        <div className="dashboard-split-grid">
+          <Card padding="none" className="overflow-hidden border-l-4" style={{ borderLeftColor: 'var(--error)' }}>
+            <div className="p-5 bg-error-bg/20 border-b border-error/15 flex justify-between items-center gap-4">
+              <div className="flex items-center gap-3">
+                <Bell size={18} className="text-error flex-shrink-0" />
+                <Typography variant="body" weight="bold" noMargin className="text-error">Active Intelligence Alerts</Typography>
+              </div>
+              <Badge variant="error" size="sm">{activeAlerts.length} ISSUES</Badge>
+            </div>
+            <OperationalTable 
+              columns={alertColumns} 
+              data={activeAlerts.slice(0, 5)} 
+              isDense 
+              isEmpty={activeAlerts.length === 0}
+              emptyTitle="No active anomalies detected"
+            />
+          </Card>
+
+          <Card padding="lg">
+            <div className="dashboard-stack gap-4">
               <div>
-                <Typography variant="caption" weight="bold" className="text-text-muted uppercase tracking-wider mb-4 block">
-                   Executive Summary (24h)
+                <Typography variant="caption" weight="bold" className="uppercase tracking-wider block mb-4" color="muted">
+                  Executive Summary (24h)
                 </Typography>
-                <div className="space-y-4">
-                   <div className="flex justify-between items-center bg-muted/30 p-3 rounded-xl">
-                      <Typography variant="body" weight="bold">Total Volume</Typography>
-                      <Typography variant="h3" weight="bold" noMargin>{stats?.ordersTotal || 0}</Typography>
-                   </div>
-                   <div className="flex justify-between items-center bg-muted/30 p-3 rounded-xl">
-                      <Typography variant="body" weight="bold">Revenue Integrity</Typography>
-                      <Badge variant="success" size="sm">99.8%</Badge>
-                   </div>
-                   <div className="flex justify-between items-center bg-muted/30 p-3 rounded-xl border border-warning/20">
-                      <Typography variant="body" weight="bold">Delayed Value</Typography>
-                      <Typography variant="body" weight="bold" className="text-warning">${(stats?.delayedCount || 0) * 85}</Typography>
-                   </div>
+                <div className="dashboard-stack gap-3">
+                  <div className="flex justify-between items-center bg-muted/30 p-4 rounded-lg">
+                    <Typography variant="body" weight="bold">Total Volume</Typography>
+                    <Typography variant="h3" weight="bold" noMargin>{stats?.ordersTotal || 0}</Typography>
+                  </div>
+                  <div className="flex justify-between items-center bg-muted/30 p-4 rounded-lg">
+                    <Typography variant="body" weight="bold">Revenue Integrity</Typography>
+                    <Badge variant="success" size="sm">99.8%</Badge>
+                  </div>
+                  <div className="flex justify-between items-center bg-muted/30 p-4 rounded-lg border border-warning/20">
+                    <Typography variant="body" weight="bold">Delayed Value</Typography>
+                    <Typography variant="body" weight="bold" className="text-warning">${(stats?.delayedCount || 0) * 85}</Typography>
+                  </div>
                 </div>
               </div>
               <Button 
                 variant="outline" 
-                className="w-full mt-6" 
+                size="md"
                 onClick={() => router.push(`/project/${projectId}/management`)}
               >
-                 System Governance <ExternalLink size={14} className="ml-2" />
+                System Governance <ExternalLink size={14} />
               </Button>
-           </Card>
+            </div>
+          </Card>
         </div>
 
         {/* 3. Operational Domain Snapshots */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-           <ModuleSnapshot 
-              title="Integrations"
-              icon={RefreshCw}
-              status={moduleHealths[0].status}
-              href={`/project/${projectId}/integrations`}
-              metrics={[
-                { label: 'Sync Health', value: metrics.find(m => m.kpiName === 'syncSuccessRate')?.value || 0, unit: '%', status: 'success' },
-                { label: 'Failed (24h)', value: activeAlerts.filter(a => a.kpiName.includes('sync')).length, status: 'error' }
-              ]}
-           />
-           <ModuleSnapshot 
-              title="Orders"
-              icon={Package}
-              status={moduleHealths[1].status}
-              href={`/project/${projectId}/orders`}
-              metrics={[
-                { label: 'Velocity', value: stats?.ordersPerMinute || '0.0', unit: 'RPM' },
-                { label: 'Exceptions', value: (stats?.failedCount || 0) + (stats?.delayedCount || 0), status: 'warning' }
-              ]}
-           />
-           <ModuleSnapshot 
-              title="Performance"
-              icon={Gauge}
-              status={moduleHealths[2].status}
-              href={`/project/${projectId}/performance`}
-              metrics={[
-                { label: 'p95 Latency', value: metrics.find(m => m.kpiName === 'pageLoadTime')?.value || 0, unit: 'ms' },
-                { label: 'Error Rate', value: metrics.find(m => m.kpiName === 'errorRatePct')?.value || 0, unit: '%', status: 'error' }
-              ]}
-           />
-           <ModuleSnapshot 
-              title="Customers"
-              icon={Users}
-              status={moduleHealths[3].status}
-              href={`/project/${projectId}/customers`}
-              metrics={[
-                { label: 'Live Users', value: metrics.find(m => m.kpiName === 'activeUsers')?.value || 0 },
-                { label: 'Retention', value: '42%', unit: 'CR' }
-              ]}
-           />
+        <div className="dashboard-metrics-grid">
+          <ModuleSnapshot 
+            title="Integrations"
+            icon={RefreshCw}
+            status={moduleHealths[0].status}
+            href={`/project/${projectId}/integrations`}
+            metrics={[
+              { label: 'Sync Health', value: metrics.find(m => m.kpiName === 'syncSuccessRate')?.value || 0, unit: '%', status: 'success' },
+              { label: 'Failed (24h)', value: activeAlerts.filter(a => a.kpiName.includes('sync')).length, status: 'error' }
+            ]}
+          />
+          <ModuleSnapshot 
+            title="Orders"
+            icon={Package}
+            status={moduleHealths[1].status}
+            href={`/project/${projectId}/orders`}
+            metrics={[
+              { label: 'Velocity', value: stats?.ordersPerMinute || '0.0', unit: 'RPM' },
+              { label: 'Exceptions', value: (stats?.failedCount || 0) + (stats?.delayedCount || 0), status: 'warning' }
+            ]}
+          />
+          <ModuleSnapshot 
+            title="Performance"
+            icon={Gauge}
+            status={moduleHealths[2].status}
+            href={`/project/${projectId}/performance`}
+            metrics={[
+              { label: 'p95 Latency', value: metrics.find(m => m.kpiName === 'pageLoadTime')?.value || 0, unit: 'ms' },
+              { label: 'Error Rate', value: metrics.find(m => m.kpiName === 'errorRatePct')?.value || 0, unit: '%', status: 'error' }
+            ]}
+          />
+          <ModuleSnapshot 
+            title="Customers"
+            icon={Users}
+            status={moduleHealths[3].status}
+            href={`/project/${projectId}/customers`}
+            metrics={[
+              { label: 'Live Users', value: metrics.find(m => m.kpiName === 'activeUsers')?.value || 0 },
+              { label: 'Retention', value: '42%', unit: 'CR' }
+            ]}
+          />
         </div>
 
         {/* 4. Trends & System Activity */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-           <Card className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                 <div className="flex items-center gap-2">
-                    <Activity size={18} className="text-text-muted" />
-                    <Typography variant="body" weight="bold" noMargin className="text-sm uppercase tracking-wider text-text-muted">
-                        Latency Confidence Profile
-                    </Typography>
-                 </div>
-                 <Badge variant="info" size="sm">REAL-TIME</Badge>
+        <div className="dashboard-split-grid">
+          <Card padding="lg">
+            <div className="dashboard-stack gap-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Activity size={18} className="text-text-muted" />
+                  <Typography variant="caption" weight="bold" className="uppercase tracking-wider text-text-muted" noMargin>
+                    Latency Confidence Profile
+                  </Typography>
+                </div>
+                <Badge variant="info" size="sm">REAL-TIME</Badge>
               </div>
               <PerformanceChart data={trends} title="" />
-           </Card>
+            </div>
+          </Card>
 
-           <Card className="p-0 overflow-hidden">
-              <div className="p-4 border-b border-subtle bg-muted/20 flex justify-between items-center">
-                 <div className="flex items-center gap-2">
-                    <Clock size={18} className="text-text-muted" />
-                    <Typography variant="body" weight="bold" noMargin className="text-sm uppercase tracking-wider text-text-muted">
-                        Recent System Activity
-                    </Typography>
-                 </div>
-                 <Typography variant="micro" className="text-primary font-bold cursor-pointer hover:underline">
-                    View Complete Audit
-                 </Typography>
+          <Card padding="none" className="overflow-hidden">
+            <div className="p-4 border-b border-subtle bg-muted/20 flex justify-between items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Clock size={18} className="text-text-muted" />
+                <Typography variant="caption" weight="bold" className="uppercase tracking-wider text-text-muted" noMargin>
+                  Recent System Activity
+                </Typography>
               </div>
-              <div className="divide-y divide-subtle">
-                 {activeAlerts.length > 0 ? activeAlerts.slice(0, 6).map((item, idx) => (
-                    <div key={idx} className="p-4 flex gap-4 hover:bg-muted/30 transition-colors group cursor-pointer">
-                        <div className="mt-1 w-2 h-2 rounded-full bg-error" />
-                        <div className="flex-1">
-                           <div className="flex justify-between items-start">
-                              <Typography variant="body" weight="bold" className="text-xs">{item.message}</Typography>
-                              <Typography variant="micro" className="text-text-muted">{new Date(item.timestamp || Date.now()).toLocaleTimeString()}</Typography>
-                           </div>
-                           <Typography variant="micro" className="text-text-muted block mt-1 uppercase">Source: {item.kpiName}</Typography>
-                        </div>
-                        <ChevronRight size={14} className="text-text-muted opacity-0 group-hover:opacity-100 transition-opacity self-center" />
+              <Typography variant="micro" className="text-primary font-bold cursor-pointer hover:underline">
+                View Audit
+              </Typography>
+            </div>
+            <div className="divide-y divide-subtle">
+              {activeAlerts.length > 0 ? activeAlerts.slice(0, 6).map((item, idx) => (
+                <div key={idx} className="p-4 flex gap-3 hover:bg-muted/40 transition-colors group cursor-pointer">
+                  <div className="mt-1 w-2 h-2 rounded-full bg-error flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-start gap-2">
+                      <Typography variant="body" weight="semibold" className="text-sm">{item.message}</Typography>
+                      <Typography variant="micro" className="text-text-muted flex-shrink-0">{new Date(item.timestamp || Date.now()).toLocaleTimeString()}</Typography>
                     </div>
-                 )) : (
-                    <div className="p-12 text-center">
-                       <Typography variant="caption" className="text-text-muted">No recent system activity detected.</Typography>
-                    </div>
-                 )}
-              </div>
-           </Card>
+                    <Typography variant="micro" className="text-text-muted block mt-1 uppercase">Source: {item.kpiName}</Typography>
+                  </div>
+                  <ChevronRight size={14} className="text-text-muted opacity-0 group-hover:opacity-100 transition-opacity self-center flex-shrink-0" />
+                </div>
+              )) : (
+                <div className="p-12 text-center">
+                  <Typography variant="caption" color="muted">No recent system activity detected.</Typography>
+                </div>
+              )}
+            </div>
+          </Card>
         </div>
       </div>
     </PageLayout>

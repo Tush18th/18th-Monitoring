@@ -10,6 +10,7 @@ interface TypographyProps extends React.HTMLAttributes<HTMLHeadingElement | HTML
   variant?: 'display' | 'h1' | 'h2' | 'h3' | 'body' | 'caption' | 'micro';
   weight?: 'light' | 'normal' | 'medium' | 'semibold' | 'bold';
   align?: 'left' | 'center' | 'right';
+  color?: 'primary' | 'secondary' | 'muted' | 'success' | 'warning' | 'error' | 'info' | 'inverse';
   noMargin?: boolean;
 }
 
@@ -17,6 +18,7 @@ export const Typography: React.FC<TypographyProps> = ({
   variant = 'body',
   weight,
   align,
+  color,
   noMargin = false,
   className,
   children,
@@ -34,6 +36,7 @@ export const Typography: React.FC<TypographyProps> = ({
         `variant-${variant}`,
         weight && `weight-${weight}`,
         align && `align-${align}`,
+        color && `color-${color}`,
         noMargin && 'no-margin',
         className
       )}

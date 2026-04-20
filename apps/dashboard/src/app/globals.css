@@ -305,7 +305,7 @@ textarea {
 .unauthorized-card {
   width: min(100%, 520px);
   padding: clamp(1.75rem, 4vw, 2.5rem);
-  border-radius: 28px;
+  border-radius: 16px;
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   text-align: center;
@@ -352,7 +352,7 @@ textarea {
   --app-shell-width: 1440px;
   --app-content-gap: clamp(1rem, 2vw, 1.5rem);
   --app-section-gap: clamp(1.25rem, 2vw, 2rem);
-  --app-card-radius: 20px;
+  --app-card-radius: 16px;
 }
 
 /* Theme aliases */
@@ -389,9 +389,9 @@ textarea {
 .dashboard-surface-card {
   position: relative;
   padding: clamp(1rem, 2vw, 1.5rem);
-  border-radius: 24px;
+  border-radius: 16px;
   border: 1px solid var(--border-subtle);
-  background: var(--surface-elevated);
+  background: var(--bg-card);
   box-shadow: var(--shadow-sm);
 }
 
@@ -458,25 +458,33 @@ textarea {
 
 .dashboard-metrics-grid {
   display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: var(--app-content-gap);
-}
-
-.dashboard-metrics-grid > * {
-  grid-column: span 3 / span 3;
 }
 
 .dashboard-two-column {
   display: grid;
-  grid-template-columns: minmax(0, 1.7fr) minmax(320px, 0.9fr);
+  grid-template-columns: 1fr;
   gap: var(--app-content-gap);
   align-items: start;
 }
 
+@media (min-width: 1024px) {
+  .dashboard-two-column {
+    grid-template-columns: minmax(0, 1.7fr) minmax(320px, 0.9fr);
+  }
+}
+
 .dashboard-split-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: var(--app-content-gap);
+}
+
+@media (min-width: 1024px) {
+  .dashboard-split-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .dashboard-card-grid {
@@ -528,7 +536,7 @@ textarea {
 .dashboard-overlay-card {
   width: min(100%, 480px);
   padding: clamp(1.5rem, 3vw, 2.25rem);
-  border-radius: 28px;
+  border-radius: 16px;
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   box-shadow: 0 28px 60px -28px rgb(15 23 42 / 0.5);
@@ -635,7 +643,7 @@ textarea {
   max-height: min(90vh, 820px);
   overflow: auto;
   padding: clamp(1.5rem, 3vw, 2.25rem);
-  border-radius: 28px;
+  border-radius: 16px;
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   box-shadow: 0 28px 60px -24px rgb(15 23 42 / 0.55);
@@ -643,9 +651,15 @@ textarea {
 
 .dashboard-hero-grid {
   display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
+  grid-template-columns: 1fr;
   gap: clamp(1.5rem, 4vw, 3rem);
   align-items: stretch;
+}
+
+@media (min-width: 1024px) {
+  .dashboard-hero-grid {
+    grid-template-columns: 1.1fr 0.9fr;
+  }
 }
 
 .portfolio-grid {
@@ -657,10 +671,9 @@ textarea {
 .portfolio-card {
   height: 100%;
   padding: 1.35rem;
-  border-radius: 24px;
+  border-radius: 12px;
   border: 1px solid var(--border-subtle);
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--bg-surface) 88%, white), var(--bg-surface));
+  background: var(--bg-card);
   box-shadow: var(--shadow-sm);
   transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
 }

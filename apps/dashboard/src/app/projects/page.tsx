@@ -185,18 +185,19 @@ export default function ProjectsPage() {
                   type="button"
                   className="portfolio-card"
                   onClick={() => openProject(project.id)}
-                  style={{ textAlign: 'left', cursor: 'pointer' }}
                 >
-                  <div className="dashboard-stack" style={{ gap: '1rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
-                      <div>
-                        <Typography variant="h3" noMargin>
-                          {project.name}
-                        </Typography>
-                        <Typography variant="caption" color="muted">
-                          {project.id}
-                        </Typography>
-                      </div>
+                  <div className="dashboard-stack gap-4">
+                    <div className="flex flex-col gap-1">
+                      <Typography variant="h3" noMargin>
+                        {project.name}
+                      </Typography>
+                      <Typography variant="caption" color="muted">
+                        {project.id}
+                      </Typography>
+                    </div>
+
+                    <div className="flex items-start justify-between gap-4">
+                      <div />
                       <span className={`dashboard-inline-status ${statusState === 'warning' ? 'is-danger' : 'is-success'}`}>
                         {statusState === 'warning' ? 'Watchlist' : 'Healthy'}
                       </span>
@@ -221,11 +222,11 @@ export default function ProjectsPage() {
                       </div>
                     </div>
 
-                    <div className="dashboard-action-row" style={{ justifyContent: 'space-between' }}>
+                    <div className="flex items-center justify-between gap-2 text-sm">
                       <Typography variant="body" color="secondary">
                         Open project workspace
                       </Typography>
-                      <ArrowRight size={18} color="var(--primary)" />
+                      <ArrowRight size={18} className="text-primary flex-shrink-0" />
                     </div>
                   </div>
                 </button>

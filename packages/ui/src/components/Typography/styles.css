@@ -67,3 +67,13 @@
 .align-left { text-align: left; }
 .align-center { text-align: center; }
 .align-right { text-align: right; }
+
+/* Colors */
+.color-primary { color: var(--text-primary); }
+.color-secondary { color: var(--text-secondary); }
+.color-muted { color: var(--text-muted); }
+.color-success { color: var(--success-text); }
+.color-warning { color: var(--warning-text); }
+.color-error { color: var(--error-text); }
+.color-info { color: var(--info-text); }
+.color-inverse { color: var(--text-inverse); }

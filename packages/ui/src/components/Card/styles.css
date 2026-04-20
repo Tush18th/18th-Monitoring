@@ -1,7 +1,7 @@
 .ui-card {
-  background: var(--surface-elevated), var(--bg-card);
+  background: var(--bg-card);
   border: 1px solid var(--border-subtle);
-  border-radius: 22px;
+  border-radius: 12px;
   box-shadow: var(--shadow-sm);
   transition: all var(--transition-normal);
   overflow: hidden;
