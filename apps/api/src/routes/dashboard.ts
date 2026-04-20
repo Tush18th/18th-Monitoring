@@ -1,12 +1,18 @@
 import { 
     getSummaries, 
     getAlerts, 
+    getAuditLogs,
+    getActivityFeed,
+    getGovernanceConfig,
+    updateGovernanceConfig,
     getPerformanceSummary, 
     getPerformanceTrends, 
+    getPerformanceAnomalies,
     getSlowestPages,
     getUserActivitySummary,
     getUserTrends,
     getUserAnalytics,
+    getCustomerIntelligence,
     getTopPages,
     getFunnelData,
     getOrderSummary,
@@ -22,6 +28,7 @@ import {
     getSyncTrends,
     getFailedSyncs,
     getIntegrationSystemBreakdown,
+    getOrders,
     getRegionalPerformance,
     getDeviceSegmentation,
     getResourceBreakdown,
@@ -38,10 +45,15 @@ export const dashboardRoutes = async (fastify: any) => {
     
     fastify.get('/summaries', getSummaries);
     fastify.get('/alerts', getAlerts);
+    fastify.get('/audit', getAuditLogs);
+    fastify.get('/activity', getActivityFeed);
+    fastify.get('/governance', getGovernanceConfig);
+    fastify.post('/governance', updateGovernanceConfig);
     
     // Performance Endpoints
     fastify.get('/performance/summary', getPerformanceSummary);
     fastify.get('/performance/trends', getPerformanceTrends);
+    fastify.get('/performance/anomalies', getPerformanceAnomalies);
     fastify.get('/performance/slowest-pages', getSlowestPages);
     fastify.get('/performance/regional', getRegionalPerformance);
     fastify.get('/performance/device', getDeviceSegmentation);
@@ -51,6 +63,7 @@ export const dashboardRoutes = async (fastify: any) => {
     fastify.get('/customers/summary',   getUserActivitySummary);
     fastify.get('/customers/trends',    getUserTrends);
     fastify.get('/customers/analytics', getUserAnalytics);
+    fastify.get('/customers/intelligence', getCustomerIntelligence);
     fastify.get('/customers/top-pages', getTopPages);
     fastify.get('/customers/funnel',    getFunnelData);
 
@@ -69,6 +82,7 @@ export const dashboardRoutes = async (fastify: any) => {
     fastify.post('/orders/offline/upload', uploadOfflineOrders);
     fastify.post('/orders/integrations/sync', syncIntegration);
     fastify.get('/orders/integrations/status', getIntegrationStatus);
+    fastify.get('/orders/list', getOrders);
     fastify.get('/orders/delayed', getDelayedOrders);
     fastify.get('/orders/source-breakdown', getOrderSourceBreakdown);
     

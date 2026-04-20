@@ -17,7 +17,8 @@ import {
   Link2, 
   Settings, 
   Bell, 
-  UserCircle 
+  UserCircle,
+  ShieldCheck
 } from 'lucide-react';
 
 export const DashboardShell = ({ children }: { children: React.ReactNode }) => {
@@ -28,6 +29,10 @@ export const DashboardShell = ({ children }: { children: React.ReactNode }) => {
   const { theme } = useTheme();
   
   const projectId = params.projectId as string || '';
+
+  // Context Bar State (in a real app, this might come from a dedicated context)
+  const [selectedEnv, setSelectedEnv] = React.useState('Production');
+  const [lastRefreshed, setLastRefreshed] = React.useState(new Date().toLocaleTimeString());
 
   // 1. RBAC: Project Access Guard
   useEffect(() => {
@@ -48,29 +53,35 @@ export const DashboardShell = ({ children }: { children: React.ReactNode }) => {
     
     if (!prefix) return [];
 
-    const isViewer = user?.role === 'CUSTOMER';
+    const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
 
     const groups: NavGroup[] = [
       {
-        name: 'Monitoring',
+        name: 'Operational Surface',
         items: [
           { label: 'Overview',     href: `${prefix}/overview`,     icon: LayoutDashboard },
           { label: 'Performance',  href: `${prefix}/performance`,  icon: Activity },
           { label: 'Customers',    href: `${prefix}/customers`,    icon: Users },
           { label: 'Orders',       href: `${prefix}/orders`,        icon: Package },
+        ]
+      },
+      {
+        name: 'Ecosystem',
+        items: [
           { label: 'Integrations', href: `${prefix}/integrations`,  icon: Link2 },
+          { label: 'Alerts',       href: `${prefix}/alerts`,        icon: Bell },
         ]
       }
     ];
 
-    // Only add Management section for Admin/SuperAdmin
-    if (!isViewer) {
+    // Only add Governance section for Admin/SuperAdmin
+    if (isAdmin) {
       groups.push({
-        name: 'Management',
+        name: 'Governance',
         items: [
-          { label: 'Alert Center',    href: `${prefix}/alerts`,           icon: Bell },
-          { label: 'Settings',        href: `${prefix}/settings`,         icon: Settings },
-          { label: 'Users',           href: `${prefix}/management/users`, icon: UserCircle },
+          { label: 'Audit & Activity', href: `${prefix}/management/audit`,   icon: ShieldCheck },
+          { label: 'Configuration',    href: `${prefix}/settings`,          icon: Settings },
+          { label: 'Administration',   href: `${prefix}/management/users`,  icon: UserCircle },
         ]
       });
     }
@@ -103,6 +114,11 @@ export const DashboardShell = ({ children }: { children: React.ReactNode }) => {
     return items;
   }, [pathname, projectId]);
 
+  // Handle Refresh simulation
+  const handleRefresh = () => {
+    setLastRefreshed(new Date().toLocaleTimeString());
+  };
+
   // Don't show shell on login or unauthorized pages
   const isPublicPage = pathname === '/login' || pathname === '/unauthorized';
   if (isPublicPage || isLoading) return <>{children}</>;
@@ -117,6 +133,7 @@ export const DashboardShell = ({ children }: { children: React.ReactNode }) => {
         email: user?.email || '',
       }}
       onLogout={logout}
+      onNavigate={(href) => router.push(href)}
       logo={
         <div className="flex items-center gap-2">
            <img 
@@ -131,8 +148,18 @@ export const DashboardShell = ({ children }: { children: React.ReactNode }) => {
           />
         </div>
       }
+      
+      // Context Bar Props
+      projects={user?.assignedProjects?.map(id => ({ id, name: id.toUpperCase() })) || []}
+      selectedProject={projectId}
+      onProjectChange={(id) => router.push(`/project/${id}/overview`)}
+      selectedEnvironment={selectedEnv}
+      onEnvironmentChange={setSelectedEnv}
+      lastUpdated={lastRefreshed}
+      onRefresh={handleRefresh}
+      freshnessStatus="healthy"
     >
-      <div className="animate-fade-in p-6">
+      <div className="animate-fade-in">
         {children}
       </div>
     </AppShell>

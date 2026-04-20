@@ -1,45 +1,89 @@
 .ui-table-container {
   width: 100%;
-  overflow-x: auto;
-  border-radius: var(--radius-md);
+  overflow: auto;
+  border-radius: 20px;
   border: 1px solid var(--border-subtle);
+  background-color: var(--bg-surface);
+  position: relative;
 }
 
 .ui-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate; /* Required for sticky border-bottom */
+  border-spacing: 0;
   text-align: left;
+  font-family: var(--font-sans);
   font-size: var(--text-sm);
-  background-color: var(--bg-surface);
+}
+
+.ui-thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .ui-th {
   padding: var(--space-3) var(--space-4);
   background-color: var(--bg-muted);
   color: var(--text-secondary);
-  font-weight: var(--font-semibold);
-  border-bottom: 1px solid var(--border-strong);
+  font-weight: var(--font-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 11px;
+  border-bottom: 2px solid var(--border-strong);
   white-space: nowrap;
+  transition: var(--transition-fast);
+}
+
+.ui-th:first-child {
+  padding-left: var(--space-5);
+}
+
+.ui-th:last-child {
+  padding-right: var(--space-5);
 }
 
 .ui-td {
   padding: var(--space-3) var(--space-4);
   color: var(--text-primary);
   border-bottom: 1px solid var(--border-subtle);
+  transition: var(--transition-fast);
+}
+
+.ui-td:first-child {
+  padding-left: var(--space-5);
+}
+
+.ui-td:last-child {
+  padding-right: var(--space-5);
 }
 
 .ui-tr:last-child .ui-td {
   border-bottom: none;
 }
 
-.ui-tr:hover {
+.ui-tr:hover .ui-td {
   background-color: var(--bg-muted);
-  transition: background-color var(--transition-fast);
 }
 
-/* Condensed variant */
-.ui-table.is-condensed .ui-th,
-.ui-table.is-condensed .ui-td {
+.ui-tr.is-active .ui-td {
+  background-color: color-mix(in srgb, var(--primary) 5%, var(--bg-surface));
+}
+
+/* Row Actions Padding */
+.ui-td.actions-cell {
+  padding-top: 0;
+  padding-bottom: 0;
+  width: 1%;
+  white-space: nowrap;
+}
+
+/* Dense Variant */
+.ui-table--dense .ui-th {
   padding: var(--space-2) var(--space-3);
+}
+
+.ui-table--dense .ui-td {
+  padding: var(--space-1-5) var(--space-3);
   font-size: var(--text-xs);
 }

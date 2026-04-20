@@ -6,14 +6,27 @@ import { externalSyncService } from '../services/external-sync.service';
 import { tenantAuthHandler } from '../middlewares/auth.middleware';
 import { roleGuard } from '../middlewares/rbac.middleware';
 
+import { SyncEngine } from '../services/sync-engine.service';
+
 export async function syncRoutes(server: FastifyInstance) {
     
     server.post('/:siteId/orders/sync/:connectorKey', { preHandler: [tenantAuthHandler, roleGuard(['ADMIN', 'SUPER_ADMIN'])] }, async (request: FastifyRequest<{ Params: { siteId: string, connectorKey: string } }>, reply: FastifyReply) => {
         try {
-            await connectorRegistryService.pollExternalAPI(request.params.siteId, request.params.connectorKey);
-            return reply.send({ success: true, message: `Sync triggered successfully for ${request.params.connectorKey}` });
+            const { siteId, connectorKey } = request.params;
+            const result = await SyncEngine.executeJob({
+                siteId,
+                connectorId: connectorKey,
+                syncType: 'MANUAL',
+                force: (request.query as any).force === 'true'
+            });
+
+            if ((result as any).skipped) {
+                return reply.status(409).send({ success: false, message: 'Sync job already in progress.' });
+            }
+
+            return reply.send({ success: true, ...result });
         } catch (err: any) {
-            return reply.status(500).send({ error: 'Sync Error', message: err.message });
+            return reply.status(500).send({ error: 'Sync Engine Error', message: err.message });
         }
     });
 

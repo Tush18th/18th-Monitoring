@@ -5,15 +5,10 @@ interface SectionHeaderProps {
   title: string;
   subtitle?: string;
   action?: React.ReactNode;
-  /** Icon emoji or React node to display before the title */
-  icon?: string | React.ReactNode;
+  icon?: React.ReactNode;
   className?: string;
 }
 
-/**
- * SectionHeader — consistent section divider used across all monitoring pages.
- * Renders a title row with optional subtitle and right-side action slot.
- */
 export const SectionHeader: React.FC<SectionHeaderProps> = ({
   title,
   subtitle,
@@ -22,61 +17,83 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
   className = '',
 }) => {
   return (
-    <div style={wrapperStyle} className={className}>
-      <div style={leftStyle}>
-        <div style={titleRowStyle}>
-          {icon && <span style={{ fontSize: '16px', lineHeight: 1 }}>{icon}</span>}
-          <h3 style={titleStyle}>{title}</h3>
+    <div className={`section-header ${className}`.trim()}>
+      <div className="section-header__copy">
+        <div className="section-header__title-row">
+          {icon ? <span className="section-header__icon">{icon}</span> : null}
+          <h2 className="section-header__title">{title}</h2>
         </div>
-        {subtitle && <p style={subtitleStyle}>{subtitle}</p>}
+        {subtitle ? <p className="section-header__subtitle">{subtitle}</p> : null}
       </div>
-      {action && <div style={actionStyle}>{action}</div>}
+      {action ? <div className="section-header__action">{action}</div> : null}
+
+      <style jsx>{`
+        .section-header {
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+          gap: 1rem;
+          margin-bottom: 1rem;
+        }
+
+        .section-header__copy {
+          display: flex;
+          flex-direction: column;
+          gap: 0.25rem;
+          min-width: 0;
+        }
+
+        .section-header__title-row {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+        }
+
+        .section-header__icon {
+          width: 2rem;
+          height: 2rem;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 12px;
+          background: color-mix(in srgb, var(--primary) 10%, var(--bg-surface));
+          color: var(--primary);
+        }
+
+        .section-header__title {
+          margin: 0;
+          font-size: 1.05rem;
+          line-height: 1.2;
+          font-weight: 800;
+          letter-spacing: -0.03em;
+          color: var(--text-primary);
+        }
+
+        .section-header__subtitle {
+          margin: 0;
+          font-size: 0.875rem;
+          line-height: 1.55;
+          color: var(--text-secondary);
+        }
+
+        .section-header__action {
+          flex-shrink: 0;
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+        }
+
+        @media (max-width: 720px) {
+          .section-header {
+            flex-direction: column;
+            align-items: flex-start;
+          }
+
+          .section-header__action {
+            width: 100%;
+          }
+        }
+      `}</style>
     </div>
   );
-};
-
-const wrapperStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'flex-end',
-  marginBottom: '16px',
-  paddingBottom: '12px',
-  borderBottom: '1px solid var(--border-subtle)',
-  gap: '16px',
-};
-
-const leftStyle: React.CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '2px',
-  flex: 1,
-  minWidth: 0,
-};
-
-const titleRowStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '8px',
-};
-
-const titleStyle: React.CSSProperties = {
-  fontSize: '15px',
-  fontWeight: 800,
-  color: 'var(--text-primary)',
-  letterSpacing: '-0.01em',
-  margin: 0,
-};
-
-const subtitleStyle: React.CSSProperties = {
-  fontSize: '12px',
-  color: 'var(--text-muted)',
-  margin: 0,
-  marginTop: '2px',
-};
-
-const actionStyle: React.CSSProperties = {
-  flexShrink: 0,
-  display: 'flex',
-  alignItems: 'center',
-  gap: '8px',
 };

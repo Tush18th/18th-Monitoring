@@ -7,9 +7,11 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-interface PageLayoutProps {
+export interface PageLayoutProps {
   title: string;
   subtitle?: string;
+  icon?: React.ReactNode;
+  eyebrow?: React.ReactNode;
   actions?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
@@ -18,6 +20,8 @@ interface PageLayoutProps {
 export const PageLayout: React.FC<PageLayoutProps> = ({ 
   title, 
   subtitle, 
+  icon,
+  eyebrow,
   actions, 
   children, 
   className 
@@ -26,6 +30,12 @@ export const PageLayout: React.FC<PageLayoutProps> = ({
     <div className={cn('ui-page-layout', className)}>
       <header className="page-header">
         <div className="header-content">
+          {(icon || eyebrow) && (
+            <div className="page-meta-row">
+              {icon ? <span className="page-icon">{icon}</span> : null}
+              {eyebrow ? <div className="page-eyebrow">{eyebrow}</div> : null}
+            </div>
+          )}
           <Typography variant="h1" noMargin className="page-title">{title}</Typography>
           {subtitle && (
             <Typography variant="body" noMargin className="page-subtitle">

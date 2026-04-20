@@ -1,24 +1,89 @@
 'use client';
 import React from 'react';
 
-interface DistributionItem {
+export interface DistributionItem {
     name: string;
     count: number;
     percentage: number;
 }
 
-interface DeviceBreakdown {
+/**
+ * The shape the API (`getUserAnalytics`) actually returns for deviceBreakdown.
+ * It is a keyed object – NOT an array.
+ */
+export interface DeviceBreakdown {
     desktop: { count: number; percentage: number };
-    mobile: { count: number; percentage: number };
-    tablet: { count: number; percentage: number };
+    mobile:  { count: number; percentage: number };
+    tablet:  { count: number; percentage: number };
 }
 
-interface UserAnalyticsData {
+/**
+ * Flattened entry used by lists / tables that need an array of devices.
+ */
+export interface DeviceBreakdownArrayItem {
+    device: string;
+    count: number;
+    percentage: number;
+}
+
+export interface UserAnalyticsData {
     activeUsers: number;
     totalCustomers: number;
     activeVisitors: number;
     deviceBreakdown: DeviceBreakdown;
     browserBreakdown: DistributionItem[];
+}
+
+/**
+ * Normalizes the API-returned deviceBreakdown object into a flat array
+ * suitable for table/list rendering.
+ *
+ * Handles all edge cases:
+ *  - null / undefined  → returns []
+ *  - array already     → returns it unchanged (defensive forward-compat)
+ *  - valid object      → converts to [{device, count, percentage}, ...]
+ *  - malformed object  → returns []
+ */
+export function normalizeDeviceBreakdownToArray(
+    breakdown: DeviceBreakdown | DeviceBreakdownArrayItem[] | null | undefined
+): DeviceBreakdownArrayItem[] {
+    if (!breakdown) return [];
+
+    // If backend ever changes to return an array, pass it through safely.
+    if (Array.isArray(breakdown)) {
+        return breakdown.filter(
+            (item): item is DeviceBreakdownArrayItem =>
+                item != null &&
+                typeof item.device === 'string' &&
+                typeof item.count === 'number'
+        );
+    }
+
+    // Object shape – the current API contract.
+    if (typeof breakdown === 'object') {
+        const DEVICE_META: Record<string, { label: string }> = {
+            desktop: { label: 'Desktop' },
+            mobile:  { label: 'Mobile'  },
+            tablet:  { label: 'Tablet'  },
+        };
+
+        return Object.entries(DEVICE_META)
+            .map(([key, meta]) => {
+                const entry = (breakdown as DeviceBreakdown)[key as keyof DeviceBreakdown];
+                if (!entry || typeof entry.count !== 'number') return null;
+                return {
+                    device:     meta.label,
+                    count:      entry.count,
+                    percentage: entry.percentage ?? 0,
+                };
+            })
+            .filter((item): item is DeviceBreakdownArrayItem => item !== null);
+    }
+
+    if (process.env.NODE_ENV !== 'production') {
+        console.warn('[normalizeDeviceBreakdownToArray] Unexpected deviceBreakdown shape:', breakdown);
+    }
+    return [];
 }
 
 export const UserStatsSummary = ({ data }: { data: UserAnalyticsData }) => {
@@ -52,83 +117,104 @@ export const UserStatsSummary = ({ data }: { data: UserAnalyticsData }) => {
     );
 };
 
-export const DeviceDistribution = ({ data }: { data: DeviceBreakdown }) => {
+export const DeviceDistribution = ({ data }: { data: DeviceBreakdown | null | undefined }) => {
+    // Guard: API returns an object, not an array. Spread each keyed entry safely.
+    const safeData: DeviceBreakdown = (data && typeof data === 'object' && !Array.isArray(data))
+        ? data
+        : { desktop: { count: 0, percentage: 0 }, mobile: { count: 0, percentage: 0 }, tablet: { count: 0, percentage: 0 } };
+
     const devices = [
-        { name: 'Desktop', ...data.desktop, icon: '💻', color: 'var(--accent-blue)' },
-        { name: 'Mobile', ...data.mobile, icon: '📱', color: 'var(--accent-purple)' },
-        { name: 'Tablet', ...data.tablet, icon: '平板', color: 'var(--accent-green)' }
+        { name: 'Desktop', ...safeData.desktop, icon: '💻', color: 'var(--accent-blue)'   },
+        { name: 'Mobile',  ...safeData.mobile,  icon: '📱', color: 'var(--accent-purple)' },
+        { name: 'Tablet',  ...safeData.tablet,  icon: '🪙', color: 'var(--accent-green)'  },
     ];
+
+    const hasData = devices.some(d => d.count > 0);
 
     return (
         <div style={{ ...sectionStyle, flex: 1 }}>
             <h3 style={sectionTitleStyle}>Device Distribution</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                {devices.map(device => (
-                    <div key={device.name}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', alignItems: 'center' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <span style={{ fontSize: '18px' }}>{device.icon}</span>
-                                <span style={{ fontWeight: '700', fontSize: '14px' }}>{device.name}</span>
+            {hasData ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                    {devices.map(device => (
+                        <div key={device.name}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <span style={{ fontSize: '18px' }}>{device.icon}</span>
+                                    <span style={{ fontWeight: '700', fontSize: '14px' }}>{device.name}</span>
+                                </div>
+                                <span style={{ fontSize: '14px', fontWeight: '800', color: 'var(--text-primary)' }}>
+                                    {device.count} <span style={{ color: 'var(--text-secondary)', fontWeight: '500' }}>({device.percentage}%)</span>
+                                </span>
                             </div>
-                            <span style={{ fontSize: '14px', fontWeight: '800', color: 'var(--text-primary)' }}>
-                                {device.count} <span style={{ color: 'var(--text-secondary)', fontWeight: '500' }}>({device.percentage}%)</span>
-                            </span>
+                            <div style={{ height: '8px', background: 'var(--border-light)', borderRadius: '4px', overflow: 'hidden' }}>
+                                <div style={{
+                                    height: '100%',
+                                    width: `${device.percentage}%`,
+                                    background: device.color,
+                                    transition: 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)'
+                                }} />
+                            </div>
                         </div>
-                        <div style={{ height: '8px', background: 'var(--border-light)', borderRadius: '4px', overflow: 'hidden' }}>
-                            <div style={{ 
-                                height: '100%', 
-                                width: `${device.percentage}%`, 
-                                background: device.color,
-                                transition: 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)'
-                            }} />
-                        </div>
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
+            ) : (
+                <div style={{ color: 'var(--text-secondary)', fontSize: '14px', padding: '16px 0' }}>
+                    No device data available for this period.
+                </div>
+            )}
         </div>
     );
 };
 
-export const BrowserDistribution = ({ data }: { data: DistributionItem[] }) => {
+export const BrowserDistribution = ({ data }: { data: DistributionItem[] | null | undefined }) => {
+    const safeData: DistributionItem[] = Array.isArray(data) ? data : [];
+
     return (
         <div style={{ ...sectionStyle, flex: 1.5 }}>
             <h3 style={sectionTitleStyle}>Browser Distribution</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {data.map((browser, i) => (
-                    <div key={browser.name} style={{ 
-                        display: 'flex', 
-                        justifyContent: 'space-between', 
-                        alignItems: 'center',
-                        padding: '12px 16px',
-                        background: i % 2 === 0 ? 'var(--bg-main)' : 'transparent',
-                        borderRadius: '12px'
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <div style={{ 
-                                width: '32px', 
-                                height: '32px', 
-                                background: 'var(--bg-surface)', 
-                                border: '1px solid var(--border)', 
-                                borderRadius: '8px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '16px',
-                                fontWeight: '800',
-                                color: 'var(--text-secondary)',
-                                textTransform: 'uppercase'
-                            }}>
-                                {browser.name[0]}
+            {safeData.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {safeData.map((browser, i) => (
+                        <div key={browser.name} style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '12px 16px',
+                            background: i % 2 === 0 ? 'var(--bg-main)' : 'transparent',
+                            borderRadius: '12px'
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div style={{
+                                    width: '32px',
+                                    height: '32px',
+                                    background: 'var(--bg-surface)',
+                                    border: '1px solid var(--border)',
+                                    borderRadius: '8px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '16px',
+                                    fontWeight: '800',
+                                    color: 'var(--text-secondary)',
+                                    textTransform: 'uppercase'
+                                }}>
+                                    {browser.name?.[0] ?? '?'}
+                                </div>
+                                <span style={{ fontWeight: '700', fontSize: '14px', textTransform: 'capitalize' }}>{browser.name}</span>
                             </div>
-                            <span style={{ fontWeight: '700', fontSize: '14px', textTransform: 'capitalize' }}>{browser.name}</span>
+                            <div style={{ textAlign: 'right' }}>
+                                <div style={{ fontWeight: '800', fontSize: '14px' }}>{browser.count} users</div>
+                                <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{browser.percentage}% of traffic</div>
+                            </div>
                         </div>
-                        <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontWeight: '800', fontSize: '14px' }}>{browser.count} users</div>
-                            <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{browser.percentage}% of traffic</div>
-                        </div>
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
+            ) : (
+                <div style={{ color: 'var(--text-secondary)', fontSize: '14px', padding: '16px 0' }}>
+                    No browser data available for this period.
+                </div>
+            )}
         </div>
     );
 };

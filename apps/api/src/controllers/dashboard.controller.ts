@@ -266,3 +266,67 @@ export const getMetricsSeries = async (req: any, res: any) => {
         return res.code(500).send({ error: 'Internal API Server Error' });
     }
 };
+
+export const getOrders = async (req: any, res: any) => {
+    try {
+        const data = await DashboardService.getOrders(getFilters(req) as any);
+        return res.code(200).send(data);
+    } catch (err) {
+        return res.code(500).send({ error: 'Internal API Server Error' });
+    }
+};
+
+export const getPerformanceAnomalies = async (req: any, res: any) => {
+    try {
+        const data = await DashboardService.getPerformanceAnomalies(getFilters(req) as any);
+        return res.code(200).send(data);
+    } catch (err) {
+        return res.code(500).send({ error: 'Internal API Server Error' });
+    }
+};
+
+export const getCustomerIntelligence = async (req: any, res: any) => {
+    try {
+        const data = await DashboardService.getCustomerIntelligence(getFilters(req) as any);
+        return res.code(200).send(data);
+    } catch (err) {
+        return res.code(500).send({ error: 'Internal API Server Error' });
+    }
+};
+
+export const getAuditLogs = async (req: any, res: any) => {
+    try {
+        const data = await DashboardService.getAuditLogs(getFilters(req) as any);
+        return res.code(200).send(data);
+    } catch (err) {
+        return res.code(500).send({ error: 'Internal API Server Error' });
+    }
+};
+
+export const getActivityFeed = async (req: any, res: any) => {
+    try {
+        const data = await DashboardService.getActivityFeed(getFilters(req) as any);
+        return res.code(200).send(data);
+    } catch (err) {
+        return res.code(500).send({ error: 'Internal API Server Error' });
+    }
+};
+
+export const getGovernanceConfig = async (req: any, res: any) => {
+    try {
+        const data = await DashboardService.getGovernanceConfig(getFilters(req) as any);
+        return res.code(200).send(data);
+    } catch (err) {
+        return res.code(500).send({ error: 'Internal API Server Error' });
+    }
+};
+
+export const updateGovernanceConfig = async (req: any, res: any) => {
+    try {
+        const { section, data } = req.body;
+        const result = await DashboardService.updateGovernanceConfig(req.params.siteId, section, data);
+        return res.code(200).send(result);
+    } catch (err) {
+        return res.code(500).send({ error: 'Internal API Server Error' });
+    }
+};

@@ -1,49 +1,57 @@
+import { reconciliationService, ReconciliationService } from './reconciliation.service';
+import { ReconciliationEngine } from './reconciliation-engine.service';
 import { db } from '../../../../packages/db/src/adapters/postgres-relational.adapter';
 import { syncLogs } from '../../../../packages/db/src/drizzle/schema';
 import crypto from 'crypto';
 
-export class ReconciliationService {
+export class ReconciliationOrchestrator {
     /**
-     * Enqueue a reconciliation job asynchronously.
-     * This ensures the scheduler thread is instantly freed, keeping API metrics fast.
+     * Requirement 11 (Reconciliation job architecture)
      */
-    public async triggerReconciliation(siteId: string, connectorId: string, dateRange: { start: string, end: string }) {
-        const syncId = crypto.randomUUID();
-        
-        // Persist initial job tracking log
+    public async triggerReconciliation(siteId: string, domain: 'ORDERS' | 'INTEGRATIONS', connectorId?: string, range?: { start: string, end: string }) {
+        const jobId = crypto.randomUUID();
+        const start = range?.start ? new Date(range.start) : new Date(Date.now() - 24 * 60 * 60 * 1000);
+        const end = range?.end ? new Date(range.end) : new Date();
+
+        // Register job
         await db.insert(syncLogs).values({
-            syncId,
+            syncId: jobId,
             siteId,
-            connectorId,
+            connectorId: connectorId || 'RECON_GENERIC',
             status: 'PENDING',
         });
 
-        // Publish to Kafka/Worker Queue: TOPICS.RECONCILE_JOB
-        console.log(`[Reconciliation] Job ${syncId} enqueued for site ${siteId} spanning ${dateRange.start} - ${dateRange.end}`);
+        // Async Execution
+        this.executeAsync(jobId, siteId, domain, connectorId, start, end);
 
-        return { syncId, status: 'QUEUED' };
+        return { jobId, status: 'QUEUED' };
     }
 
-    /**
-     * Worker Payload Execution.
-     * Operates bounds against chunks preventing exhaustive memory scans.
-     */
-    public async executeReconJob(syncId: string, siteId: string, connectorId: string, range: any) {
-        // 1. Load canonical data window (from normalized_orders)
-        // 2. Load API snapshot delta mapping (External connector query)
-        // 3. Compute Delta 
-        // 4. Record output
+    private async executeAsync(jobId: string, siteId: string, domain: any, connectorId: any, start: Date, end: Date) {
+        try {
+            const summary = await ReconciliationEngine.runReconciliation({
+                siteId,
+                domain,
+                connectorId,
+                start,
+                end
+            });
 
-        console.log(`[Reconciliation Worker] Executing sync job ${syncId}`);
-        const dummyVariance = {
-            expected: 450,
-            canonical: 448,
-            missing: ['POS-X901', 'POS-X905']
-        };
-
-        // Complete job marking it SUCCESS or FAILED in DB
-        // Update sync_logs where syncId = syncId
+            // Requirement 10 (Explainable results)
+            await db.update(syncLogs).set({
+                status: 'SUCCESS',
+                errorSummary: { 
+                    message: `Reconciliation ${summary.status}`,
+                    confidenceScore: summary.confidenceScore,
+                    mismatchesFound: summary.counts.mismatched 
+                }
+            }).where(eq(syncLogs.syncId, jobId));
+            
+            console.log(`[ReconOrchestrator] Job ${jobId} finished with quality score ${summary.confidenceScore}`);
+        } catch (err: any) {
+            console.error(`[ReconOrchestrator] Job ${jobId} failed:`, err);
+        }
     }
 }
 
-export const reconciliationService = new ReconciliationService();
+export const reconciliationOrchestrator = new ReconciliationOrchestrator();

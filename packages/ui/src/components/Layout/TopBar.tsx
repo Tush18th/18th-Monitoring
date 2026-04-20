@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Search, Bell, User, ChevronDown, Menu } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -33,11 +33,42 @@ export const TopBar: React.FC<TopBarProps> = ({
 }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const notificationRef = useRef<HTMLDivElement | null>(null);
+  const profileRef = useRef<HTMLDivElement | null>(null);
 
   const handleLogout = () => {
     setShowProfile(false);
     if (onLogout) onLogout();
   };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+
+      if (notificationRef.current && !notificationRef.current.contains(target)) {
+        setShowNotifications(false);
+      }
+
+      if (profileRef.current && !profileRef.current.contains(target)) {
+        setShowProfile(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowNotifications(false);
+        setShowProfile(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, []);
 
   return (
     <header className={cn('ui-top-bar', className)}>
@@ -63,12 +94,14 @@ export const TopBar: React.FC<TopBarProps> = ({
         <div className="header-actions">
           <ThemeToggle />
           
-          <div className="notification-wrapper">
+          <div className="notification-wrapper" ref={notificationRef}>
             <Button 
               variant="ghost" 
               size="icon" 
               className="action-button relative" 
               onClick={() => setShowNotifications(!showNotifications)}
+              aria-expanded={showNotifications}
+              aria-haspopup="dialog"
             >
               <Bell size={20} />
               <span className="notification-badge" />
@@ -84,8 +117,8 @@ export const TopBar: React.FC<TopBarProps> = ({
             )}
           </div>
 
-          <div className="profile-wrapper">
-            <button className="user-profile-button" onClick={() => setShowProfile(!showProfile)}>
+          <div className="profile-wrapper" ref={profileRef}>
+            <button className="user-profile-button" onClick={() => setShowProfile(!showProfile)} aria-expanded={showProfile} aria-haspopup="menu">
               <div className="user-avatar">
                 {user?.avatar ? <img src={user.avatar} alt={user.name} /> : <User size={18} />}
               </div>

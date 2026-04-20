@@ -8,14 +8,14 @@ export class KafkaStreamConsumer {
         this.isConsuming = true;
         for (const t of topics) {
             MemoryBus.on(t, async (msg: any) => {
-                console.log(`[Processor] Actively grabbed payload mapping: ${msg.value.eventType}`);
-                await this.onMessage(msg);
+                await this.onMessage(t, msg);
             });
         }
         console.log(`[KafkaConsumer] Subscribed seamlessly linking memory channels to: ${topics.join(', ')}`);
     }
 
-    async onMessage(rawPayload: any) {
+    async onMessage(topic: string, rawPayload: any) {
+        console.log(`[KafkaConsumer] Processing topic ${topic} with type ${rawPayload.value?.eventType || 'unknown'}`);
         await EventRegistry.route(rawPayload);
     }
 }

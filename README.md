@@ -6,7 +6,14 @@ A production-grade observability, alerting, and synthetic monitoring platform fo
 
 ---
 
-## 🚀 Key Modules
+### 🔌 API Exposure Layer (v1)
+The platform now includes a production-grade API layer for external consumption:
+- **Domains**: Overview, Performance, Orders, Customers, Integrations.
+- **Security**: Scope-based API Keys (`X-API-KEY` header).
+- **Format**: Standardized JSON envelopes with observability trace IDs.
+- **Docs**: See [Exposure Layer Documentation](apps/api/docs/exposure_layer.md).
+
+### 🛠️ Key Components
 
 ### 1. 🧪 Synthetic Monitoring Agent (NEW)
 Automated Playwright-based monitoring that runs every **4 hours** against real desktop and mobile browser contexts.

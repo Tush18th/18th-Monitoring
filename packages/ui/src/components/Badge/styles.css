@@ -2,99 +2,119 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-full);
+  gap: var(--space-1-5);
+  border-radius: var(--radius-sm); /* Enterprise prefers less rounded corners for badges usually, or capsule. Let's go with slightly rounded or capsule based on size */
   font-weight: var(--font-semibold);
   white-space: nowrap;
+  border: 1px solid transparent;
 }
 
-.size-sm {
-  padding: 0 var(--space-2);
-  height: 18px;
+.ui-badge--sm {
+  padding: 0 var(--space-1-5);
+  height: 20px;
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  border-radius: 4px;
 }
 
-.size-md {
-  padding: var(--space-0-5) var(--space-3);
+.ui-badge--md {
+  padding: 0 var(--space-2);
   height: 24px;
   font-size: var(--text-xs);
+  border-radius: 6px;
 }
 
-.variant-default {
+.ui-badge--lg {
+  padding: 0 var(--space-3);
+  height: 32px;
+  font-size: var(--text-sm);
+  border-radius: 8px;
+}
+
+/* Variants */
+.ui-badge--default {
   background-color: var(--bg-muted);
   color: var(--text-secondary);
+  border-color: var(--border-subtle);
 }
 
-.variant-success {
+.ui-badge--success {
   background-color: var(--success-bg);
   color: var(--success-text);
+  border-color: color-mix(in srgb, var(--success) 20%, transparent);
 }
 
-.variant-warning {
+.ui-badge--warning {
   background-color: var(--warning-bg);
   color: var(--warning-text);
+  border-color: color-mix(in srgb, var(--warning) 20%, transparent);
 }
 
-.variant-error {
+.ui-badge--error {
   background-color: var(--error-bg);
   color: var(--error-text);
+  border-color: color-mix(in srgb, var(--error) 20%, transparent);
 }
 
-.variant-info {
+.ui-badge--info {
   background-color: var(--info-bg);
   color: var(--info-text);
+  border-color: color-mix(in srgb, var(--info) 20%, transparent);
 }
 
-/* Status Indicator */
-.ui-status-indicator {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
+.ui-badge--degraded {
+  background-color: var(--degraded-bg);
+  color: var(--degraded-text);
+  border-color: color-mix(in srgb, var(--degraded) 20%, transparent);
 }
 
-.status-dot {
-  width: 8px;
-  height: 8px;
+.ui-badge--stale {
+  background-color: var(--stale-bg);
+  color: var(--stale-text);
+  border-color: var(--border-subtle);
+}
+
+.ui-badge--paused {
+  background-color: var(--paused-bg);
+  color: var(--paused-text);
+  border-color: var(--border-subtle);
+}
+
+.ui-badge--processing {
+  background-color: var(--processing-bg);
+  color: var(--processing-text);
+  border-color: color-mix(in srgb, var(--processing) 20%, transparent);
+}
+
+/* Badge Dot */
+.badge-dot {
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  position: relative;
+  background-color: currentColor;
 }
 
-.status-dot::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  border-radius: 50%;
-  animation: pulse 2s ease-in-out infinite;
-  opacity: 0.6;
+.ui-badge--success .badge-dot { background-color: var(--success); }
+.ui-badge--warning .badge-dot { background-color: var(--warning); }
+.ui-badge--error .badge-dot { background-color: var(--error); }
+.ui-badge--info .badge-dot { background-color: var(--info); }
+.ui-badge--degraded .badge-dot { background-color: var(--degraded); }
+.ui-badge--processing .badge-dot { 
+  background-color: var(--processing);
+  animation: pulse-processing 2s ease-in-out infinite;
 }
 
-@keyframes pulse {
-  0% { transform: scale(1); opacity: 0.8; }
-  70% { transform: scale(3); opacity: 0; }
-  100% { transform: scale(1); opacity: 0; }
+@keyframes pulse-processing {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
 }
 
-.status-success { background-color: var(--success); }
-.status-success::after { background-color: var(--success); }
+.badge-icon {
+  flex-shrink: 0;
+  opacity: 0.8;
+}
 
-.status-warning { background-color: var(--warning); }
-.status-warning::after { background-color: var(--warning); }
-
-.status-error { background-color: var(--error); }
-.status-error::after { background-color: var(--error); }
-
-.status-info { background-color: var(--info); }
-.status-info::after { background-color: var(--info); }
-
-.status-inactive { background-color: var(--text-muted); }
-.status-inactive::after { display: none; }
-
-.status-label {
-  font-size: var(--text-sm);
-  font-weight: var(--font-medium);
-  color: var(--text-secondary);
+.badge-content {
+  line-height: 1;
 }

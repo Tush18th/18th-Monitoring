@@ -1,41 +1,74 @@
 'use client';
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useAuth } from '../../../../context/AuthContext';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { 
-    OrderStatsGrid, 
-    IntelligentRcaPanel, 
-    IngestionControlPanel 
-} from '../../../../components/ui/OrderAnalyticsWidgets';
-import { PageLayout } from '@kpi-platform/ui';
-import { MonitoringFilterBar } from '../../../../components/ui/MonitoringFilterBar';
-import { SectionHeader } from '../../../../components/ui/SectionHeader';
-import { SortableTable } from '../../../../components/ui/SortableTable';
+  PageLayout, 
+  Typography, 
+  Card, 
+  Badge, 
+  BadgeVariant,
+  FilterBar, 
+  InformationState,
+  DiagnosticDrawer,
+  OperationalTable,
+  Column,
+  MetricCard
+} from '@kpi-platform/ui';
+import { 
+  Package, 
+  TrendingUp, 
+  Clock, 
+  AlertTriangle, 
+  ShoppingBag, 
+  ArrowRight,
+  Activity,
+  Filter,
+  Search,
+  MoreHorizontal,
+  ChevronRight,
+  RefreshCw,
+  Box,
+  Truck,
+  CreditCard,
+  Building2,
+  FileText
+} from 'lucide-react';
+
+// Orders specific components
+import { OrderHealthSummary } from '../../../../components/orders/OrderHealthSummary';
+import { LifecycleDistribution } from '../../../../components/orders/LifecycleDistribution';
+import { OrderDetailDrawerContent } from '../../../../components/orders/OrderDetailDrawerContent';
 
 export default function OrdersPage() {
     const params = useParams();
+    const router = useRouter();
     const projectId = params.projectId as string;
     const { token, apiFetch } = useAuth();
     
-    const [stats, setStats] = useState<any>(null);
-    const [rca, setRca] = useState<any>(null);
-    const [recommendations, setRecommendations] = useState<any[]>([]);
-    const [logs, setLogs] = useState<any[]>([]);
+    // State
     const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState<any>({
+        totalOrders: 0, ordersThisHour: 0, onlineSplit: 0, offlineSplit: 0, delayedCount: 0, failedCount: 0, ordersPerMinute: '0.00'
+    });
+    const [orders, setOrders] = useState<any[]>([]);
+    
+    // UI State
+    const [selectedOrder, setSelectedOrder] = useState<any>(null);
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filterStatus, setFilterStatus] = useState('');
 
     const fetchData = useCallback(async () => {
         if (!token || !projectId) return;
+        setLoading(true);
         try {
-            const [s, r, rec, l] = await Promise.all([
+            const [s, oList] = await Promise.all([
                 apiFetch(`/api/v1/dashboard/orders/summary?siteId=${projectId}`),
-                apiFetch(`/api/v1/dashboard/orders/rca?siteId=${projectId}`),
-                apiFetch(`/api/v1/dashboard/orders/recommendations?siteId=${projectId}`),
-                apiFetch(`/api/v1/dashboard/orders/integrations/status?siteId=${projectId}`)
+                apiFetch(`/api/v1/dashboard/orders/list?siteId=${projectId}`)
             ]);
             setStats(s);
-            setRca(r);
-            setRecommendations(rec);
-            setLogs(l);
+            setOrders(oList);
         } catch (e) {
             console.error('Failed to sync order intelligence:', e);
         } finally {
@@ -45,78 +78,241 @@ export default function OrdersPage() {
 
     useEffect(() => {
         fetchData();
-        const interval = setInterval(fetchData, 15000);
+        const interval = setInterval(fetchData, 30000); // 30s refresh for orders
         return () => clearInterval(interval);
     }, [fetchData]);
 
-    const handleUpload = async (csv: string) => {
-        try {
-            await apiFetch(`/api/v1/dashboard/orders/offline/upload?siteId=${projectId}`, {
-                method: 'POST',
-                body: JSON.stringify({ csv })
-            });
-            fetchData();
-        } catch (e) {
-            alert('Upload failed. Check format.');
+    const handleInspect = (order: any) => {
+        setSelectedOrder(order);
+        setIsDrawerOpen(true);
+    };
+
+    const handleAction = async (action: string) => {
+        // Implementation for retry/reprocess actions
+        console.log(`Action triggered for ${selectedOrder?.id}: ${action}`);
+    };
+
+    const filteredOrders = useMemo(() => {
+        return orders.filter(o => {
+            const matchesSearch = o.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                  o.externalOrderId.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesStatus = !filterStatus || o.status === filterStatus;
+            return matchesSearch && matchesStatus;
+        });
+    }, [orders, searchQuery, filterStatus]);
+
+    const getStatusVariant = (status: string): BadgeVariant => {
+        switch (status.toLowerCase()) {
+            case 'shipped':
+            case 'delivered':
+            case 'paid': return 'success';
+            case 'placed':
+            case 'processing': return 'processing';
+            case 'cancelled':
+            case 'failed': return 'error';
+            default: return 'default';
         }
     };
 
-    const handleSync = async (system: string) => {
-        try {
-            await apiFetch(`/api/v1/dashboard/orders/integrations/sync?siteId=${projectId}`, {
-                method: 'POST',
-                body: JSON.stringify({ system })
-            });
-            fetchData();
-        } catch (e) {
-            console.error(e);
+    const orderColumns: Column<any>[] = [
+        { 
+            key: 'id', 
+            header: 'Order Reference', 
+            render: (val, row) => (
+                <div>
+                   <Typography variant="body" weight="bold" className="text-sm" noMargin>{val}</Typography>
+                   <Typography variant="micro" className="text-text-muted">{row.externalOrderId}</Typography>
+                </div>
+            )
+        },
+        { 
+            key: 'orderSource', 
+            header: 'Channel',
+            render: (val) => (
+                <div className="flex items-center gap-2">
+                    {val === 'online' ? <Activity size={14} className="text-primary"/> : <Building2 size={14} className="text-text-muted"/>}
+                    <span className="text-xs uppercase font-bold text-text-secondary">{val}</span>
+                </div>
+            )
+        },
+        { 
+            key: 'status', 
+            header: 'Lifecycle State',
+            render: (val) => (
+                <Badge variant={getStatusVariant(val)} size="sm">
+                    {val.toUpperCase()}
+                </Badge>
+            )
+        },
+        { 
+            key: 'health', 
+            header: 'Health',
+            render: (val) => (
+                <Badge variant={val === 'healthy' ? 'success' : val === 'delayed' ? 'warning' : 'error'} size="sm" dot>
+                    {val?.toUpperCase()}
+                </Badge>
+            )
+        },
+        { 
+            key: 'syncStatus', 
+            header: 'Reconciliation',
+            render: (val) => (
+                <Badge variant={val === 'synced' ? 'default' : 'error'} size="sm" className={val !== 'synced' ? 'animate-pulse' : ''}>
+                    {val?.toUpperCase()}
+                </Badge>
+            )
+        },
+        { 
+            key: 'amount', 
+            header: 'Value',
+            align: 'right',
+            render: (val) => <span className="font-bold">${val.toFixed(2)}</span>
+        },
+        { 
+            key: 'createdAt', 
+            header: 'Age',
+            align: 'right',
+            render: (val) => {
+                const diff = (Date.now() - new Date(val).getTime()) / 60000;
+                return <span className={diff > 60 ? 'text-error font-bold' : 'text-text-muted'}>{Math.floor(diff)}m ago</span>;
+            }
+        },
+        {
+            key: 'actions',
+            header: '',
+            align: 'right',
+            render: () => <ChevronRight size={16} className="text-text-muted group-hover:text-primary transition-colors" />
         }
-    };
-
-    if (loading && !stats) return <div style={{ padding: '40px' }}>Loading Command Center...</div>;
+    ];
 
     return (
-        <PageLayout 
-            title="Orders Monitoring & Intelligence"
-            subtitle="Centralized oversight of online, offline, and integrated system flow"
-            actions={
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ width: '12px', height: '12px', background: rca?.status === 'alert' ? 'var(--accent-red)' : '#10b981', borderRadius: '50%', boxShadow: `0 0 10px ${rca?.status === 'alert' ? 'var(--accent-red)' : '#10b981'}` }} />
-                    <span style={{ fontWeight: '700', fontSize: '14px' }}>System Status: {rca?.status === 'alert' ? 'CRITICAL' : 'HEALTHY'}</span>
-                </div>
-            }
+        <PageLayout
+            title="Order Operations Console"
+            subtitle="Real-time oversight and intelligence for high-volume order flows."
+            icon={<Package size={24} />}
         >
-            <div className="animate-fade-in" style={{ paddingBottom: '40px' }}>
-                <MonitoringFilterBar lastRefreshed={new Date()} />
+            <div className="space-y-6">
+                {/* 1. Statistics & Velocity Header */}
+                <OrderHealthSummary stats={stats} loading={loading} />
 
-            <SectionHeader title="RCA Intelligence" subtitle="Automated root-cause analysis and actionable recommendations" icon="🧠" />
-            <IntelligentRcaPanel rca={rca} recommendations={recommendations} />
+                {/* 2. Exception Highlighting */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <Card className="bg-error-bg border-error/10 p-5 flex items-center justify-between group cursor-pointer hover:border-error/30 transition-all">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-error/10 flex items-center justify-center text-error">
+                                <AlertTriangle size={24} />
+                            </div>
+                            <div>
+                                <Typography variant="h2" weight="bold" noMargin className="text-error-text">{stats.failedCount}</Typography>
+                                <Typography variant="caption" className="text-error-text opacity-70">Critical Order Failures</Typography>
+                            </div>
+                        </div>
+                        <ArrowRight size={20} className="text-error opacity-40 group-hover:opacity-100 transform group-hover:translateX-1 transition-all" />
+                    </Card>
 
-            <SectionHeader title="Order Telemetry" subtitle="Aggregated processing KPIs and ingestion stats" icon="📦" style={{ marginTop: '32px' }} />
-            <OrderStatsGrid stats={stats} />
+                    <Card className="bg-warning-bg border-warning/10 p-5 flex items-center justify-between group cursor-pointer hover:border-warning/30 transition-all">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-warning/10 flex items-center justify-center text-warning">
+                                <Clock size={24} />
+                            </div>
+                            <div>
+                                <Typography variant="h2" weight="bold" noMargin className="text-warning-text">{stats.delayedCount}</Typography>
+                                <Typography variant="caption" className="text-warning-text opacity-70">SLA Breach / Delays</Typography>
+                            </div>
+                        </div>
+                        <ArrowRight size={20} className="text-warning opacity-40 group-hover:opacity-100 transform group-hover:translateX-1 transition-all" />
+                    </Card>
 
-            <div style={{ marginTop: '32px', marginBottom: '40px' }}>
-                <SectionHeader title="Ingestion Control" subtitle="Manage integrations and offline sync manually" icon="🔌" />
-                <IngestionControlPanel onUpload={handleUpload} onSync={handleSync} />
-            </div>
+                    <Card className="border-subtle p-5 flex items-center justify-between group cursor-pointer hover:border-primary/30 transition-all">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center text-text-muted group-hover:bg-primary/5 group-hover:text-primary transition-colors">
+                                <FileText size={24} />
+                            </div>
+                            <div>
+                                <Typography variant="h2" weight="bold" noMargin>14</Typography>
+                                <Typography variant="caption" className="text-text-muted">Unreconciled Mismatches</Typography>
+                            </div>
+                        </div>
+                        <ArrowRight size={20} className="text-text-muted opacity-40 group-hover:opacity-100 transform group-hover:translateX-1 transition-all" />
+                    </Card>
+                </div>
 
-            <div style={{ marginTop: '32px' }}>
-                <SectionHeader title="Recent Sync History" subtitle="Integration job statuses and outcomes" icon="📝" />
-                <SortableTable
-                    columns={[
-                        { key: 'system', label: 'System', sortable: true, render: v => <span style={{ fontWeight: 700 }}>{v}</span> },
-                        { key: 'timestamp', label: 'Time', sortable: true, align: 'right', render: v => <span style={{ color: 'var(--text-secondary)' }}>{v ? new Date(v).toLocaleTimeString() : '—'}</span> },
-                        { key: 'status', label: 'Status', sortable: true, align: 'right', render: v => {
-                            const isSuccess = v === 'success';
-                            return <span style={{ color: isSuccess ? '#10b981' : '#ef4444', fontWeight: 800, textTransform: 'uppercase', fontSize: '11px', padding: '4px 10px', background: isSuccess ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', borderRadius: '20px' }}>{v}</span>;
-                        }}
+                {/* 3. Lifecycle & Distribution */}
+                <LifecycleDistribution 
+                    loading={loading}
+                    stages={[
+                        { stage: 'Created', count: 120, color: 'var(--text-muted)' },
+                        { stage: 'Paid', count: 85, color: '#3b82f6' },
+                        { stage: 'Processing', count: 42, color: '#f59e0b' },
+                        { stage: 'Shipped', count: 215, color: '#10b981' },
+                        { stage: 'Delivered', count: 480, color: '#059669' },
+                        { stage: 'Cancelled', count: 12, color: '#ef4444' },
+                        { stage: 'Returned', count: 5, color: '#6366f1' },
                     ]}
-                    data={logs}
-                    pageSize={5}
-                    emptyMessage="No integration logs found for this period"
                 />
+
+                {/* 4. Unified Filter Bar */}
+                <FilterBar 
+                    searchPlaceholder="Search Order ID, Marketplace ID, or Customer..."
+                    searchValue={searchQuery}
+                    onSearchChange={setSearchQuery}
+                    filters={[
+                        {
+                            id: 'status',
+                            label: 'Status',
+                            value: filterStatus,
+                            options: [
+                                { label: 'Placed', value: 'placed' },
+                                { label: 'Shipped', value: 'shipped' },
+                                { label: 'Paid', value: 'paid' },
+                                { label: 'Cancelled', value: 'cancelled' },
+                                { label: 'Failed', value: 'failed' }
+                            ]
+                        }
+                    ]}
+                    onFilterChange={(_, val) => setFilterStatus(val)}
+                    activeFilterCount={filterStatus ? 1 : 0}
+                    onClearFilters={() => { setFilterStatus(''); setSearchQuery(''); }}
+                />
+
+                {/* 5. High-Performance Orders Table */}
+                <Card className="p-0 overflow-hidden border-subtle border">
+                    <OperationalTable 
+                        columns={orderColumns} 
+                        data={filteredOrders} 
+                        isLoading={loading}
+                        isEmpty={filteredOrders.length === 0}
+                        onRowClick={handleInspect}
+                        className="group"
+                    />
+                </Card>
             </div>
-          </div>
+
+            {/* Order Diagnostic Side Panel */}
+            <DiagnosticDrawer
+                isOpen={isDrawerOpen}
+                onClose={() => setIsDrawerOpen(false)}
+                title="Order Details"
+                subtitle={`Site: ${projectId} • Integrity: ${selectedOrder?.health === 'healthy' ? 'Verified' : 'Review Required'}`}
+                width="600px"
+            >
+                <OrderDetailDrawerContent 
+                    order={selectedOrder}
+                    timeline={[
+                        { title: 'Payment Success', time: '10m ago', system: 'Stripe', type: 'success' },
+                        { title: 'Order Export Delay', time: '15m ago', system: 'OMS-1', type: 'error', description: 'API rate limit exceeded during synchronization attempt.' },
+                        { title: 'Entry Point Validated', time: '20m ago', system: 'Ingestion-V3', type: 'success' },
+                        { title: 'Order Placed', time: '21m ago', system: 'Magento', type: 'success' },
+                    ]}
+                    reconciliation={[
+                        { name: 'Storefront State', id: 'MAGENTO_API', value: `$${selectedOrder?.amount?.toFixed(2)}`, match: true, icon: <ShoppingBag size={14}/> },
+                        { name: 'OMS State', id: 'STERLING_OMS', value: `$${selectedOrder?.amount?.toFixed(2)}`, match: true, icon: <Building2 size={14}/> },
+                        { name: 'ERP Ledger', id: 'SAP_S4HANA', value: `$${selectedOrder?.amount ? (selectedOrder.syncStatus === 'mismatch' ? selectedOrder.amount - 10 : selectedOrder.amount).toFixed(2) : '-'}`, match: selectedOrder?.syncStatus !== 'mismatch', icon: <RefreshCw size={14}/> },
+                        { name: 'Payment Gateway', id: 'STRIPE_V3', value: `$${selectedOrder?.amount?.toFixed(2)}`, match: true, icon: <CreditCard size={14}/> },
+                    ]}
+                    onAction={handleAction}
+                />
+            </DiagnosticDrawer>
         </PageLayout>
     );
 }

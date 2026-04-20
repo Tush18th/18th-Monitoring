@@ -1,8 +1,10 @@
 .ui-app-shell {
   display: flex;
-  height: 100vh;
-  overflow: hidden;
-  background-color: var(--bg-base);
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top, rgb(37 99 235 / 0.05), transparent 24%),
+    linear-gradient(180deg, var(--bg-base), var(--bg-muted));
+  position: relative;
 }
 
 .shell-main {
@@ -10,30 +12,22 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
+  min-height: 100vh;
 }
 
 .shell-content {
   flex: 1;
   padding: var(--space-6);
-  max-width: 1600px;
+  max-width: 1720px;
   width: 100%;
   margin: 0 auto;
+  overflow-x: hidden;
 }
 
-/* Global Smooth Scrolling */
-html {
-  scroll-behavior: smooth;
+.sidebar-overlay {
+  display: none;
 }
 
-body {
-  margin: 0;
-  padding: 0;
-}
-
-/* Page Transitions */
 .shell-content {
   animation: fade-in 0.4s ease-out;
 }
@@ -41,4 +35,27 @@ body {
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 1024px) {
+  .shell-content {
+    padding: var(--space-4);
+  }
+
+  .sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgb(15 23 42 / 0.48);
+    border: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition-normal);
+    z-index: 140;
+  }
+
+  .sidebar-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }

@@ -107,13 +107,31 @@ export const MonitoringFilterBar: React.FC<MonitoringFilterBarProps> = ({
             Auto-refreshing
           </span>
         </div>
-        {lastRefreshed && (
-          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-            Updated {lastRefreshed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          </span>
-        )}
+        <LastRefreshedLabel date={lastRefreshed} />
       </div>
     </div>
+  );
+};
+
+const LastRefreshedLabel: React.FC<{ date?: Date }> = ({ date }) => {
+  const [mounted, setMounted] = useState(false);
+  
+  useState(() => {
+    // Only works in browser
+    if (typeof window !== 'undefined') setMounted(true);
+  });
+
+  // Use useEffect for cleaner hydration in Next.js
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!date || !mounted) return null;
+
+  return (
+    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+      Updated {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+    </span>
   );
 };
 

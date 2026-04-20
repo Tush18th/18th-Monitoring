@@ -1,228 +1,299 @@
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
 import { Eye, EyeOff, Copy, Check } from 'lucide-react';
 
-/**
- * A layout container for form sections.
- */
-export const FormSection = ({ title, description, icon, dangerouslyRed = false, children, style }: any) => {
-    return (
-        <fieldset style={{
-            background: dangerouslyRed ? 'rgba(239, 68, 68, 0.02)' : 'white',
-            border: dangerouslyRed ? '1px solid rgba(239, 68, 68, 0.1)' : '1px solid var(--border)',
-            borderRadius: '24px',
-            padding: '32px',
-            boxShadow: dangerouslyRed ? 'none' : 'var(--shadow-sm)',
-            margin: '0 0 32px 0',
-            position: 'relative',
-            ...style
-        }}>
-            <legend style={{
-                fontSize: '18px',
-                fontWeight: '900',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '0 8px',
-                marginLeft: '-8px',
-                color: dangerouslyRed ? 'var(--accent-red)' : 'var(--text-primary)'
-            }}>
-                {icon && <span style={{ display: 'flex', alignItems: 'center' }}>{icon}</span>}
-                {title}
-            </legend>
-            {description && (
-                <p style={{
-                    fontSize: '13px',
-                    color: 'var(--text-secondary)',
-                    marginBottom: '32px',
-                    marginTop: '-12px',
-                    lineHeight: '1.5'
-                }}>
-                    {description}
-                </p>
-            )}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                {children}
-            </div>
-        </fieldset>
-    );
+export const FormSection = ({
+  title,
+  description,
+  icon,
+  dangerouslyRed = false,
+  children,
+  style,
+}: any) => {
+  return (
+    <fieldset
+      style={{
+        background: 'var(--bg-surface)',
+        border: `1px solid ${
+          dangerouslyRed
+            ? 'color-mix(in srgb, var(--error) 22%, var(--border-subtle))'
+            : 'var(--border-subtle)'
+        }`,
+        borderRadius: '24px',
+        padding: 'clamp(1.25rem, 3vw, 2rem)',
+        boxShadow: 'var(--shadow-sm)',
+        margin: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1.5rem',
+        ...style,
+      }}
+    >
+      <legend
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+          padding: '0 0.35rem',
+          color: dangerouslyRed ? 'var(--error)' : 'var(--text-primary)',
+          fontSize: '1.05rem',
+          fontWeight: 800,
+          letterSpacing: '-0.02em',
+        }}
+      >
+        {icon ? <span style={{ display: 'inline-flex', alignItems: 'center' }}>{icon}</span> : null}
+        {title}
+      </legend>
+      {description ? (
+        <p
+          style={{
+            margin: 0,
+            marginTop: '-0.25rem',
+            color: 'var(--text-secondary)',
+            fontSize: '0.92rem',
+            lineHeight: 1.6,
+          }}
+        >
+          {description}
+        </p>
+      ) : null}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>{children}</div>
+    </fieldset>
+  );
 };
 
 export const FormGroup = ({ children, style }: any) => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', ...style }}>
-        {children}
-    </div>
+  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', ...style }}>{children}</div>
 );
 
-export const FormLabel = ({ children, required }: any) => (
-    <label style={{ fontSize: '13px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '2px' }}>
-        {children} {required && <span style={{ color: 'var(--accent-red)' }}>*</span>}
-    </label>
+export const FormLabel = ({ children, required, htmlFor }: any) => (
+  <label
+    htmlFor={htmlFor}
+    style={{
+      fontSize: '0.86rem',
+      fontWeight: 800,
+      color: 'var(--text-primary)',
+      lineHeight: 1.4,
+    }}
+  >
+    {children} {required ? <span style={{ color: 'var(--error)' }}>*</span> : null}
+  </label>
 );
 
 export const FormHelper = ({ children, error }: any) => {
-    if (!children) return null;
-    return (
-        <div style={{
-            fontSize: '12px',
-            color: error ? 'var(--accent-red)' : 'var(--text-secondary)',
-            marginBottom: '8px',
-            lineHeight: '1.4',
-            fontWeight: error ? '700' : '400'
-        }}>
-            {children}
-        </div>
-    );
+  if (!children) return null;
+  return (
+    <div
+      style={{
+        fontSize: '0.78rem',
+        lineHeight: 1.5,
+        color: error ? 'var(--error-text)' : 'var(--text-secondary)',
+        fontWeight: error ? 700 : 500,
+      }}
+    >
+      {children}
+    </div>
+  );
 };
 
-export const FormInput = ({ error, style, rightElement, ...props }: any) => {
-    return (
-        <div style={{ position: 'relative', width: '100%' }}>
-            <input 
-                {...props}
-                style={{
-                    padding: '12px 14px',
-                    background: 'var(--bg-app)',
-                    border: error ? '1px solid var(--accent-red)' : '1px solid var(--border)',
-                    borderRadius: '10px',
-                    fontSize: '14px',
-                    fontWeight: '700',
-                    width: '100%',
-                    outline: 'none',
-                    color: 'var(--text-primary)',
-                    boxShadow: error ? '0 0 0 1px rgba(239, 68, 68, 0.2)' : 'none',
-                    transition: 'border-color 0.2s',
-                    ...style
-                }}
-                onFocus={(e: any) => {
-                    if (!error) e.target.style.borderColor = 'var(--accent-blue)';
-                    if (props.onFocus) props.onFocus(e);
-                }}
-                onBlur={(e: any) => {
-                    if (!error) e.target.style.borderColor = 'var(--border)';
-                    if (props.onBlur) props.onBlur(e);
-                }}
-            />
-            {rightElement && (
-                <div style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center' }}>
-                    {rightElement}
-                </div>
-            )}
-        </div>
-    );
+const inputBaseStyle: React.CSSProperties = {
+  width: '100%',
+  minHeight: '46px',
+  padding: '0.8rem 0.95rem',
+  background: 'color-mix(in srgb, var(--bg-muted) 68%, var(--bg-surface))',
+  border: '1px solid var(--border-subtle)',
+  borderRadius: '14px',
+  color: 'var(--text-primary)',
+  fontSize: '0.95rem',
+  fontWeight: 600,
+  outline: 'none',
+  transition: 'border-color 160ms ease, box-shadow 160ms ease, background 160ms ease',
 };
 
-export const FormSelect = ({ error, style, children, ...props }: any) => (
-    <select 
+export const FormInput = ({ error, style, rightElement, id, ...props }: any) => {
+  const generatedId = useId();
+  const inputId = id ?? generatedId;
+
+  return (
+    <div style={{ position: 'relative', width: '100%' }}>
+      <input
+        id={inputId}
         {...props}
         style={{
-            padding: '12px 14px',
-            background: 'var(--bg-app)',
-            border: error ? '1px solid var(--accent-red)' : '1px solid var(--border)',
-            borderRadius: '10px',
-            fontSize: '14px',
-            fontWeight: '600',
-            width: '100%',
-            outline: 'none',
-            color: 'var(--text-primary)',
-            transition: 'border-color 0.2s',
-            ...style
+          ...inputBaseStyle,
+          borderColor: error ? 'color-mix(in srgb, var(--error) 24%, var(--border-subtle))' : 'var(--border-subtle)',
+          boxShadow: error ? '0 0 0 4px color-mix(in srgb, var(--error) 10%, transparent)' : 'none',
+          paddingRight: rightElement ? '3rem' : inputBaseStyle.padding,
+          ...style,
         }}
         onFocus={(e: any) => {
-            if (!error) e.target.style.borderColor = 'var(--accent-blue)';
-            if (props.onFocus) props.onFocus(e);
+          if (!error) {
+            e.target.style.borderColor = 'var(--primary)';
+            e.target.style.boxShadow = '0 0 0 4px color-mix(in srgb, var(--primary) 12%, transparent)';
+          }
+          props.onFocus?.(e);
         }}
         onBlur={(e: any) => {
-            if (!error) e.target.style.borderColor = 'var(--border)';
-            if (props.onBlur) props.onBlur(e);
+          if (!error) {
+            e.target.style.borderColor = 'var(--border-subtle)';
+            e.target.style.boxShadow = 'none';
+          }
+          props.onBlur?.(e);
         }}
+      />
+      {rightElement ? (
+        <div
+          style={{
+            position: 'absolute',
+            right: '0.9rem',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            display: 'inline-flex',
+            alignItems: 'center',
+          }}
+        >
+          {rightElement}
+        </div>
+      ) : null}
+    </div>
+  );
+};
+
+export const FormSelect = ({ error, style, id, children, ...props }: any) => {
+  const generatedId = useId();
+  const selectId = id ?? generatedId;
+
+  return (
+    <select
+      id={selectId}
+      {...props}
+      style={{
+        ...inputBaseStyle,
+        appearance: 'none',
+        borderColor: error ? 'color-mix(in srgb, var(--error) 24%, var(--border-subtle))' : 'var(--border-subtle)',
+        ...style,
+      }}
     >
-        {children}
+      {children}
     </select>
-);
+  );
+};
 
 export const FormCheckboxItem = ({ checked, onChange, title, description }: any) => (
-    <div 
-        onClick={() => onChange(!checked)}
-        style={{
-            padding: '16px',
-            background: checked ? 'rgba(37, 99, 235, 0.04)' : 'var(--bg-app)',
-            border: checked ? '1px solid rgba(37, 99, 235, 0.2)' : '1px solid var(--border)',
-            borderRadius: '12px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            cursor: 'pointer',
-            transition: 'all 0.15s ease'
-        }}
-    >
-        <div>
-            <div style={{ fontSize: '14px', fontWeight: '800', color: 'var(--text-primary)' }}>{title}</div>
-            {description && <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{description}</div>}
-        </div>
-        <input 
-            type="checkbox" 
-            checked={checked} 
-            onChange={e => {
-                // Prevent bubbling to the div
-                e.stopPropagation();
-                onChange(e.target.checked);
-            }} 
-            onClick={e => e.stopPropagation()}
-            style={{ width: '20px', height: '20px', accentColor: 'var(--accent-blue)', cursor: 'pointer' }} 
-        />
+  <button
+    type="button"
+    onClick={() => onChange(!checked)}
+    style={{
+      padding: '1rem 1rem 1rem 1.1rem',
+      background: checked ? 'color-mix(in srgb, var(--primary) 7%, var(--bg-surface))' : 'var(--bg-surface)',
+      border: `1px solid ${
+        checked ? 'color-mix(in srgb, var(--primary) 24%, var(--border-subtle))' : 'var(--border-subtle)'
+      }`,
+      borderRadius: '16px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: '1rem',
+      cursor: 'pointer',
+      textAlign: 'left',
+      width: '100%',
+    }}
+  >
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+      <span style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--text-primary)' }}>{title}</span>
+      {description ? <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{description}</span> : null}
     </div>
+    <input
+      type="checkbox"
+      checked={checked}
+      readOnly
+      style={{ width: '1.15rem', height: '1.15rem', accentColor: 'var(--primary)', pointerEvents: 'none' }}
+    />
+  </button>
 );
 
 export const MaskedRevealInput = ({ value, label }: any) => {
-    const [visible, setVisible] = useState(false);
-    const [copied, setCopied] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const [copied, setCopied] = useState(false);
 
-    const handleCopy = () => {
-        navigator.clipboard.writeText(value);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(value);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
-    return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '16px', background: 'var(--bg-app)', border: '1px solid var(--border)', borderRadius: '16px' }}>
-            {label && <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>{label}</div>}
-            
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'white', padding: '12px', borderRadius: '12px', border: '1px solid var(--border)' }}>
-                <div style={{ flex: 1, fontFamily: 'monospace', fontSize: '14px', fontWeight: '700', letterSpacing: visible ? 'normal' : '4px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {visible ? value : value.replace(/./g, '•')}
-                </div>
-                
-                <div style={{ display: 'flex', gap: '8px' }}>
-                    <button 
-                        onClick={() => setVisible(!visible)} 
-                        title={visible ? 'Hide secret' : 'Reveal secret'}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: '4px', display: 'flex', alignItems: 'center' }}
-                    >
-                        {visible ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                    <button 
-                        onClick={handleCopy}
-                        title="Copy to clipboard"
-                        style={{ 
-                            background: copied ? 'var(--accent-green)' : 'var(--bg-surface)', 
-                            border: '1px solid var(--border)', 
-                            cursor: 'pointer', 
-                            color: copied ? 'white' : 'var(--text-primary)', 
-                            padding: '6px 12px', 
-                            borderRadius: '8px',
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            gap: '6px',
-                            fontSize: '11px',
-                            fontWeight: '800',
-                            transition: 'all 0.2s'
-                        }}
-                    >
-                        {copied ? <Check size={14} /> : <Copy size={14} />}
-                        {copied ? 'Copied' : 'Copy'}
-                    </button>
-                </div>
-            </div>
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.7rem',
+        padding: '1rem',
+        background: 'color-mix(in srgb, var(--bg-muted) 72%, var(--bg-surface))',
+        border: '1px solid var(--border-subtle)',
+        borderRadius: '18px',
+      }}
+    >
+      {label ? (
+        <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          {label}
         </div>
-    );
+      ) : null}
+
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+          padding: '0.85rem 1rem',
+          borderRadius: '14px',
+          border: '1px solid var(--border-subtle)',
+          background: 'var(--bg-surface)',
+        }}
+      >
+        <div
+          style={{
+            flex: 1,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+            letterSpacing: visible ? 'normal' : '0.22em',
+            fontWeight: 700,
+          }}
+        >
+          {visible ? value : value.replace(/./g, '•')}
+        </div>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+          <button
+            type="button"
+            onClick={() => setVisible((open) => !open)}
+            aria-label={visible ? 'Hide secret' : 'Reveal secret'}
+            style={{ background: 'transparent', border: 0, color: 'var(--text-secondary)', cursor: 'pointer' }}
+          >
+            {visible ? <EyeOff size={16} /> : <Eye size={16} />}
+          </button>
+          <button
+            type="button"
+            onClick={handleCopy}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              minHeight: '34px',
+              padding: '0 0.8rem',
+              borderRadius: '999px',
+              border: '1px solid var(--border-subtle)',
+              background: copied ? 'var(--success)' : 'var(--bg-muted)',
+              color: copied ? '#fff' : 'var(--text-primary)',
+              fontSize: '0.75rem',
+              fontWeight: 800,
+              cursor: 'pointer',
+            }}
+          >
+            {copied ? <Check size={14} /> : <Copy size={14} />}
+            {copied ? 'Copied' : 'Copy'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 };

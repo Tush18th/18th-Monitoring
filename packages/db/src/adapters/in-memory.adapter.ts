@@ -17,6 +17,8 @@ export const GlobalMemoryStore = {
     integrationSyncs: [] as any[],
     projectIntegrations: new Map<string, any[]>(), // siteId -> Array of instances
     projectAccessKeys: new Map<string, any[]>(),   // siteId -> Array of keys
+    projectWebhookSubscriptions: new Map<string, any[]>(), // siteId -> Array of subscriptions
+    webhookDeliveryLogs: [] as any[],
     governanceAuditLogs: [] as any[],
     rateLimitBuckets: new Map<string, { count: number, resetAt: number }>(),
     syncHistory: [] as any[],
@@ -236,7 +238,37 @@ export const GlobalMemoryStore = {
             audit: { createdAt: now, updatedAt: now }
         });
 
-        console.log('[DB] Seeded 3 users with dynamically hashed passwords');
+        // Seed Webhook Subscriptions for store_001
+        this.projectWebhookSubscriptions.set('store_001', [
+            {
+                id: 'sub_order_alerts_001',
+                siteId: 'store_001',
+                label: 'External OMS Sync',
+                callbackUrl: 'https://webhook.site/demo-oms-sync-endpoint',
+                secret: 'sh_test_secret_12345',
+                status: 'active',
+                eventTypes: ['order.delayed', 'order.stuck', 'order.mismatched'],
+                retryPolicy: { maxRetries: 5, backoff: 'exponential' },
+                createdAt: now,
+                updatedAt: now,
+                createdBy: 'u1'
+            },
+            {
+                id: 'sub_perf_monitoring_002',
+                siteId: 'store_001',
+                label: 'Performance Slack Bot',
+                callbackUrl: 'https://hooks.slack.com/services/T000/B000/XXXX',
+                secret: 'sh_slack_secret_56789',
+                status: 'active',
+                eventTypes: ['performance.anomaly_detected', 'alert.triggered'],
+                retryPolicy: { maxRetries: 3, backoff: 'constant' },
+                createdAt: now,
+                updatedAt: now,
+                createdBy: 'u1'
+            }
+        ]);
+
+        console.log('[DB] Seeded 3 users and 2 webhook subscriptions');
     },
 
     pruneSessions() {

@@ -5,8 +5,13 @@ import { useAuth } from '../../context/AuthContext';
 
 export const OutageNotificationShell: React.FC = () => {
     const { outageStatus, lastUpdated } = useAuth();
+    const [mounted, setMounted] = React.useState(false);
 
-    if (outageStatus === 'none') return null;
+    React.useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    if (outageStatus === 'none' || !mounted) return null;
 
     const isExpired = outageStatus === 'expired';
     const bgColor = isExpired ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)';

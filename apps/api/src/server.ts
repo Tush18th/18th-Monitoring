@@ -14,6 +14,8 @@ import { rateLimiter } from './middlewares/rate-limiter.middleware';
 import { secureHeaders } from './middlewares/secure-headers.middleware';
 import { tenantIsolationGuard } from './middlewares/tenant-isolation.middleware';
 import { idempotencyGuard } from './middlewares/idempotency.middleware';
+import { exposureV1Routes } from './exposure/routes/v1';
+import { OutboundBridge } from './services/outbound-bridge';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -22,12 +24,24 @@ declare module 'fastify' {
 }
 
 // ─── Boot the in-process stream consumer ──────────────────────────────────────
-
-// This subscribes to the MemoryBus so events published via IngestionService
-// are immediately routed through the KPI engine and alert evaluator.
 const consumer = new KafkaStreamConsumer();
-consumer.connectAndSubscribe([TOPICS.BROWSER_EVENTS, TOPICS.SERVER_EVENTS])
-  .then(() => console.log('[Processor] Stream consumer subscribed to MemoryBus topics'));
+
+// Subscribe to all streams and bridge them
+consumer.onMessage = async (topic: string, message: any) => {
+    if (topic === TOPICS.NOTIFICATIONS) {
+        await OutboundBridge.handleInternalEvent(message);
+    } else {
+        // Default to processing via EventRegistry for ingestion streams
+        const { EventRegistry } = require('../../../services/processor/src/registry/event-registry');
+        await EventRegistry.route(message);
+    }
+};
+
+consumer.connectAndSubscribe([
+    TOPICS.BROWSER_EVENTS, 
+    TOPICS.SERVER_EVENTS, 
+    TOPICS.NOTIFICATIONS
+]).then(() => console.log('[Platform] Event Engine & Outbound Bridge linked successfully'));
 
 // ─── Build server ─────────────────────────────────────────────────────────────
 export const bootstrapApi = async () => {
@@ -96,6 +110,15 @@ export const bootstrapApi = async () => {
 
     await server.register(require('./routes/webhooks').webhookRoutes, {
         prefix: '/api/v1/webhooks'
+    });
+
+    // ── API Exposure Layer (Production Data Access) ────────────────────────
+    await server.register(exposureV1Routes, {
+        prefix: '/api/v1'
+    });
+
+    await server.register(require('./routes/resilience').resilienceRoutes, {
+        prefix: '/api/v1/resilience'
     });
 
     // ── Auth & RBAC ────────────────────────────────────────────────────────

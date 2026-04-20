@@ -1,380 +1,338 @@
 'use client';
-import React, { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
-import { useAuth } from '../../../../context/AuthContext';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { 
-  ShieldCheck, 
-  Zap, 
+  Button, 
+  Card, 
+  PageLayout, 
+  Typography, 
+  Badge, 
+  BadgeVariant,
+  OperationalTable,
+  Column,
+  InformationState,
+  MetricCard
+} from '@kpi-platform/ui';
+import { 
   AlertTriangle, 
-  Settings, 
+  CheckCircle2, 
+  Gauge, 
   PlayCircle, 
-  ChevronRight,
+  Settings, 
+  ShieldCheck, 
   TrendingUp,
+  Activity,
+  Package,
+  Users,
+  Zap,
+  ArrowRight,
   Clock,
-  CheckCircle2
+  ExternalLink,
+  ChevronRight,
+  Bell,
+  RefreshCw,
+  Search
 } from 'lucide-react';
-import { PageLayout, Grid, Col, Card, Button, Typography, StatusIndicator, Badge } from '@kpi-platform/ui';
+import { useAuth } from '../../../../context/AuthContext';
+
+// Logic & UI Primitives
 import { PerformanceChart } from '../../../../components/ui/PerformanceChart';
-import { MetricCard } from '../../../../components/ui/MetricCard';
-import { MonitoringFilterBar } from '../../../../components/ui/MonitoringFilterBar';
-import { SectionHeader } from '../../../../components/ui/SectionHeader';
-import { SortableTable, TableColumn } from '../../../../components/ui/SortableTable';
+// Metrics and specific cards
+
+// Dashboard Specific Components
+import { SystemHealthOverview } from '../../../../components/dashboard/SystemHealthOverview';
+import { ModuleSnapshot } from '../../../../components/dashboard/ModuleSnapshot';
 
 export default function ProjectOverviewPage() {
   const params = useParams();
+  const router = useRouter();
   const projectId = params.projectId as string;
   const { token, apiFetch, user, outageStatus, lastUpdated } = useAuth();
-  
+
+  // State
+  const [loading, setLoading] = useState(true);
   const [metrics, setMetrics] = useState<any[]>([]);
   const [trends, setTrends] = useState<any[]>([]);
   const [alerts, setAlerts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
+  const [stats, setStats] = useState<any>(null);
+  
   const isExpired = outageStatus === 'expired';
 
-  useEffect(() => {
-    if (!token || !projectId) {
-      setLoading(false);
-      return;
-    }
-
-    let isMounted = true;
+  const loadData = useCallback(async () => {
+    if (!token || !projectId) return;
     setLoading(true);
-    setErrorMsg(null);
-
-    Promise.allSettled([
-      apiFetch(`/api/v1/dashboard/summaries?siteId=${projectId}`),
-      apiFetch(`/api/v1/dashboard/alerts?siteId=${projectId}`),
-      apiFetch(`/api/v1/dashboard/performance/trends?siteId=${projectId}`)
-    ]).then((results) => {
-      if (!isMounted) return;
-
-      const errors = results.filter(r => r.status === 'rejected');
-      if (errors.length > 0) {
-        const firstError = (errors[0] as PromiseRejectedResult).reason;
-        setErrorMsg(firstError?.message || 'Failed to fetch dashboard data.');
-      }
-
-      const [m, a, t] = results.map(r => r.status === 'fulfilled' ? r.value : []);
+    try {
+      const [summ, alrt, trnd, ords] = await Promise.all([
+        apiFetch(`/api/v1/dashboard/summaries?siteId=${projectId}`),
+        apiFetch(`/api/v1/dashboard/alerts?siteId=${projectId}`),
+        apiFetch(`/api/v1/dashboard/performance/trends?siteId=${projectId}`),
+        apiFetch(`/api/v1/dashboard/orders/summary?siteId=${projectId}`)
+      ]);
       
-      setMetrics(Array.isArray(m) ? m : []);
-      setAlerts(Array.isArray(a) ? a : []);
-      setTrends(Array.isArray(t) ? t : []);
+      setMetrics(Array.isArray(summ) ? summ : []);
+      setAlerts(Array.isArray(alrt) ? alrt : []);
+      setTrends(Array.isArray(trnd) ? trnd : []);
+      setStats(ords);
+    } catch (err) {
+      console.error('Failed to load dashboard data', err);
+    } finally {
       setLoading(false);
-    });
-
-    return () => { isMounted = false; };
+    }
   }, [projectId, token, apiFetch]);
 
-  const activeAlerts = (alerts || []).filter((a: any) => a.status === 'active');
+  useEffect(() => {
+    loadData();
+    const interval = setInterval(loadData, 60000); // 1 min refresh for high-level overview
+    return () => clearInterval(interval);
+  }, [loadData]);
 
-  const metricLabelMap: Record<string, { title: string, icon: string, unit?: string }> = {
-    'pageLoadTime':      { title: 'Page Load Avg', icon: '⚡', unit: 'ms' },
-    'errorRatePct':       { title: 'Client Errors', icon: '⚠️', unit: 'events' },
-    'activeUsers':        { title: 'Active Users',   icon: '👥' },
-    'ordersTotal':        { title: 'Total Orders',   icon: '🛍️' },
-    'ordersDelayCount':   { title: 'Delayed Orders', icon: '⏳' },
-    'syncSuccessRate':    { title: 'Integrations Sync', icon: '🔗', unit: '%' },
-  };
+  // Derivations
+  const activeAlerts = useMemo(() => alerts.filter(a => a.status === 'active'), [alerts]);
+  
+  const moduleHealths = useMemo(() => {
+    const findMetric = (name: string) => metrics.find(m => m.kpiName === name);
+    
+    return [
+      { 
+        name: 'Integrations', 
+        status: (findMetric('syncSuccessRate')?.state === 'critical' ? 'critical' : findMetric('syncSuccessRate')?.state === 'warning' ? 'degraded' : 'healthy') as any, 
+        icon: RefreshCw, 
+        href: `/project/${projectId}/integrations`,
+        label: `Reliability: ${findMetric('syncSuccessRate')?.value || 0}%`
+      },
+      { 
+        name: 'Orders', 
+        status: (stats?.failedCount > 0 ? 'critical' : stats?.delayedCount > 0 ? 'degraded' : 'healthy') as any, 
+        icon: Package, 
+        href: `/project/${projectId}/orders`,
+        label: `Velocity: ${stats?.ordersPerMinute || '0.00'} RPM`
+      },
+      { 
+        name: 'Performance', 
+        status: (findMetric('errorRatePct')?.state || 'healthy') as any, 
+        icon: Gauge, 
+        href: `/project/${projectId}/performance`,
+        label: `Client Latency: ${findMetric('pageLoadTime')?.value || 0}ms`
+      },
+      { 
+        name: 'Customers', 
+        status: 'healthy' as any, 
+        icon: Users, 
+        href: `/project/${projectId}/customers`,
+        label: `Live Sessions: ${findMetric('activeUsers')?.value || 0}`
+      }
+    ];
+  }, [projectId, metrics, stats]);
 
-  const PageActions = (
-    <>
-      <Button variant="outline" icon={Settings}>Manage</Button>
-      <Button 
-        variant="primary" 
-        icon={PlayCircle}
-        onClick={() => {
-          apiFetch('/api/v1/simulate', { method: 'POST', body: JSON.stringify({ siteId: projectId }) })
-            .then(() => window.location.reload());
-        }}
-      >
-        Simulate Traffic
-      </Button>
-    </>
-  );
+  const overallHealth = useMemo(() => {
+    const isCritical = moduleHealths.some(m => m.status === 'critical');
+    const isDegraded = moduleHealths.some(m => m.status === 'degraded');
+    
+    if (isCritical) return { variant: 'error' as BadgeVariant, label: 'CRITICAL STATE' };
+    if (isDegraded) return { variant: 'warning' as BadgeVariant, label: 'SYSTEM DEGRADED' };
+    return { variant: 'success' as BadgeVariant, label: 'SYSTEM HEALTHY' };
+  }, [moduleHealths]);
+
+  const alertColumns: Column<any>[] = [
+    { 
+      key: 'severity', 
+      header: 'Level', 
+      width: '80px',
+      render: (val) => <Badge variant={val === 'high' || val === 'critical' ? 'error' : 'warning'} size="sm">{val?.toUpperCase()}</Badge> 
+    },
+    { 
+      key: 'message', 
+      header: 'Intelligence Alert', 
+      render: (val, row) => (
+        <div>
+          <Typography variant="body" weight="bold" className="text-sm" noMargin>{row.kpiName}</Typography>
+          <Typography variant="micro" className="text-text-muted">{val}</Typography>
+        </div>
+      )
+    },
+    { 
+      key: 'timestamp', 
+      header: 'Detected', 
+      align: 'right',
+      render: (val) => <span className="text-text-muted">{new Date(val || Date.now()).toLocaleTimeString()}</span>
+    },
+    {
+      key: 'actions',
+      header: '',
+      align: 'right',
+      render: () => <ArrowRight size={14} className="text-text-muted" />
+    }
+  ];
 
   return (
     <PageLayout
-      title="Project Overview"
-      subtitle={`Viewing real-time telemetry for platform ID: ${projectId}`}
-      actions={user?.role !== 'CUSTOMER' ? PageActions : undefined}
-      className={isExpired ? 'is-expired' : ''}
+      title="Control Tower"
+      subtitle="Unified executive observability and operational oversight."
+      icon={<ShieldCheck size={24} />}
+      actions={
+        <div className="flex items-center gap-3">
+          <Badge variant={isExpired ? 'stale' : 'success'} size="sm" dot>
+            {isExpired ? 'DATA STALE' : 'LIVE FEED ACTIVE'}
+          </Badge>
+          <Button variant="ghost" size="sm" onClick={loadData}>
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+          </Button>
+        </div>
+      }
     >
-      {isExpired && (
-        <div className="expired-overlay">
-           <Card className="expired-card">
-              <div className="expired-icon-wrapper">
-                <AlertTriangle size={32} color="var(--error)" />
+      <div className="space-y-8 pb-12">
+        {/* 1. Global System Health */}
+        <SystemHealthOverview 
+          modules={moduleHealths}
+          overallStatus={overallHealth.variant}
+          overallLabel={overallHealth.label}
+          loading={loading}
+        />
+
+        {/* 2. Intelligence Area: Critical Anomalies & Alerts */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+           <div className="lg:col-span-2">
+              <Card className="p-0 overflow-hidden border-error/20">
+                <div className="p-4 bg-error-bg/30 border-b border-error/10 flex justify-between items-center">
+                   <div className="flex items-center gap-2 text-error">
+                      <Bell size={18} />
+                      <Typography variant="body" weight="bold" noMargin>Active Intelligence Alerts</Typography>
+                   </div>
+                   <Badge variant="error" size="sm">{activeAlerts.length} ISSUES</Badge>
+                </div>
+                <OperationalTable 
+                  columns={alertColumns} 
+                  data={activeAlerts.slice(0, 5)} 
+                  isDense 
+                  isEmpty={activeAlerts.length === 0}
+                  emptyTitle="No active anomalies detected"
+                />
+              </Card>
+           </div>
+           
+           <Card className="p-6 flex flex-col justify-between">
+              <div>
+                <Typography variant="caption" weight="bold" className="text-text-muted uppercase tracking-wider mb-4 block">
+                   Executive Summary (24h)
+                </Typography>
+                <div className="space-y-4">
+                   <div className="flex justify-between items-center bg-muted/30 p-3 rounded-xl">
+                      <Typography variant="body" weight="bold">Total Volume</Typography>
+                      <Typography variant="h3" weight="bold" noMargin>{stats?.ordersTotal || 0}</Typography>
+                   </div>
+                   <div className="flex justify-between items-center bg-muted/30 p-3 rounded-xl">
+                      <Typography variant="body" weight="bold">Revenue Integrity</Typography>
+                      <Badge variant="success" size="sm">99.8%</Badge>
+                   </div>
+                   <div className="flex justify-between items-center bg-muted/30 p-3 rounded-xl border border-warning/20">
+                      <Typography variant="body" weight="bold">Delayed Value</Typography>
+                      <Typography variant="body" weight="bold" className="text-warning">${(stats?.delayedCount || 0) * 85}</Typography>
+                   </div>
+                </div>
               </div>
-              <Typography variant="h2" align="center">Data Lifecycle Expired</Typography>
-              <Typography variant="body" align="center" color="muted">
-                Last successful sync: <strong>{lastUpdated ? new Date(lastUpdated).toLocaleString() : 'Unknown'}</strong>.
-              </Typography>
-              <Button variant="primary" onClick={() => window.location.reload()} fullWidth>
-                Attempt Reconnection
+              <Button 
+                variant="outline" 
+                className="w-full mt-6" 
+                onClick={() => router.push(`/project/${projectId}/management`)}
+              >
+                 System Governance <ExternalLink size={14} className="ml-2" />
               </Button>
            </Card>
         </div>
-      )}
 
-      {errorMsg && (
-        <Card className="error-card" variant="outline">
-          <Badge variant="error" icon={AlertTriangle}>{errorMsg}</Badge>
-        </Card>
-      )}
+        {/* 3. Operational Domain Snapshots */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+           <ModuleSnapshot 
+              title="Integrations"
+              icon={RefreshCw}
+              status={moduleHealths[0].status}
+              href={`/project/${projectId}/integrations`}
+              metrics={[
+                { label: 'Sync Health', value: metrics.find(m => m.kpiName === 'syncSuccessRate')?.value || 0, unit: '%', status: 'success' },
+                { label: 'Failed (24h)', value: activeAlerts.filter(a => a.kpiName.includes('sync')).length, status: 'error' }
+              ]}
+           />
+           <ModuleSnapshot 
+              title="Orders"
+              icon={Package}
+              status={moduleHealths[1].status}
+              href={`/project/${projectId}/orders`}
+              metrics={[
+                { label: 'Velocity', value: stats?.ordersPerMinute || '0.0', unit: 'RPM' },
+                { label: 'Exceptions', value: (stats?.failedCount || 0) + (stats?.delayedCount || 0), status: 'warning' }
+              ]}
+           />
+           <ModuleSnapshot 
+              title="Performance"
+              icon={Gauge}
+              status={moduleHealths[2].status}
+              href={`/project/${projectId}/performance`}
+              metrics={[
+                { label: 'p95 Latency', value: metrics.find(m => m.kpiName === 'pageLoadTime')?.value || 0, unit: 'ms' },
+                { label: 'Error Rate', value: metrics.find(m => m.kpiName === 'errorRatePct')?.value || 0, unit: '%', status: 'error' }
+              ]}
+           />
+           <ModuleSnapshot 
+              title="Customers"
+              icon={Users}
+              status={moduleHealths[3].status}
+              href={`/project/${projectId}/customers`}
+              metrics={[
+                { label: 'Live Users', value: metrics.find(m => m.kpiName === 'activeUsers')?.value || 0 },
+                { label: 'Retention', value: '42%', unit: 'CR' }
+              ]}
+           />
+        </div>
 
-      <div style={{ paddingBottom: '24px' }}>
-         <MonitoringFilterBar lastRefreshed={new Date()} />
-      </div>
-
-      <Grid gap={6}>
-        {/* Main Content Area */}
-        <Col span={12} lg={8}>
-          <Grid gap={4}>
-            {/* KPI Section */}
-            <Col span={12}>
-              <SectionHeader title="Platform KPIs" subtitle="Live aggregate metrics across all monitoring dimensions" icon="📊" />
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-4)' }}>
-                {loading ? (
-                  Array.from({ length: 4 }).map((_, i: number) => (
-                    <MetricCard key={`loader-${i}`} title="Computing" value="—" state="healthy" icon="🔄" loading={true} />
-                  ))
-                ) : metrics.length === 0 ? (
-                  <Card variant="outline" className="empty-state">
-                    <ShieldCheck size={48} className="empty-icon" />
-                    <Typography variant="h3">Waiting for Telemetry</Typography>
-                    <Typography variant="body" color="muted">No live events tracked yet.</Typography>
-                  </Card>
-                ) : (
-                  metrics.map((m: any) => {
-                    const cfg = metricLabelMap[m?.kpiName] || { title: m?.kpiName || 'Unknown KPI', icon: '📈' };
-                    return (
-                      <MetricCard
-                        key={m?.kpiName}
-                        title={cfg.title}
-                        value={m?.value}
-                        unit={cfg.unit}
-                        state={m?.state || 'healthy'}
-                        icon={cfg.icon}
-                        trendPct={m?.trendPct}
-                        loading={false}
-                      />
-                    );
-                  })
-                )}
+        {/* 4. Trends & System Activity */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+           <Card className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                 <div className="flex items-center gap-2">
+                    <Activity size={18} className="text-text-muted" />
+                    <Typography variant="body" weight="bold" noMargin className="text-sm uppercase tracking-wider text-text-muted">
+                        Latency Confidence Profile
+                    </Typography>
+                 </div>
+                 <Badge variant="info" size="sm">REAL-TIME</Badge>
               </div>
-            </Col>
+              <PerformanceChart data={trends} title="" />
+           </Card>
 
-            {/* Chart Section */}
-            <Col span={12}>
-              <SectionHeader title="Latency Trend" subtitle="Rolling performance profile over the selected timeframe" icon="📈" />
-              <Card title="">
-                {loading ? (
-                  <div className="skeleton" style={{ height: '300px', width: '100%', borderRadius: '12px' }} />
-                ) : (
-                  <PerformanceChart data={trends || []} title="" />
-                )}
-              </Card>
-            </Col>
-
-            {/* Events Summary Table */}
-            <Col span={12}>
-              <SectionHeader title="Events Summary" subtitle="Detailed breakdown of each tracked KPI metric" icon="📋" />
-              <SortableTable
-                columns={[
-                  { key: 'kpiName', label: 'Metric', sortable: true, render: (v, row) => <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{metricLabelMap[v]?.title || v}</span> },
-                  { key: 'value', label: 'Value', sortable: true, align: 'right', render: (v, row) => <span style={{ fontWeight: 800 }}>{v ?? '—'}{metricLabelMap[row.kpiName]?.unit ? ` ${metricLabelMap[row.kpiName].unit}` : ''}</span> },
-                  { key: 'state', label: 'Status', sortable: true, width: '110px', render: (v) => {
-                    const statusColor = v === 'healthy' ? 'var(--success)' : v === 'warning' ? 'var(--warning)' : 'var(--error)';
-                    const statusBg = v === 'healthy' ? 'var(--success-bg)' : v === 'warning' ? 'var(--warning-bg)' : 'var(--error-bg)';
-                    return (
-                      <span style={{ 
-                        padding: '4px 10px', 
-                        background: statusBg, 
-                        color: statusColor, 
-                        border: `1px solid ${statusColor}15`,
-                        borderRadius: '20px', 
-                        fontSize: '11px', 
-                        fontWeight: 800, 
-                        textTransform: 'capitalize' 
-                      }}>
-                        {v || 'unknown'}
-                      </span>
-                    );
-                  }},
-                  { key: 'trendPct', label: 'Trend', sortable: true, align: 'right', render: (v) => {
-                    if (v === undefined || v === null) return <span style={{ color: 'var(--text-muted)' }}>—</span>;
-                    const up = v >= 0;
-                    return <span style={{ color: up ? '#ef4444' : '#10b981', fontWeight: 800, fontSize: '13px' }}>{up ? '↑' : '↓'} {Math.abs(v).toFixed(1)}%</span>;
-                  }},
-                ]}
-                data={metrics}
-                loading={loading}
-                emptyMessage="No KPI data available for this session"
-              />
-            </Col>
-          </Grid>
-        </Col>
-
-        {/* Sidebar Area */}
-        <Col span={12} lg={4}>
-          <Grid gap={6}>
-            {/* Alerts Section */}
-            <Col span={12}>
-              <Card 
-                title="Active Alerts" 
-                extra={<Badge variant={activeAlerts.length > 0 ? 'error' : 'success'}>{activeAlerts.length}</Badge>}
-              >
-                {activeAlerts.length === 0 ? (
-                  <div className="empty-alerts">
-                    <CheckCircle2 size={32} color="var(--success)" style={{ opacity: 0.5 }} />
-                    <Typography variant="body" color="muted">No critical breaches detected</Typography>
-                  </div>
-                ) : (
-                  <div className="alerts-list">
-                    {activeAlerts.slice(0, 3).map((a: any) => (
-                      <div key={a.alertId} className="alert-item">
-                        <div className="alert-item-header">
-                          <Typography variant="body" weight="bold" color="error">{a.kpiName}</Typography>
-                          <Typography variant="caption" color="muted">2m ago</Typography>
+           <Card className="p-0 overflow-hidden">
+              <div className="p-4 border-b border-subtle bg-muted/20 flex justify-between items-center">
+                 <div className="flex items-center gap-2">
+                    <Clock size={18} className="text-text-muted" />
+                    <Typography variant="body" weight="bold" noMargin className="text-sm uppercase tracking-wider text-text-muted">
+                        Recent System Activity
+                    </Typography>
+                 </div>
+                 <Typography variant="micro" className="text-primary font-bold cursor-pointer hover:underline">
+                    View Complete Audit
+                 </Typography>
+              </div>
+              <div className="divide-y divide-subtle">
+                 {activeAlerts.length > 0 ? activeAlerts.slice(0, 6).map((item, idx) => (
+                    <div key={idx} className="p-4 flex gap-4 hover:bg-muted/30 transition-colors group cursor-pointer">
+                        <div className="mt-1 w-2 h-2 rounded-full bg-error" />
+                        <div className="flex-1">
+                           <div className="flex justify-between items-start">
+                              <Typography variant="body" weight="bold" className="text-xs">{item.message}</Typography>
+                              <Typography variant="micro" className="text-text-muted">{new Date(item.timestamp || Date.now()).toLocaleTimeString()}</Typography>
+                           </div>
+                           <Typography variant="micro" className="text-text-muted block mt-1 uppercase">Source: {item.kpiName}</Typography>
                         </div>
-                        <Typography variant="caption" color="secondary">{a.message}</Typography>
-                      </div>
-                    ))}
-                    <Button variant="ghost" size="sm" icon={ChevronRight} className="view-all-alerts">
-                      View all alerts
-                    </Button>
-                  </div>
-                )}
-              </Card>
-            </Col>
-
-            {/* Governance Section */}
-            <Col span={12}>
-              <Card title="Governance">
-                <div className="governance-list">
-                  <div className="gov-item">
-                    <div className="gov-info">
-                      <TrendingUp size={14} color="var(--warning)" />
-                      <Typography variant="caption">Trend Ingestion</Typography>
+                        <ChevronRight size={14} className="text-text-muted opacity-0 group-hover:opacity-100 transition-opacity self-center" />
                     </div>
-                    <StatusIndicator status="success" label="Active" />
-                  </div>
-                  <div className="gov-item">
-                    <div className="gov-info">
-                      <Clock size={14} color="var(--error)" />
-                      <Typography variant="caption">Auto-Recovery</Typography>
+                 )) : (
+                    <div className="p-12 text-center">
+                       <Typography variant="caption" className="text-text-muted">No recent system activity detected.</Typography>
                     </div>
-                    <StatusIndicator status="success" label="Enabled" />
-                  </div>
-                </div>
-              </Card>
-            </Col>
-          </Grid>
-        </Col>
-      </Grid>
-
-      <style jsx>{`
-        .is-expired .ui-page-layout > header,
-        .is-expired .ui-page-layout > .page-content {
-          opacity: 0.3;
-          pointer-events: none;
-        }
-        
-        .expired-overlay {
-          position: absolute;
-          inset: 0;
-          z-index: 100;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: var(--space-10);
-          backdrop-filter: blur(4px);
-        }
-
-        :global(.expired-card) {
-          max-width: 440px;
-          display: flex !important;
-          flex-direction: column;
-          align-items: center;
-          gap: var(--space-6);
-          padding: var(--space-8) !important;
-          background: var(--bg-surface) !important;
-          box-shadow: var(--shadow-2xl) !important;
-        }
-
-        .expired-icon-wrapper {
-          width: 80px;
-          height: 80px;
-          border-radius: var(--radius-2xl);
-          background: rgba(239, 68, 68, 0.1);
-          border: 1px solid rgba(239, 68, 68, 0.2);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .empty-state {
-          grid-column: 1 / -1;
-          display: flex !important;
-          flex-direction: column;
-          align-items: center;
-          text-align: center;
-          padding: var(--space-10) !important;
-        }
-
-        .empty-icon {
-          color: var(--text-muted);
-          opacity: 0.5;
-          margin-bottom: var(--space-4);
-        }
-
-        .empty-alerts {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: var(--space-2);
-          padding: var(--space-6) 0;
-        }
-
-        .alerts-list {
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-3);
-        }
-
-        .alert-item {
-          padding: var(--space-3);
-          background: rgba(var(--error-rgb), 0.05);
-          border: 1px solid rgba(var(--error-rgb), 0.1);
-          border-radius: var(--radius-lg);
-        }
-
-        .alert-item-header {
-          display: flex;
-          justify-content: space-between;
-          margin-bottom: var(--space-1);
-        }
-
-        .governance-list {
-          display: flex;
-          flex-direction: column;
-          gap: var(--space-4);
-        }
-
-        .gov-item {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-
-        .gov-info {
-          display: flex;
-          align-items: center;
-          gap: var(--space-3);
-        }
-      `}</style>
+                 )}
+              </div>
+           </Card>
+        </div>
+      </div>
     </PageLayout>
   );
 }

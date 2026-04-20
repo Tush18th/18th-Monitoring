@@ -1,33 +1,118 @@
 @import "@kpi-platform/ui/styles";
 @import "tailwindcss";
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+/* ==========================================================================
+   Tailwind v4 Theme Bridge
+   Maps CSS design tokens from the UI package into Tailwind's utility system.
+   Without this block, ALL custom-color utilities are broken/silent.
+   ========================================================================== */
+
+@theme {
+  /* ---- Core Palette ---- */
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-hover: var(--secondary-hover);
+
+  /* ---- Surfaces & Backgrounds ---- */
+  --color-surface: var(--bg-surface);
+  --color-base: var(--bg-base);
+  --color-muted: var(--bg-muted);
+  --color-accent: var(--bg-accent);
+  --color-card: var(--bg-card);
+
+  /* ---- Borders ---- */
+  --color-subtle: var(--border-subtle);
+  --color-strong: var(--border-strong);
+  --color-interactive: var(--border-interactive);
+
+  /* ---- Text ---- */
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-text-inverse: var(--text-inverse);
+
+  /* ---- Semantic: Success ---- */
+  --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
+  --color-success-text: var(--success-text);
+
+  /* ---- Semantic: Warning ---- */
+  --color-warning: var(--warning);
+  --color-warning-bg: var(--warning-bg);
+  --color-warning-text: var(--warning-text);
+
+  /* ---- Semantic: Error ---- */
+  --color-error: var(--error);
+  --color-error-bg: var(--error-bg);
+  --color-error-text: var(--error-text);
+
+  /* ---- Semantic: Info ---- */
+  --color-info: var(--info);
+  --color-info-bg: var(--info-bg);
+  --color-info-text: var(--info-text);
+
+  /* ---- Enterprise States ---- */
+  --color-degraded: var(--degraded);
+  --color-degraded-bg: var(--degraded-bg);
+  --color-degraded-text: var(--degraded-text);
+  --color-stale: var(--stale);
+  --color-stale-bg: var(--stale-bg);
+  --color-stale-text: var(--stale-text);
+  --color-paused: var(--paused);
+  --color-paused-bg: var(--paused-bg);
+  --color-paused-text: var(--paused-text);
+  --color-processing: var(--processing);
+  --color-processing-bg: var(--processing-bg);
+  --color-processing-text: var(--processing-text);
+
+  /* ---- Chart Colors ---- */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
 }
 
-/* Theme mappings for dashboard-specific aliases */
-:root {
-  /* Legend: --dashboard-alias: var(--ui-package-token) */
-  --border: var(--border-subtle);
-  --border-light: var(--bg-muted);
-  
-  --accent-blue: var(--primary);
-  --accent-cyan: var(--info);
-  --accent-green: var(--success);
-  --accent-orange: var(--warning);
-  --accent-red: var(--error);
-}
+/* ==========================================================================
+   Base Reset & Typography
+   ========================================================================== */
 
 html, body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background-color: var(--bg-base);
   color: var(--text-primary);
   min-height: 100%;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+body {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* ==========================================================================
+   Animations & Keyframes
+   ========================================================================== */
 
 @keyframes pulse-glow {
   0%, 100% { opacity: 1; }
@@ -44,6 +129,16 @@ html, body {
   to { opacity: 1; }
 }
 
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: calc(200px + 100%) 0; }
+}
+
 .animate-slide-in {
   animation: slide-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
@@ -52,12 +147,17 @@ html, body {
   animation: fade-in 0.5s ease-out forwards;
 }
 
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+.animate-pulse {
   animation: pulse-glow 2s ease-in-out infinite;
 }
+
+/* ==========================================================================
+   Scrollbar
+   ========================================================================== */
 
 ::-webkit-scrollbar {
   width: 6px;
@@ -68,7 +168,7 @@ html, body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border);
+  background: var(--border-subtle);
   border-radius: 3px;
 }
 
@@ -76,8 +176,16 @@ html, body {
   background: var(--text-muted);
 }
 
-/* ========================================================================= */
-/* --- Micro-Interactions & UI Utilities --- */
+/* ==========================================================================
+   Status & Interaction Utilities
+   ========================================================================== */
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: pulse-glow 2s ease-in-out infinite;
+}
 
 /* Interactive Table Rows */
 .table-row {
@@ -88,7 +196,7 @@ html, body {
   background: var(--bg-muted);
 }
 .table-row:active {
-  background: rgba(37, 99, 235, 0.05); /* very light blue hint */
+  background: rgba(37, 99, 235, 0.05);
 }
 
 /* Core Button Interactions */
@@ -112,17 +220,12 @@ html, body {
 }
 
 /* Skeleton Loaders */
-@keyframes skeleton-shimmer {
-  0% { background-position: -200px 0; }
-  100% { background-position: calc(200px + 100%) 0; }
-}
-
 .skeleton {
   background: var(--bg-muted);
   background-image: linear-gradient(
-    90deg, 
-    var(--bg-muted) 0px, 
-    var(--border-subtle) 40px, 
+    90deg,
+    var(--bg-muted) 0px,
+    var(--border-subtle) 40px,
     var(--bg-muted) 80px
   );
   background-size: 200px 100%;
@@ -130,7 +233,10 @@ html, body {
   border-radius: 4px;
 }
 
-/* Auth Specific Utilities */
+/* ==========================================================================
+   Auth & Login Utilities
+   ========================================================================== */
+
 .auth-gradient-text {
   background: linear-gradient(90deg, #2563eb, #7c3aed);
   -webkit-background-clip: text;
@@ -172,4 +278,499 @@ html, body {
 .premium-btn:active:not(:disabled) {
   transform: translateY(0);
   filter: brightness(0.95);
+}
+
+.auth-shell {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top right, rgb(37 99 235 / 0.14), transparent 30%),
+    radial-gradient(circle at bottom left, rgb(14 165 233 / 0.12), transparent 28%),
+    linear-gradient(180deg, #f8fbff 0%, #eef4fb 100%);
+}
+
+[data-theme='dark'] .auth-shell {
+  background:
+    radial-gradient(circle at top right, rgb(37 99 235 / 0.18), transparent 32%),
+    radial-gradient(circle at bottom left, rgb(14 165 233 / 0.16), transparent 28%),
+    linear-gradient(180deg, #020617 0%, #081120 100%);
+}
+
+.unauthorized-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+}
+
+.unauthorized-card {
+  width: min(100%, 520px);
+  padding: clamp(1.75rem, 4vw, 2.5rem);
+  border-radius: 28px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  text-align: center;
+  box-shadow: var(--shadow-md);
+}
+
+/* ==========================================================================
+   App Loading State
+   ========================================================================== */
+
+.app-loading-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease;
+}
+
+.app-loading-spinner {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 3px solid var(--border-subtle);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.app-loading-text {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+
+/* ==========================================================================
+   Dashboard Design System
+   ========================================================================== */
+
+:root {
+  --app-shell-width: 1440px;
+  --app-content-gap: clamp(1rem, 2vw, 1.5rem);
+  --app-section-gap: clamp(1.25rem, 2vw, 2rem);
+  --app-card-radius: 20px;
+}
+
+/* Theme aliases */
+:root {
+  --border: var(--border-subtle);
+  --border-light: var(--bg-muted);
+  --accent-blue: var(--primary);
+  --accent-cyan: var(--info);
+  --accent-green: var(--success);
+  --accent-orange: var(--warning);
+  --accent-red: var(--error);
+}
+
+.dashboard-page-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-section-gap);
+  padding-bottom: var(--space-10);
+}
+
+.dashboard-section-grid {
+  display: grid;
+  gap: var(--app-content-gap);
+}
+
+.dashboard-section-grid.is-two-up {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.dashboard-section-grid.is-three-up {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.dashboard-surface-card {
+  position: relative;
+  padding: clamp(1rem, 2vw, 1.5rem);
+  border-radius: 24px;
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-elevated);
+  box-shadow: var(--shadow-sm);
+}
+
+.dashboard-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.72rem;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.dashboard-data-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.dashboard-data-list > * {
+  min-width: 0;
+}
+
+.dashboard-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--app-section-gap);
+}
+
+.dashboard-inline-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0.55rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.dashboard-inline-status.is-success {
+  background: var(--success-bg);
+  border-color: color-mix(in srgb, var(--success) 22%, transparent);
+  color: var(--success-text);
+}
+
+.dashboard-inline-status.is-danger {
+  background: var(--error-bg);
+  border-color: color-mix(in srgb, var(--error) 22%, transparent);
+  color: var(--error-text);
+}
+
+.dashboard-live-dot {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 0.75rem color-mix(in srgb, currentColor 45%, transparent);
+}
+
+.dashboard-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--app-content-gap);
+}
+
+.dashboard-metrics-grid > * {
+  grid-column: span 3 / span 3;
+}
+
+.dashboard-two-column {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(320px, 0.9fr);
+  gap: var(--app-content-gap);
+  align-items: start;
+}
+
+.dashboard-split-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--app-content-gap);
+}
+
+.dashboard-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--app-content-gap);
+}
+
+.dashboard-surface-note {
+  padding: var(--space-4);
+  border-radius: 18px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--primary) 6%, var(--bg-surface)), var(--bg-surface));
+  border: 1px solid color-mix(in srgb, var(--primary) 12%, var(--border-subtle));
+  color: var(--text-secondary);
+}
+
+.dashboard-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  min-height: 220px;
+  padding: var(--space-8);
+  text-align: center;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--app-card-radius);
+  background: color-mix(in srgb, var(--bg-muted) 75%, var(--bg-surface));
+}
+
+.dashboard-empty-state svg {
+  color: var(--text-muted);
+  opacity: 0.72;
+}
+
+.dashboard-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(1rem, 4vw, 2rem);
+  border-radius: 28px;
+  background: rgb(15 23 42 / 0.42);
+  backdrop-filter: blur(8px);
+}
+
+.dashboard-overlay-card {
+  width: min(100%, 480px);
+  padding: clamp(1.5rem, 3vw, 2.25rem);
+  border-radius: 28px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 28px 60px -28px rgb(15 23 42 / 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  text-align: center;
+}
+
+.dashboard-overlay-icon {
+  width: 4.75rem;
+  height: 4.75rem;
+  border-radius: 1.6rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--error) 12%, var(--bg-surface));
+  border: 1px solid color-mix(in srgb, var(--error) 18%, transparent);
+  color: var(--error);
+}
+
+.dashboard-panel-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.dashboard-list-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--bg-muted) 72%, var(--bg-surface));
+  border: 1px solid var(--border-subtle);
+}
+
+.dashboard-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.35rem;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--bg-muted) 85%, var(--bg-surface));
+  border: 1px solid var(--border-subtle);
+}
+
+.dashboard-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 44px;
+  padding: 0.7rem 1rem;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.925rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.dashboard-tab:hover {
+  background: color-mix(in srgb, var(--bg-surface) 65%, transparent);
+  color: var(--text-primary);
+}
+
+.dashboard-tab.is-active {
+  background: var(--bg-surface);
+  color: var(--primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.dashboard-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.dashboard-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  align-items: center;
+}
+
+.dashboard-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: rgb(15 23 42 / 0.66);
+  backdrop-filter: blur(10px);
+}
+
+.dashboard-modal-card {
+  width: min(100%, 560px);
+  max-height: min(90vh, 820px);
+  overflow: auto;
+  padding: clamp(1.5rem, 3vw, 2.25rem);
+  border-radius: 28px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 28px 60px -24px rgb(15 23 42 / 0.55);
+}
+
+.dashboard-hero-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: clamp(1.5rem, 4vw, 3rem);
+  align-items: stretch;
+}
+
+.portfolio-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--app-content-gap);
+}
+
+.portfolio-card {
+  height: 100%;
+  padding: 1.35rem;
+  border-radius: 24px;
+  border: 1px solid var(--border-subtle);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--bg-surface) 88%, white), var(--bg-surface));
+  box-shadow: var(--shadow-sm);
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.portfolio-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--primary) 18%, var(--border-subtle));
+  box-shadow: var(--shadow-md);
+}
+
+/* ==========================================================================
+   Inline Action Button (replaces raw <button> elements in drawers/panels)
+   ========================================================================== */
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.85rem 1.25rem;
+  border-radius: var(--radius-xl);
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.18s ease;
+}
+
+.action-btn:hover {
+  filter: brightness(1.06);
+}
+
+.action-btn:active {
+  transform: scale(0.98);
+}
+
+.action-btn--primary {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: var(--shadow-sm);
+}
+
+.action-btn--primary:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.action-btn--outline {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border-color: var(--border-subtle);
+}
+
+.action-btn--outline:hover {
+  background: var(--bg-muted);
+}
+
+.action-btn--ghost {
+  background: color-mix(in srgb, var(--bg-muted) 50%, transparent);
+  color: var(--text-primary);
+  border-color: var(--border-subtle);
+}
+
+.action-btn--ghost:hover {
+  background: var(--bg-muted);
+}
+
+.action-btn--wide {
+  width: 100%;
+}
+
+/* ==========================================================================
+   Responsive Breakpoints
+   ========================================================================== */
+
+@media (max-width: 1180px) {
+  .dashboard-two-column,
+  .dashboard-hero-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-metrics-grid > * {
+    grid-column: span 6 / span 6;
+  }
+}
+
+@media (max-width: 720px) {
+  .dashboard-form-grid,
+  .dashboard-split-grid,
+  .dashboard-section-grid.is-two-up,
+  .dashboard-section-grid.is-three-up {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-metrics-grid > * {
+    grid-column: span 12 / span 12;
+  }
+}
+
+/* ==========================================================================
+   Print Styles
+   ========================================================================== */
+
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  .dashboard-modal-backdrop,
+  .dashboard-overlay {
+    display: none !important;
+  }
 }

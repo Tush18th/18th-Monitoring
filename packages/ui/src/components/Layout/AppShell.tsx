@@ -3,6 +3,7 @@ import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { Sidebar, NavGroup } from './Sidebar';
 import { TopBar } from './TopBar';
+import { GlobalContextBar, FreshnessStatus } from './GlobalContextBar';
 import { BreadcrumbItem } from './Breadcrumbs';
 
 function cn(...inputs: ClassValue[]) {
@@ -20,8 +21,22 @@ interface AppShellProps {
     avatar?: string;
   };
   onLogout?: () => void;
+  onNavigate?: (href: string) => void;
   logo?: React.ReactNode;
   className?: string;
+
+  // Context Bar Props
+  projects?: Array<{ id: string; name: string }>;
+  selectedProject?: string;
+  onProjectChange?: (id: string) => void;
+  environments?: string[];
+  selectedEnvironment?: string;
+  onEnvironmentChange?: (env: string) => void;
+  dateRange?: string;
+  onDateRangeClick?: () => void;
+  lastUpdated?: string;
+  onRefresh?: () => void;
+  freshnessStatus?: FreshnessStatus;
 }
 
 export const AppShell: React.FC<AppShellProps> = ({ 
@@ -31,11 +46,23 @@ export const AppShell: React.FC<AppShellProps> = ({
   breadcrumbs,
   user,
   onLogout,
+  onNavigate,
   logo,
-  className 
+  className,
+  projects,
+  selectedProject,
+  onProjectChange,
+  environments,
+  selectedEnvironment,
+  onEnvironmentChange,
+  dateRange,
+  onDateRangeClick,
+  lastUpdated,
+  onRefresh,
+  freshnessStatus
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   // Load persistence from localStorage
   useEffect(() => {
@@ -43,7 +70,6 @@ export const AppShell: React.FC<AppShellProps> = ({
     if (saved !== null) {
       setIsCollapsed(saved === 'true');
     }
-    setMounted(true);
   }, []);
 
   const handleToggleCollapse = () => {
@@ -52,20 +78,51 @@ export const AppShell: React.FC<AppShellProps> = ({
     localStorage.setItem('sidebar-collapsed', String(nextState));
   };
 
+  const handleMenuToggle = () => {
+    setIsMobileOpen((open) => !open);
+  };
+
+  const handleCloseMobile = () => {
+    setIsMobileOpen(false);
+  };
+
   return (
     <div className={cn('ui-app-shell', isCollapsed && 'sidebar-collapsed', className)}>
       <Sidebar 
         groups={navGroups} 
         activeHref={activeHref}
+        onNavigate={onNavigate}
         isCollapsed={isCollapsed}
         onToggleCollapse={handleToggleCollapse}
+        isMobileOpen={isMobileOpen}
+        onCloseMobile={handleCloseMobile}
         logo={logo}
+      />
+      <button
+        type="button"
+        className={cn('sidebar-overlay', isMobileOpen && 'open')}
+        onClick={handleCloseMobile}
+        aria-label="Close navigation"
       />
       
       <div className="shell-main">
+        <GlobalContextBar 
+          projects={projects}
+          selectedProject={selectedProject}
+          onProjectChange={onProjectChange}
+          environments={environments}
+          selectedEnvironment={selectedEnvironment}
+          onEnvironmentChange={onEnvironmentChange}
+          dateRange={dateRange}
+          onDateRangeClick={onDateRangeClick}
+          lastUpdated={lastUpdated}
+          onRefresh={onRefresh}
+          freshnessStatus={freshnessStatus}
+        />
         <TopBar 
           breadcrumbs={breadcrumbs} 
           user={user}
+          onMenuClick={handleMenuToggle}
           onLogout={onLogout}
         />
         <main className="shell-content">

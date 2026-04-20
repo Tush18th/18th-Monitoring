@@ -23,8 +23,8 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={isLoading || disabled}
         className={cn(
           'ui-button',
-          `variant-${variant}`,
-          `size-${size}`,
+          `ui-button--${variant}`,
+          `ui-button--${size}`,
           isLoading && 'is-loading',
           className
         )}
@@ -32,7 +32,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       >
         {isLoading && <Loader2 className="animate-spin" size={18} />}
         {!isLoading && LeftIcon && <LeftIcon size={size === 'sm' ? 16 : 20} strokeWidth={2} />}
-        {children && <span className="button-text">{children}</span>}
+        {children && <span className="ui-button__text">{children}</span>}
         {!isLoading && RightIcon && <RightIcon size={size === 'sm' ? 16 : 20} strokeWidth={2} />}
       </button>
     );

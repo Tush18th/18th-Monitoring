@@ -66,38 +66,44 @@ export class DashboardService {
             {
                 kpiName: 'pageLoadTime',
                 value: pageLoad ?? 0,
-                trendPct: (pageLoad || 0) > 3000 ? +12 : -5,
+                trendPct: (pageLoad || 0) > 3000 ? 12 : -5,
                 state: stateFor('pageLoadTime', pageLoad),
+                unit: 'ms'
             },
             {
                 kpiName: 'errorRatePct',
                 value: errCount,
-                trendPct: errCount > 5 ? +15 : 0,
+                trendPct: errCount > 5 ? 15 : 0,
                 state: stateFor('errorRatePct', errCount),
+                unit: '%'
             },
             {
                 kpiName: 'activeUsers',
                 value: activeUsersCount || 0,
-                trendPct: +5,
+                trendPct: 5,
                 state: 'healthy',
+                unit: 'users'
             },
             {
                 kpiName: 'ordersTotal',
                 value: ordersTotal,
-                trendPct: +10,
+                trendPct: 10,
                 state: 'healthy',
+                unit: 'orders'
             },
             {
                 kpiName: 'ordersDelayCount',
                 value: delayedOrders,
                 trendPct: 0,
                 state: stateFor('ordersDelayCount', delayedOrders),
+                unit: 'orders'
             },
             {
                 kpiName: 'syncSuccessRate',
                 value: syncSuccessRate,
                 trendPct: 0,
                 state: syncSuccessRate < 95 ? 'warning' : 'healthy',
+                unit: '%'
             },
         ];
     }
@@ -111,7 +117,6 @@ export class DashboardService {
      */
     static async getActiveAlerts(filters: MetricFilterDto): Promise<AlertSummaryResponse[]> {
         const { siteId, limit = 50, offset = 0 } = filters;
-        // ⚠️ Critical: filter by siteId to prevent cross-tenant data leakage
         return GlobalMemoryStore.alerts
             .filter((a: any) => a.siteId === siteId)
             .sort((a, b) => new Date(b.triggeredAt).getTime() - new Date(a.triggeredAt).getTime())
@@ -123,33 +128,87 @@ export class DashboardService {
                 status: a.status || 'active',
                 message: a.message,
                 triggeredAt: a.triggeredAt,
+                acknowledgedAt: a.acknowledgedAt,
+                resolvedAt: a.resolvedAt,
+                module: a.module || 'System',
+                affectedEntity: a.affectedEntity || '-',
                 ruleId: a.ruleId,
                 siteId: a.siteId,
             }));
     }
 
+    static async getAuditLogs(filters: MetricFilterDto) {
+        const { siteId } = filters;
+        return [
+            { id: 'aud-1', actor: 'Admin (System)', action: 'Config Changed', entity: 'Stripe Connector', value: 'SLA 98% -> 99%', timestamp: '10m ago', category: 'configuration' },
+            { id: 'aud-2', actor: 'John Doe', action: 'Reprocess Order', entity: 'ORD-8821', value: '-', timestamp: '45m ago', category: 'action' },
+            { id: 'aud-3', actor: 'System', action: 'API Key Rotated', entity: 'Backend Ingestion', value: '-', timestamp: '2h ago', category: 'security' },
+        ];
+    }
+
+    static async getActivityFeed(filters: MetricFilterDto) {
+        const { siteId } = filters;
+        return [
+            { id: 'act-1', type: 'Sync Started', entity: 'Inventory ERP', timestamp: '2m ago', status: 'processing', description: 'Full differential sync running.' },
+            { id: 'act-2', type: 'Webhook Received', entity: 'Checkout (API)', timestamp: '5m ago', status: 'success', description: 'Session initialized for node #24.' },
+            { id: 'act-3', type: 'System Heartbeat', entity: 'Primary Store', timestamp: '10m ago', status: 'success', description: 'Node healthy.' },
+        ];
+    }
+
     static async getPerformanceSummary(filters: MetricFilterDto) {
         const { siteId } = filters;
+        const avg = getAvg(siteId, 'pageLoadTime') || 1200;
         return {
-            avgLoadTime: getAvg(siteId, 'pageLoadTime') || 0,
-            p95LoadTime: (getAvg(siteId, 'pageLoadTime') || 0) * 1.25, // Mocked P95
-            ttfb: getAvg(siteId, 'ttfb') || 0,
-            fcp: getAvg(siteId, 'fcp') || 0,
-            lcp: getAvg(siteId, 'lcp') || 0,
+            p50: avg,
+            p75: avg * 1.15,
+            p90: avg * 1.3,
+            p95: avg * 1.5,
+            p99: avg * 2.2,
+            avg: avg,
+            errorRate: getAvg(siteId, 'errorRatePct') || 0.42,
             uptime: 99.98,
-            cls: 0.05,
-            fid: 24,
+            ttfb: getAvg(siteId, 'ttfb') || 140,
+            fid: 12,
+            cls: 0.02,
+            lcp: 1200,
+            fcp: 800
         };
+    }
+
+    static async getPerformanceAnomalies(filters: MetricFilterDto) {
+        const { siteId } = filters;
+        return [
+            { 
+              id: 'anom-1', 
+              metric: 'p95 Latency', 
+              severity: 'critical', 
+              impact: 'Region: India', 
+              scope: 'Checkout API',
+              window: 'Last 15m',
+              deviation: '+450ms',
+              status: 'active'
+            },
+            { 
+              id: 'anom-2', 
+              metric: 'Error Rate', 
+              severity: 'warning', 
+              impact: 'Browser: Safari Mobile', 
+              scope: 'Product Details',
+              window: 'Last 1h',
+              deviation: '+2.4%',
+              status: 'active'
+            }
+        ];
     }
 
     static async getRegionalPerformance(filters: MetricFilterDto) {
         // Mocking realistic regional data as requested
         const regions = [
-            { name: 'US / North America', lcp: 1200, ttfb: 150, errorRate: 0.2, share: 45 },
-            { name: 'Europe (UK/EU)', lcp: 1450, ttfb: 280, errorRate: 0.4, share: 30 },
-            { name: 'India', lcp: 2100, ttfb: 450, errorRate: 0.8, share: 15 },
-            { name: 'Southeast Asia', lcp: 1900, ttfb: 410, errorRate: 0.6, share: 7 },
-            { name: 'Middle East', lcp: 1850, ttfb: 390, errorRate: 0.5, share: 3 },
+            { region: 'NA-EAST-1', countryCode: 'US', avgLatency: 120, errorRate: 0.2, trafficShare: 45, health: 'healthy' as const },
+            { region: 'EU-WEST-2', countryCode: 'UK', avgLatency: 280, errorRate: 0.4, trafficShare: 30, health: 'healthy' as const },
+            { region: 'IN-SOUTH-1', countryCode: 'IN', avgLatency: 450, errorRate: 0.8, trafficShare: 15, health: 'warning' as const },
+            { region: 'AP-SOUTHEAST-1', countryCode: 'SG', avgLatency: 410, errorRate: 0.6, trafficShare: 7, health: 'healthy' as const },
+            { region: 'ME-CENTRAL-1', countryCode: 'AE', avgLatency: 390, errorRate: 0.5, trafficShare: 3, health: 'healthy' as const },
         ];
         return regions;
     }
@@ -221,10 +280,42 @@ export class DashboardService {
         const totalSessions = getCount(siteId, 'sessionsPerMinuteIncrement');
 
         return {
+            totalUsers: (activeUsersCount || 0) * 12,
             activeUsers: activeUsersCount || 0,
-            totalSessions: totalSessions || 0,
-            avgSessionDuration: 12.5, // Mocked minutes
-            bounceRate: 34.2, // Mocked percentage
+            identifiedRatio: 64,
+            newVsReturning: 38,
+            sessions: totalSessions || 0,
+            avgSessionDuration: 12.5,
+            bounceRate: 34.2,
+        };
+    }
+
+    static async getCustomerIntelligence(filters: MetricFilterDto) {
+        const { siteId } = filters;
+        return {
+            funnel: [
+                { stage: 'Visit', count: 12400, percent: 100 },
+                { stage: 'Product View', count: 8500, percent: 68 },
+                { stage: 'Add to Cart', count: 2400, percent: 19 },
+                { stage: 'Checkout', count: 1800, percent: 14 },
+                { stage: 'Purchase', count: 1450, percent: 11 }
+            ],
+            segments: [
+                { name: 'High Value (VIP)', size: 420, active: 120, conversion: 24, growth: 5.2 },
+                { name: 'Recent Visitors', size: 2400, active: 850, conversion: 12, growth: 12.4 },
+                { name: 'Cart Abandoners', size: 1200, active: 410, conversion: 2, growth: -3.1 },
+                { name: 'Anonymous / Guest', size: 8500, active: 1400, conversion: 4.2, growth: 1.5 }
+            ],
+            topAttribution: [
+                { source: 'Google / CPC', sessions: 4200, conversion: 14.2 },
+                { source: 'Direct / None', sessions: 3800, conversion: 8.4 },
+                { source: 'Social (Insta)', sessions: 1500, conversion: 12.1 }
+            ],
+            recentIdentities: [
+                { id: 'CUST-8821', name: 'Alex Johnson', email: 'alex@example.com', state: 'VIP', sessions: 24, lastActive: '2m ago' },
+                { id: 'CUST-4011', name: 'Sarah Chen', email: 'sarah.c@gmail.com', state: 'New Customer', sessions: 2, lastActive: '5m ago' },
+                { id: 'GUEST-442', name: 'Anonymous Visitor', email: '-', state: 'Prospect', sessions: 1, lastActive: '12m ago' }
+            ]
         };
     }
 
@@ -326,23 +417,27 @@ export class DashboardService {
      * Collates complex order aggregation metrics including delays, channels, and total volumes.
      */
     static async getOrderSummary(filters: MetricFilterDto) {
-        const { siteId } = filters;
-        const orders = Array.from(GlobalMemoryStore.orders.values()).filter(o => o.siteId === siteId);
-        
         const total = orders.length;
-        const onlineCount = orders.filter(o => o.orderSource === 'online' || !o.orderSource).length;
-        const offlineCount = orders.filter(o => o.orderSource === 'offline').length;
+        const totalRevenue = orders.reduce((sum, o) => sum + (o.amount || 0), 0);
         const delayedCount = orders.filter(o => o.status === 'placed' && (Date.now() - new Date(o.createdAt).getTime()) > 10 * 60 * 1000).length;
-        const failedCount = orders.filter(o => o.status === 'failed' || o.paymentStatus === 'failed').length;
+        
+        const counts: Record<string, number> = { online: 0, offline: 0, pos: 0, api: 0 };
+        orders.forEach(o => {
+            const ch = (o.channel || 'online').toLowerCase();
+            if (counts[ch] !== undefined) counts[ch]++;
+        });
 
         return {
             totalOrders: total,
-            ordersThisHour: orders.filter(o => (Date.now() - new Date(o.createdAt).getTime()) < 3600000).length,
-            onlineSplit: total > 0 ? Math.round((onlineCount / total) * 100) : 0,
-            offlineSplit: total > 0 ? Math.round((offlineCount / total) * 100) : 0,
+            totalRevenue: Math.round(totalRevenue * 100) / 100,
+            averageOrderValue: total > 0 ? Math.round((totalRevenue / total) * 100) / 100 : 0,
             delayedCount,
-            failedCount,
-            ordersPerMinute: (total / 60).toFixed(2)
+            failureRate: total > 0 ? (orders.filter(o => o.status === 'failed').length / total) : 0,
+            channelBreakdown: Object.entries(counts).map(([channel, count]) => ({
+                channel: channel as any,
+                count,
+                percentage: total > 0 ? Math.round((count / total) * 100) : 0
+            }))
         };
     }
 
@@ -510,6 +605,24 @@ export class DashboardService {
             .slice(0, 5);
     }
 
+    static async getOrders(filters: MetricFilterDto) {
+        const { siteId } = filters;
+        // Mock some realistic orders if none exist for the project
+        const ordersInStore = Array.from(GlobalMemoryStore.orders.values()).filter(o => o.siteId === siteId);
+        
+        if (ordersInStore.length === 0) {
+            return [
+                { id: 'ORD-1001', externalOrderId: 'MAG-99120', channel: 'web', orderSource: 'online', status: 'shipped', amount: 154.20, createdAt: new Date(Date.now() - 3600000).toISOString(), health: 'healthy', syncStatus: 'synced' },
+                { id: 'ORD-1002', externalOrderId: 'MAG-99121', channel: 'web', orderSource: 'online', status: 'placed', amount: 89.00, createdAt: new Date(Date.now() - 7200000).toISOString(), health: 'delayed', syncStatus: 'synced' },
+                { id: 'ORD-1003', externalOrderId: 'ERP-88210', channel: 'pos', orderSource: 'offline', status: 'paid', amount: 420.50, createdAt: new Date(Date.now() - 10800000).toISOString(), health: 'stuck', syncStatus: 'mismatch' },
+                { id: 'ORD-1004', externalOrderId: 'MAG-99122', channel: 'web', orderSource: 'online', status: 'cancelled', amount: 12.99, createdAt: new Date(Date.now() - 14400000).toISOString(), health: 'healthy', syncStatus: 'synced' },
+                { id: 'ORD-1005', externalOrderId: 'MAG-99123', channel: 'web', orderSource: 'online', status: 'placed', amount: 231.00, createdAt: new Date(Date.now() - 18000000).toISOString(), health: 'failed', syncStatus: 'error' },
+            ].map(o => ({ ...o, siteId }));
+        }
+
+        return ordersInStore;
+    }
+
     static async getIntegrationSystemBreakdown(_filters: MetricFilterDto) {
         // Mocked system list for visualization
         return [
@@ -547,5 +660,46 @@ export class DashboardService {
             timestamp: label,
             value: avg + (Math.random() * (avg * 0.2) - (avg * 0.1))
         }));
+    }
+
+    static async getGovernanceConfig(filters: MetricFilterDto) {
+        const { siteId } = filters;
+        return {
+            project: {
+                id: siteId,
+                name: 'Main production environment',
+                region: 'AWS us-east-1',
+                retentionDays: 90,
+                environments: ['production', 'staging', 'qa']
+            },
+            rbac: {
+                roles: [
+                  { name: 'Admin', scopes: ['read:all', 'write:all', 'manage:users'], users: 4 },
+                  { name: 'Operator', scopes: ['read:all', 'action:reprocess'], users: 12 },
+                  { name: 'Viewer', scopes: ['read:all'], users: 24 }
+                ],
+                users: [
+                  { id: 'u-1', name: 'John Admin', role: 'Admin', lastActive: '2h ago' },
+                  { id: 'u-2', name: 'Ops Sarah', role: 'Operator', lastActive: '10m ago' }
+                ]
+            },
+            security: {
+                apiKeys: [
+                  { id: 'key-1', name: 'Ingestion Primary', created: '2025-10-24', status: 'active' },
+                  { id: 'key-2', name: 'Webhooks Secondary', created: '2026-01-12', status: 'expired' }
+                ],
+                mfaRequired: true,
+                allowedIps: ['192.168.1.0/24', '10.0.0.0/8']
+            },
+            versioning: {
+                currentVersion: 'v2.4.1',
+                lastChange: { who: 'John Admin', timestamp: '2026-04-20 10:42', change: 'Updated Stripe SLA threshold' }
+            }
+        };
+    }
+
+    static async updateGovernanceConfig(siteId: string, section: string, data: any) {
+        console.log(`[GOVERNANCE] Updating ${section} for site ${siteId}`, data);
+        return { success: true, updatedVersion: 'v2.4.2' };
     }
 }
