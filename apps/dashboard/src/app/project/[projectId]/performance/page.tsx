@@ -180,8 +180,8 @@ export default function PerformancePage() {
                             { name: 'Payment (Stripe)', id: 'INT-402', status: 'Healthy', latency: '240ms' },
                             { name: 'Shipping (FedEx)', id: 'INT-88', status: 'Degraded', latency: '1.2s' },
                             { name: 'Identity (Auth0)', id: 'INT-12', status: 'Healthy', latency: '42ms' },
-                          ].map((dep, idx) => (
-                             <div key={idx} className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
+                          ].map((dep) => (
+                             <div key={dep.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
                                 <div>
                                    <Typography variant="body" weight="bold" className="text-sm">{dep.name}</Typography>
                                    <Typography variant="micro" className="text-text-muted uppercase">{dep.id}</Typography>

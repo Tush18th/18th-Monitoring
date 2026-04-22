@@ -74,6 +74,7 @@ export const SegmentationPivot: React.FC<SegmentationPivotProps> = ({
         isDense 
         onRowClick={onSelect}
         isLoading={loading}
+        getRowKey={(item) => item.dimension}
       />
     </Card>
   );

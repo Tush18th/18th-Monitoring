@@ -52,9 +52,6 @@ export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ items, className }) =>
   );
 };
 
-/**
- * Utility to format route parts into human-readable labels
- */
 export const formatBreadcrumbLabel = (segment: string): string => {
   if (!segment) return '';
   return segment

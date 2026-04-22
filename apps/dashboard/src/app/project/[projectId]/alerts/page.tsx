@@ -60,7 +60,7 @@ export default function AlertsPage() {
             apiFetch(`/api/v1/dashboard/audit?siteId=${projectId}`),
             apiFetch(`/api/v1/dashboard/activity?siteId=${projectId}`)
          ]);
-         setAlerts(Array.isArray(alrts) ? alrts : []);
+          setAlerts(Array.isArray(alrts) ? alrts : alrts?.alerts || []);
          setAuditLogs(Array.isArray(audit) ? audit : []);
          setActivityFeed(Array.isArray(activity) ? activity : []);
       } catch (err) {

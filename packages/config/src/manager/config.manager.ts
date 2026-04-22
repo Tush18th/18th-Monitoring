@@ -1,7 +1,7 @@
 import { ProjectConfigPayload } from '../../../shared-types/src';
 // Assume db exposes drizzle db instance matching schema
 import { db } from '../../../db/src/adapters/postgres-relational.adapter'; 
-import { siteConfigs, configVersions } from '../../../db/src/drizzle/schema';
+import { projects, configVersions } from '../../../db/src/drizzle/schema';
 import crypto from 'crypto';
 import { eq, desc } from 'drizzle-orm';
 import { cache, TTL } from '../../../../packages/cache/src';
@@ -17,7 +17,7 @@ export class ConfigManager {
         const hit = await cache.get<ProjectConfigPayload>(CACHE_KEY);
         if (hit) return hit;
 
-        const site = await db.select().from(siteConfigs).where(eq(siteConfigs.siteId, siteId)).limit(1);
+        const site = await db.select().from(projects).where(eq(projects.id, siteId)).limit(1);
         if (!site.length || !site[0].activeVersionId) return null;
 
         const version = await db.select().from(configVersions).where(eq(configVersions.versionId, site[0].activeVersionId)).limit(1);
@@ -66,11 +66,11 @@ export class ConfigManager {
             });
 
             // Update active site pointer safely using ON CONFLICT (upsert paradigm)
-            await tx.insert(siteConfigs).values({
-                siteId,
+            await tx.insert(projects).values({
+                id: siteId,
                 activeVersionId: versionId,
             }).onConflictDoUpdate({
-                target: siteConfigs.siteId,
+                target: projects.id,
                 set: { activeVersionId: versionId, updatedAt: new Date() }
             });
 
@@ -81,7 +81,7 @@ export class ConfigManager {
                 siteId,
                 entityType: 'config_version',
                 entityId: versionId,
-                changes: { publishedVersion: nextVersion }
+                metadata: { publishedVersion: nextVersion }
             });
 
             return { success: true, versionId, nextVersion };
@@ -100,9 +100,9 @@ export class ConfigManager {
             const version = await tx.select().from(configVersions).where(eq(configVersions.versionId, targetVersionId)).limit(1);
             if (!version.length) throw new Error('Target version not found');
 
-            await tx.update(siteConfigs)
+            await tx.update(projects)
                     .set({ activeVersionId: targetVersionId, updatedAt: new Date() })
-                    .where(eq(siteConfigs.siteId, siteId));
+                    .where(eq(projects.id, siteId));
 
             await AuditService.log({
                 action: 'CONFIG_ROLLBACK',
@@ -110,7 +110,7 @@ export class ConfigManager {
                 siteId,
                 entityType: 'config_version',
                 entityId: targetVersionId,
-                changes: { rollbackToNumber: version[0].versionNumber }
+                metadata: { rollbackToNumber: version[0].versionNumber }
             });
 
             return { success: true, activeVersion: version[0].versionNumber };

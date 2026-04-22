@@ -24,6 +24,8 @@ interface AppShellProps {
   onNavigate?: (href: string) => void;
   logo?: React.ReactNode;
   className?: string;
+  showSidebar?: boolean;
+  defaultCollapsed?: boolean;
 
   // Context Bar Props
   projects?: Array<{ id: string; name: string }>;
@@ -49,6 +51,8 @@ export const AppShell: React.FC<AppShellProps> = ({
   onNavigate,
   logo,
   className,
+  showSidebar = true,
+  defaultCollapsed = false,
   projects,
   selectedProject,
   onProjectChange,
@@ -61,7 +65,7 @@ export const AppShell: React.FC<AppShellProps> = ({
   onRefresh,
   freshnessStatus
 }) => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   // Load persistence from localStorage
@@ -69,8 +73,10 @@ export const AppShell: React.FC<AppShellProps> = ({
     const saved = localStorage.getItem('sidebar-collapsed');
     if (saved !== null) {
       setIsCollapsed(saved === 'true');
+    } else if (defaultCollapsed) {
+      setIsCollapsed(true);
     }
-  }, []);
+  }, [defaultCollapsed]);
 
   const handleToggleCollapse = () => {
     const nextState = !isCollapsed;
@@ -87,23 +93,32 @@ export const AppShell: React.FC<AppShellProps> = ({
   };
 
   return (
-    <div className={cn('ui-app-shell', isCollapsed && 'sidebar-collapsed', className)}>
-      <Sidebar 
-        groups={navGroups} 
-        activeHref={activeHref}
-        onNavigate={onNavigate}
-        isCollapsed={isCollapsed}
-        onToggleCollapse={handleToggleCollapse}
-        isMobileOpen={isMobileOpen}
-        onCloseMobile={handleCloseMobile}
-        logo={logo}
-      />
-      <button
-        type="button"
-        className={cn('sidebar-overlay', isMobileOpen && 'open')}
-        onClick={handleCloseMobile}
-        aria-label="Close navigation"
-      />
+    <div className={cn(
+      'ui-app-shell', 
+      isCollapsed && 'sidebar-collapsed', 
+      !showSidebar && 'sidebar-hidden',
+      className
+    )}>
+      {showSidebar && (
+        <>
+          <Sidebar 
+            groups={navGroups} 
+            activeHref={activeHref}
+            onNavigate={onNavigate}
+            isCollapsed={isCollapsed}
+            onToggleCollapse={handleToggleCollapse}
+            isMobileOpen={isMobileOpen}
+            onCloseMobile={handleCloseMobile}
+            logo={logo}
+          />
+          <button
+            type="button"
+            className={cn('sidebar-overlay', isMobileOpen && 'open')}
+            onClick={handleCloseMobile}
+            aria-label="Close navigation"
+          />
+        </>
+      )}
       
       <div className="shell-main">
         <GlobalContextBar 
@@ -118,12 +133,12 @@ export const AppShell: React.FC<AppShellProps> = ({
           lastUpdated={lastUpdated}
           onRefresh={onRefresh}
           freshnessStatus={freshnessStatus}
-        />
-        <TopBar 
-          breadcrumbs={breadcrumbs} 
+          breadcrumbs={breadcrumbs}
           user={user}
-          onMenuClick={handleMenuToggle}
           onLogout={onLogout}
+          onMenuClick={showSidebar ? handleMenuToggle : undefined}
+          showLogo={!showSidebar}
+          logo={logo}
         />
         <main className="shell-content">
           {children}

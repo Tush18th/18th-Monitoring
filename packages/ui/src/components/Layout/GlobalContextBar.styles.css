@@ -1,162 +1,27 @@
 .ui-global-context-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 48px;
-  padding: 0 var(--space-4);
-  background: var(--surface-overlay);
-  border-bottom: 1px solid var(--border-subtle);
-  font-family: var(--font-sans);
-  font-size: var(--text-xs);
-  color: var(--text-secondary);
-  z-index: 40;
-  position: sticky;
-  top: 0;
-}
-
-.context-left, .context-right {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: var(--space-4);
+  min-height: 56px;
+  padding: 0 clamp(1rem, 2vw, 1.5rem);
+  background: var(--surface-overlay);
+  border-bottom: 1px solid var(--border-subtle);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
-.context-item {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-width: 0;
-}
-
-.context-divider {
-  width: 1px;
-  height: 16px;
-  background: var(--border-subtle);
-}
-
-.item-icon {
-  color: var(--text-muted);
-}
-
-.item-label {
-  font-weight: var(--font-medium);
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.025em;
-}
-
-.context-select-shell {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  padding: 2px 10px;
-  border-radius: var(--radius-md);
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  color: var(--text-primary);
-  transition: var(--transition-fast);
-  min-width: 0;
-}
-
-.context-select-shell:hover {
-  border-color: var(--border-interactive);
-  background: var(--bg-accent);
-}
-
-.context-select-shell:focus-within,
-.date-selector:focus-visible,
-.refresh-button:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
-}
-
-.context-select {
+.ui-global-context-bar select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
   appearance: none;
-  border: 0;
-  background: transparent;
-  color: var(--text-primary);
-  font-size: var(--text-sm);
-  font-weight: var(--font-semibold);
-  padding: 6px 20px 6px 0;
-  min-width: 0;
+}
+
+.ui-global-context-bar select:focus {
   outline: none;
-}
-
-.current-value {
-  max-width: 160px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.chevron {
-  color: var(--text-muted);
-}
-
-.env-badge {
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: var(--font-bold);
-  text-transform: uppercase;
-}
-
-.env-badge.production {
-  background: var(--success-bg);
-  color: var(--success-text);
-}
-
-.env-badge.staging {
-  background: var(--warning-bg);
-  color: var(--warning-text);
-}
-
-.env-badge.development {
-  background: var(--info-bg);
-  color: var(--info-text);
-}
-
-.date-selector {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  color: var(--text-secondary);
-  font-weight: var(--font-medium);
-  cursor: pointer;
-  padding: 6px 10px;
-  border-radius: var(--radius-md);
-  transition: var(--transition-fast);
-}
-
-.date-selector:hover {
-  background: var(--bg-muted);
-}
-
-.freshness-info {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.refresh-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  background: transparent;
-  border: 1px solid transparent;
-  color: var(--text-muted);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: var(--transition-fast);
-}
-
-.refresh-button:hover {
-  background: var(--bg-muted);
-  color: var(--primary);
-}
-
-.refresh-button:active {
-  transform: scale(0.9);
 }
 
 /* Animations */
@@ -169,29 +34,15 @@
   animation: spin 1s linear infinite;
 }
 
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
 @media (max-width: 1024px) {
   .ui-global-context-bar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--space-2);
-    padding: var(--space-3) var(--space-4);
+    padding: 0 var(--space-4);
+    grid-template-columns: auto 1fr auto;
   }
+}
 
-  .context-left,
-  .context-right {
-    justify-content: space-between;
-    flex-wrap: wrap;
+@media (max-width: 640px) {
+  .ui-global-context-bar {
+     gap: var(--space-2);
   }
 }

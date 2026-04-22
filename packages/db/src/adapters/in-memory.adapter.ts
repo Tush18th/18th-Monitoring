@@ -5,23 +5,33 @@ import { ConfigResolver } from '../../../../packages/config/src/resolver';
 
 // ─── Singleton in-memory store shared across the whole process ────────────────
 export const GlobalMemoryStore = {
-    metrics:  [] as MetricRecord[],
-    events:   [] as any[],
-    alerts:   [] as any[],
-    orders:   new Map<string, any>(),
-    users:    new Map<string, any>(),
+    metrics: [] as MetricRecord[],
+    events: [] as any[],
+    alerts: [] as any[],
+    tenants: new Map<string, any>(),
+    orders: new Map<string, any>(),
+    users: new Map<string, any>(),
     projects: new Map<string, any>(),
     sessions: new Map<string, any>(),
     synthetics: [] as any[],
     ingestionLogs: [] as any[],
     integrationSyncs: [] as any[],
+    pipelineJobs: [] as any[],
+    pipelineCheckpoints: new Map<string, any>(),
+    deadLetterQueue: [] as any[],
+    alertRules: [] as any[],
+    healthSnapshots: [] as any[],
+    canonicalOrders: [] as any[],
     projectIntegrations: new Map<string, any[]>(), // siteId -> Array of instances
+    connectorCredentials: new Map<string, any[]>(), // instanceId -> Array of credentials
+    connectorLifecycleEvents: [] as any[],
     projectAccessKeys: new Map<string, any[]>(),   // siteId -> Array of keys
     projectWebhookSubscriptions: new Map<string, any[]>(), // siteId -> Array of subscriptions
     webhookDeliveryLogs: [] as any[],
     governanceAuditLogs: [] as any[],
     rateLimitBuckets: new Map<string, { count: number, resetAt: number }>(),
     syncHistory: [] as any[],
+    orderSnapshots: [] as any[],
 
     _p(pwd: string): string {
         const salt = process.env.JWT_SECRET || 'hardcoded_demo_salt';
@@ -31,32 +41,72 @@ export const GlobalMemoryStore = {
 
     seed() {
         const now = new Date().toISOString();
+
+        // Seed Tenants
+        this.tenants.set('tenant_001', {
+            id: 'tenant_001',
+            name: 'Global Retail Corp',
+            slug: 'global-retail',
+            status: 'ACTIVE',
+            plan: 'ENTERPRISE',
+            settings: {},
+            createdAt: now,
+            updatedAt: now
+        });
+        this.tenants.set('tenant_002', {
+            id: 'tenant_002',
+            name: 'Tushar Creations',
+            slug: 'tushar-creations',
+            status: 'ACTIVE',
+            plan: 'PRO',
+            settings: {},
+            createdAt: now,
+            updatedAt: now
+        });
+
         // Seed Projects
-        this.projects.set('store_001', { 
-            id: 'store_001', name: 'Standard Store v1', status: 'active',
-            description: 'Main US retail frontend with default monitoring',
-            lastActivity: now,
-            metricsSummary: { activeUsers: 1420, errorRate: 1.2, revenue: 12500 }
+        this.projects.set('store_001', {
+            id: 'store_001',
+            tenantId: 'tenant_001',
+            name: 'Global Flagship Store',
+            slug: 'global-flagship',
+            status: 'ACTIVE',
+            createdAt: now,
+            updatedAt: now,
+            metricsSummary: { activeUsers: 142, errorRate: 0.02, revenue: 12400 }
         });
-        this.projects.set('store_002', { 
-            id: 'store_002', name: 'Premium Merchant',   status: 'active',
-            description: 'High-volume checkout with critical alerts enabled',
-            lastActivity: now,
-            metricsSummary: { activeUsers: 840, errorRate: 0.5, revenue: 42000 }
+
+        this.projects.set('store_002', {
+            id: 'store_002',
+            tenantId: 'tenant_001',
+            name: 'European Outlet',
+            slug: 'eu-outlet',
+            status: 'ACTIVE',
+            createdAt: now,
+            updatedAt: now,
+            metricsSummary: { activeUsers: 85, errorRate: 0.05, revenue: 5600 }
         });
-        this.projects.set('store_003', { 
-            id: 'store_003', name: 'Store EU-01',   status: 'maintenance',
-            description: 'European cluster currently undergoing load test',
-            lastActivity: now,
-            metricsSummary: { activeUsers: 12, errorRate: 94.0, revenue: 0 },
-            globalRateLimit: { max: 5000, windowMs: 60000 } // fallback ceiling
+
+        this.projects.set('store_003', {
+            id: 'store_003',
+            tenantId: 'tenant_002',
+            name: 'Tushar Portfolio',
+            slug: 'tushar-portfolio',
+            status: 'ACTIVE',
+            createdAt: now,
+            updatedAt: now,
+            metricsSummary: { activeUsers: 12, errorRate: 0.0, revenue: 0 }
         });
-        
-        this.projects.set('tc_demo_004', { 
-            id: 'tc_demo_004', name: "Tushar's Creation", status: 'active',
-            description: 'Live Demo Simulation Environment for VIP Presentation',
-            lastActivity: now,
-            metricsSummary: { activeUsers: 840, errorRate: 2.1, revenue: 154000 }
+
+        this.projects.set('tc_demo_004', {
+            id: 'tc_demo_004',
+            tenantId: 'tenant_001',
+            name: 'High-Volume Commerce Demo',
+            slug: 'commerce-demo',
+            status: 'active',
+            createdAt: now,
+            updatedAt: now,
+            metricsSummary: { activeUsers: 1250, errorRate: 0.01, revenue: 45200 }
         });
 
         // Seed Default Access Keys for store_001
@@ -98,46 +148,51 @@ export const GlobalMemoryStore = {
         this.projectIntegrations.set('store_001', [
             {
                 id: 'int_magento_main',
+                tenantId: 'tenant_001',
+                siteId: 'store_001',
                 connectorId: 'magento_us_web',
                 label: 'Global Online Storefront',
                 category: 'Commerce',
-                status: 'Active',
-                health: 98,
+                family: 'Commerce',
+                status: 'ACTIVE',
+                healthStatus: 'HEALTHY',
+                healthScore: 98,
                 enabled: true,
-                config: {
-                    prod: { clientId: 'magento_p_01', apiKey: '••••••••8901' },
-                    staging: { clientId: 'magento_s_01', apiKey: '••••••••1234' }
-                },
+                configVersion: '1.0.0',
                 syncSettings: { frequency: '15m', retryPolicy: 'exponential', timeout: 30 },
                 lastSyncAt: now,
                 lastSyncStatus: 'success'
             },
             {
                 id: 'int_vend_pos',
+                tenantId: 'tenant_001',
+                siteId: 'store_001',
                 connectorId: 'pos_us_stores',
                 label: 'US Retail POS (Vend)',
                 category: 'Retail',
-                status: 'Degraded',
-                health: 72,
+                family: 'POS',
+                status: 'ACTIVE',
+                healthStatus: 'HEALTHY',
+                healthScore: 98,
                 enabled: true,
-                config: {
-                    prod: { clientId: 'vend_p_99', apiKey: '••••••••4567' }
-                },
+                configVersion: '1.0.0',
                 syncSettings: { frequency: '1h', retryPolicy: 'constant', timeout: 60 },
                 lastSyncAt: now,
-                lastSyncStatus: 'failure',
+                lastSyncStatus: 'success',
             },
             {
                 id: 'int_celigo_sync',
+                tenantId: 'tenant_001',
+                siteId: 'store_001',
                 connectorId: 'celigo',
                 label: 'Celigo iPaaS Router',
                 category: 'middleware',
-                status: 'Active',
-                health: 99,
+                family: 'connector',
+                status: 'ACTIVE',
+                healthStatus: 'HEALTHY',
+                healthScore: 99,
                 enabled: true,
-                config: {
-                    prod: { endpoint: 'https://api.celigo.com/v1', apiKey: '••••••••celigo89' }
-                },
+                configVersion: '1.2.0',
                 syncSettings: { frequency: 'webhook', timeout: 120 },
                 lastSyncAt: new Date(Date.now() - 5000).toISOString(),
                 lastSyncStatus: 'success',
@@ -145,15 +200,17 @@ export const GlobalMemoryStore = {
             },
             {
                 id: 'int_custom_wms',
+                tenantId: 'tenant_001',
+                siteId: 'store_001',
                 connectorId: 'custom_api',
                 label: 'Legacy WMS Internal API',
                 category: 'custom',
-                status: 'Configuring',
-                health: 50,
+                family: 'WMS',
+                status: 'DRAFT',
+                healthStatus: 'HEALTHY',
+                healthScore: 50,
                 enabled: false,
-                config: {
-                    staging: { endpoint: 'http://internal.wms.local:8080', clientId: 'wms_test' }
-                },
+                configVersion: '1.0.0',
                 syncSettings: { frequency: '1h', timeout: 60 },
                 errorCount: 15
             }
@@ -216,25 +273,61 @@ export const GlobalMemoryStore = {
             }
         ]);
 
+        // Seed Credentials
+        this.connectorCredentials.set('int_magento_main', [{
+            id: 'cred_magento_01',
+            connectorInstanceId: 'int_magento_main',
+            tenantId: 'tenant_001',
+            authType: 'API_KEY',
+            vaultKey: 'vault/tenant_001/magento_main_secret',
+            scopes: ['orders:read', 'products:read'],
+            createdAt: now
+        }]);
+
+        this.connectorCredentials.set('int_vend_pos', [{
+            id: 'cred_vend_01',
+            connectorInstanceId: 'int_vend_pos',
+            tenantId: 'tenant_001',
+            authType: 'OAUTH2',
+            vaultKey: 'vault/tenant_001/vend_oauth_token',
+            expiresAt: new Date(Date.now() + 86400000).toISOString(),
+            createdAt: now
+        }]);
+
         // Seed Users
         this.users.set('superadmin@monitor.io', {
-            id: 'u1', email: 'superadmin@monitor.io', name: 'Super Admin', 
+            id: 'u_super_001',
+            email: 'superadmin@monitor.io',
+            name: 'Platform Superadmin',
+            role: 'SUPER_ADMIN',
+            status: 'active',
+            tenantId: 'tenant_001',
+            assignedProjects: ['store_001', 'store_002', 'store_003', 'tc_demo_004'],
             passwordHash: this._p('password123'),
-            role: 'SUPER_ADMIN', status: 'active', assignedProjects: ['store_001', 'store_002', 'store_003', 'tc_demo_004'],
             audit: { createdAt: now, updatedAt: now }
         });
-        
+
         this.users.set('admin@store001.com', {
-            id: 'u2', email: 'admin@store001.com', name: 'Project Admin', 
+            id: 'u_admin_001',
+            email: 'admin@store001.com',
+            name: 'Store Manager',
+            role: 'TENANT_ADMIN',
+            status: 'active',
+            tenantId: 'tenant_001',
+            assignedProjects: ['store_001', 'tc_demo_004'],
             passwordHash: this._p('password123'),
-            role: 'ADMIN', status: 'active', assignedProjects: ['store_001', 'tc_demo_004'],
             audit: { createdAt: now, updatedAt: now }
         });
 
         this.users.set('viewer@store001.com', {
-            id: 'u3', email: 'viewer@store001.com', name: 'Customer Viewer', 
+            id: 'u_viewer_001',
+            email: 'viewer@store001.com',
+            name: 'John Viewer',
+            role: 'VIEWER',
+            status: 'active',
+            tenantId: 'tenant_001',
+            assignedProjects: ['store_001', 'tc_demo_004'],
             passwordHash: this._p('password123'),
-            role: 'CUSTOMER', status: 'active', assignedProjects: ['store_001', 'tc_demo_004'],
             audit: { createdAt: now, updatedAt: now }
         });
 
@@ -268,7 +361,32 @@ export const GlobalMemoryStore = {
             }
         ]);
 
-        console.log('[DB] Seeded 3 users and 2 webhook subscriptions');
+        // Seed Orders for tc_demo_004
+        const orderIds = ['ORD-9901', 'ORD-9902', 'ORD-9903', 'ORD-9904', 'ORD-9905'];
+        orderIds.forEach((id, idx) => {
+            this.orders.set(id, {
+                id,
+                siteId: 'tc_demo_004',
+                externalOrderId: `EXT-${1000 + idx}`,
+                amount: 150 + (idx * 45.2),
+                status: idx === 0 ? 'failed' : idx === 2 ? 'placed' : 'shipped',
+                channel: idx % 2 === 0 ? 'web' : 'api',
+                createdAt: new Date(Date.now() - (idx * 2 * 60 * 60 * 1000)).toISOString(),
+            });
+        });
+
+        // Seed Metrics for tc_demo_004
+        const metrics = [
+            { siteId: 'tc_demo_004', kpiName: 'pageLoadTime', value: 2450, timestamp: now, dimensions: { url: '/home' } },
+            { siteId: 'tc_demo_004', kpiName: 'pageLoadTime', value: 3100, timestamp: now, dimensions: { url: '/checkout' } },
+            { siteId: 'tc_demo_004', kpiName: 'errorRatePct', value: 1.2, timestamp: now, dimensions: {} },
+            { siteId: 'tc_demo_004', kpiName: 'activeUsersIncrement', value: 1, timestamp: now, dimensions: { sessionId: 's1', action: 'active' } },
+            { siteId: 'tc_demo_004', kpiName: 'activeUsersIncrement', value: 1, timestamp: now, dimensions: { sessionId: 's2', action: 'active' } },
+            { siteId: 'tc_demo_004', kpiName: 'syncSuccessPing', value: 1, timestamp: now, dimensions: { systemName: 'SAP' } }
+        ];
+        this.metrics.push(...metrics as any);
+
+        console.log('[DB] Seeded 3 users, 2 webhook subscriptions, and baseline metrics for tc_demo_004');
     },
 
     pruneSessions() {
@@ -311,20 +429,37 @@ export class InMemoryEventAdapter implements EventStoreRepository {
 
 // ─── Relational Adapter ───────────────────────────────────────────────────────
 export class InMemoryRelationalAdapter implements RelationalRepository {
-    async getTenant(_tenantId: string): Promise<Tenant | null> { return null; }
-    async getSiteMetadata(_siteId: string): Promise<SiteMetadata | null> { return null; }
-    async updateSiteConfig(_siteId: string, _config: any): Promise<void> {}
+    async getTenant(tenantId: string): Promise<Tenant | null> {
+        return GlobalMemoryStore.tenants.get(tenantId) || null;
+    }
+    async getSiteMetadata(siteId: string): Promise<SiteMetadata | null> {
+        const project = GlobalMemoryStore.projects.get(siteId);
+        if (!project) return null;
+        return {
+            siteId: project.id,
+            tenantId: project.tenantId,
+            domain: project.id + '.monitor.io',
+            status: project.status === 'active' ? 'active' : 'suspended',
+            config: {}
+        };
+    }
+
+    async updateSiteConfig(siteId: string, config: any): Promise<void> {
+        const project = GlobalMemoryStore.projects.get(siteId);
+        if (!project) throw new Error('Project not found');
+        project.settings = { ...project.settings, ...config };
+    }
 
     async getAlertRules(siteId: string): Promise<any[]> {
         const resolver = new ConfigResolver();
         const config = resolver.resolve(siteId);
-        
+
         // Dynamically build rules based on thresholds config
         return [
-            { id: 'rule_page_load_01',    siteId, kpiName: 'pageLoadTime',         threshold: config.thresholds.pageLoadMs, type: 'gt', severity: 'warning'  },
-            { id: 'rule_error_rate_01',   siteId, kpiName: 'errorRatePct',          threshold: config.thresholds.errorRatePct,    type: 'gt', severity: 'high'     },
-            { id: 'rule_oms_failure_01',  siteId, kpiName: 'oms_sync_failed_count', threshold: 0,    type: 'gt', severity: 'critical' },
-            { id: 'rule_delayed_orders_01', siteId, kpiName: 'delayedOrdersCount',  threshold: 0,    type: 'gt', severity: 'warning' },
+            { id: 'rule_page_load_01', siteId, kpiName: 'pageLoadTime', threshold: config.thresholds.pageLoadMs, type: 'gt', severity: 'warning' },
+            { id: 'rule_error_rate_01', siteId, kpiName: 'errorRatePct', threshold: config.thresholds.errorRatePct, type: 'gt', severity: 'high' },
+            { id: 'rule_oms_failure_01', siteId, kpiName: 'oms_sync_failed_count', threshold: 0, type: 'gt', severity: 'critical' },
+            { id: 'rule_delayed_orders_01', siteId, kpiName: 'delayedOrdersCount', threshold: 0, type: 'gt', severity: 'warning' },
             { id: 'rule_synthetic_fail', siteId, kpiName: 'syntheticFailure', threshold: 0, type: 'gt', severity: 'critical' }
         ];
     }
@@ -335,7 +470,7 @@ export class InMemoryRelationalAdapter implements RelationalRepository {
             a => a.ruleId === alert.ruleId && a.status === 'active'
         );
         if (!existing) {
-            alert.status  = 'active';
+            alert.status = 'active';
             alert.alertId = 'alt_' + Math.random().toString(36).slice(2, 7).toUpperCase();
             GlobalMemoryStore.alerts.push(alert);
             console.log(`[Storage:Alert] 🔴 New alert: ${alert.kpiName} → "${alert.message}"`);
@@ -344,7 +479,7 @@ export class InMemoryRelationalAdapter implements RelationalRepository {
 
     // ─── User Management ───
     async getUsersByProject(projectId: string): Promise<any[]> {
-        return Array.from(GlobalMemoryStore.users.values()).filter(u => 
+        return Array.from(GlobalMemoryStore.users.values()).filter(u =>
             u.assignedProjects.includes(projectId) && u.role === 'CUSTOMER'
         );
     }
@@ -360,7 +495,7 @@ export class InMemoryRelationalAdapter implements RelationalRepository {
         // userId is email in this in-memory mock
         const user = GlobalMemoryStore.users.get(userId);
         if (!user) throw new Error('User not found');
-        
+
         Object.assign(user, updates);
         user.audit.updatedAt = new Date().toISOString();
     }

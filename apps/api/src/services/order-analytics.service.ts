@@ -12,14 +12,14 @@ export class OrderAnalyticsService {
         // Ensuring only high-confidence data is used for KPIs (Requirement 15)
         return db.select({
             date: sql<string>`DATE(created_at)`,
-            totalRevenue: sql<number>`SUM(grand_total)`,
+            totalRevenue: sql<number>`SUM(total_amount)`,
             orderCount: sql<number>`COUNT(*)`,
-            avgOrderValue: sql<number>`AVG(grand_total)`
+            avgOrderValue: sql<number>`AVG(total_amount)`
         })
         .from(canonicalOrders)
         .where(and(
             eq(canonicalOrders.siteId, siteId),
-            eq(canonicalOrders.qualityState, 'VALID') // Trust Layer filter
+            eq(canonicalOrders.normalizedStatus, 'ACTIVE') // Trust Layer filter
         ))
         .groupBy(sql`DATE(created_at)`)
         .orderBy(desc(sql`DATE(created_at)`));
@@ -32,12 +32,12 @@ export class OrderAnalyticsService {
         return db.select({
             channel: canonicalOrders.channel,
             orderCount: sql<number>`COUNT(*)`,
-            totalValue: sql<number>`SUM(grand_total)`
+            totalValue: sql<number>`SUM(total_amount)`
         })
         .from(canonicalOrders)
         .where(and(
             eq(canonicalOrders.siteId, siteId),
-            eq(canonicalOrders.qualityState, 'VALID')
+            eq(canonicalOrders.normalizedStatus, 'ACTIVE')
         ))
         .groupBy(canonicalOrders.channel);
     }

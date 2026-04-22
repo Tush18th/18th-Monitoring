@@ -1,5 +1,5 @@
 import { db } from '../../../../packages/db/src/adapters/postgres-relational.adapter';
-import { rawPayloads } from '../../../../packages/db/src/drizzle/schema';
+import { ingestionEvents } from '../../../../packages/db/src/drizzle/schema';
 import crypto from 'crypto';
 
 export class CsvImportService {
@@ -27,13 +27,15 @@ export class CsvImportService {
             // Validate mapping
             
             // Durable store into Database immediately representing Chunk durability
-            await db.insert(rawPayloads).values({
-                payloadId,
-                siteId,
-                connectorId,
-                status: 'PENDING',
-                rawData: chunk,
-            });
+            await db.insert(ingestionEvents).values({
+                id: payloadId,
+                tenantId: 'tenant_001',
+                projectId: siteId,
+                integrationId: connectorId,
+                status: 'RECEIVED',
+                mode: 'FILE_IMPORT',
+                correlationId: payloadId,
+            } as any);
 
             // Hand-off exactly this chunk ID to the Kafka Queue internally for async workers to digest.
             console.log(`[CSV Import] Enqueued chunk ${payloadId} with ${chunk.length} rows.`);

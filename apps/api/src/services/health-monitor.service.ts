@@ -17,7 +17,7 @@ export class HealthMonitorService {
                 gte(systemHealthMetrics.timestamp, new Date(Date.now() - 5 * 60 * 1000)) // Last 5 mins
             ));
         
-        const totalErrors = errorMetrics.reduce((sum, m) => sum + m.metricValue, 0);
+        const totalErrors = errorMetrics.reduce((sum: number, m: any) => sum + (m.metricValue || 0), 0);
 
         if (totalErrors > 50) {
             await ObservabilityService.triggerAlert({

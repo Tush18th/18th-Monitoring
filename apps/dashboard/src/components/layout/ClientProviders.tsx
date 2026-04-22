@@ -5,7 +5,7 @@ import { useAuth, AuthProvider } from '../../context/AuthContext';
 import { usePathname, useRouter } from 'next/navigation';
 import { ErrorBoundary } from '../ui/ErrorBoundary';
 import { OutageNotificationShell } from '../layout/OutageNotificationShell';
-import { ThemeProvider } from '@kpi-platform/ui';
+import { ThemeProvider, ToastProvider } from '@kpi-platform/ui';
 import { DashboardShell } from '../layout/DashboardShell';
 
 function LayoutWrapper({ children }: { children: React.ReactNode }) {
@@ -58,16 +58,18 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 export function ClientProviders({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider>
-      <ErrorBoundary>
-        <AuthProvider>
-          <OutageNotificationShell />
-          <AuthGuard>
-            <LayoutWrapper>
-              {children}
-            </LayoutWrapper>
-          </AuthGuard>
-        </AuthProvider>
-      </ErrorBoundary>
+      <ToastProvider>
+        <ErrorBoundary>
+          <AuthProvider>
+            <OutageNotificationShell />
+            <AuthGuard>
+              <LayoutWrapper>
+                {children}
+              </LayoutWrapper>
+            </AuthGuard>
+          </AuthProvider>
+        </ErrorBoundary>
+      </ToastProvider>
     </ThemeProvider>
   );
 }

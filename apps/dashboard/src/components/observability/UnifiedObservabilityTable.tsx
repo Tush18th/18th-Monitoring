@@ -155,6 +155,7 @@ export const UnifiedObservabilityTable: React.FC<UnifiedObservabilityTableProps>
         data={getData()} 
         isLoading={loading}
         onRowClick={(row) => onRowClick(activeTab.slice(0, -1) as any, row)}
+        getRowKey={(item) => item.alertId || item.id}
       />
     </Card>
   );

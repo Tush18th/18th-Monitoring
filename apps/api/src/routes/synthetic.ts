@@ -1,4 +1,4 @@
-import { 
+﻿import { 
     ingestRunResults, 
     getDashboardSummary, 
     getHistoryOptions, 
@@ -18,3 +18,4 @@ export const syntheticRoutes = async (fastify: any) => {
     fastify.get('/history', getHistoryOptions);
     fastify.get('/failures', getFailures);
 };
+

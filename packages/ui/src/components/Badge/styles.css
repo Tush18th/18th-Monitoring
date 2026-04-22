@@ -3,7 +3,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-1-5);
-  border-radius: var(--radius-sm); /* Enterprise prefers less rounded corners for badges usually, or capsule. Let's go with slightly rounded or capsule based on size */
+  border-radius: 999px;
   font-weight: var(--font-semibold);
   white-space: nowrap;
   border: 1px solid transparent;
@@ -15,21 +15,21 @@
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  border-radius: 4px;
+  border-radius: 999px;
 }
 
 .ui-badge--md {
   padding: 0 var(--space-2);
   height: 24px;
   font-size: var(--text-xs);
-  border-radius: 6px;
+  border-radius: 999px;
 }
 
 .ui-badge--lg {
   padding: 0 var(--space-3);
   height: 32px;
   font-size: var(--text-sm);
-  border-radius: 8px;
+  border-radius: 999px;
 }
 
 /* Variants */

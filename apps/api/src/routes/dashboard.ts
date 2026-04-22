@@ -44,7 +44,7 @@ export const dashboardRoutes = async (fastify: any) => {
     fastify.addHook('preHandler', tenantAuthHandler);
     
     fastify.get('/summaries', getSummaries);
-    fastify.get('/alerts', getAlerts);
+    // Alerts are now handled via monitoringRoutes to avoid duplication
     fastify.get('/audit', getAuditLogs);
     fastify.get('/activity', getActivityFeed);
     fastify.get('/governance', getGovernanceConfig);
@@ -98,4 +98,5 @@ export const dashboardRoutes = async (fastify: any) => {
     
     fastify.register(syntheticRoutes, { prefix: '/synthetic' });
 };
+
 

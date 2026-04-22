@@ -10,7 +10,7 @@ export async function resilienceRoutes(server: FastifyInstance) {
     
     // POST /api/v1/resilience/replay/:eventId
     // Replays a single failed event
-    server.post('/replay/:eventId', { preHandler: [tenantAuthHandler, roleGuard(['ADMIN', 'SUPER_ADMIN'])] }, async (request: FastifyRequest<{ Params: { eventId: string } }>, reply: FastifyReply) => {
+    server.post('/replay/:eventId', { preHandler: [tenantAuthHandler, roleGuard(['TENANT_ADMIN', 'PROJECT_ADMIN', 'SUPER_ADMIN'])] }, async (request: FastifyRequest<{ Params: { eventId: string } }>, reply: FastifyReply) => {
         try {
             const result = await ReplayService.replayEvent(request.params.eventId);
             return reply.send({ success: true, eventId: result.eventId, status: result.status });
@@ -21,7 +21,7 @@ export async function resilienceRoutes(server: FastifyInstance) {
 
     // POST /api/v1/resilience/replay-batch
     // Replays a batch of failed events based on range/connector
-    server.post('/replay-batch', { preHandler: [tenantAuthHandler, roleGuard(['ADMIN', 'SUPER_ADMIN'])] }, async (request: FastifyRequest<{ Body: any }>, reply: FastifyReply) => {
+    server.post('/replay-batch', { preHandler: [tenantAuthHandler, roleGuard(['TENANT_ADMIN', 'PROJECT_ADMIN', 'SUPER_ADMIN'])] }, async (request: FastifyRequest<{ Body: { siteId: string, connectorId: string, start?: string, end?: string, status?: string } }>, reply: FastifyReply) => {
         try {
             const { siteId, connectorId, start, end, status } = request.body;
             const result = await ReplayService.replayBatch({
@@ -49,3 +49,4 @@ export async function resilienceRoutes(server: FastifyInstance) {
         });
     });
 }
+

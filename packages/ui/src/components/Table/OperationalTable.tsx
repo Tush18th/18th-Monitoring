@@ -35,11 +35,12 @@ export interface OperationalTableProps<T> {
   emptyDescription?: string;
   onRowClick?: (item: T) => void;
   rowActions?: (item: T) => React.ReactNode;
+  getRowKey?: (item: T) => string | number;
   isDense?: boolean;
   className?: string;
 }
 
-export function OperationalTable<T extends { id: string | number }>({
+export function OperationalTable<T extends { id?: string | number }>({
   columns,
   data,
   isLoading,
@@ -48,6 +49,7 @@ export function OperationalTable<T extends { id: string | number }>({
   emptyDescription,
   onRowClick,
   rowActions,
+  getRowKey,
   isDense,
   className
 }: OperationalTableProps<T>) {
@@ -78,12 +80,15 @@ export function OperationalTable<T extends { id: string | number }>({
         </TR>
       </THead>
       <TBody>
-        {data.map((item) => (
-          <TR 
-            key={item.id} 
-            onClick={onRowClick ? () => onRowClick(item) : undefined}
-            className={onRowClick ? 'cursor-pointer' : ''}
-          >
+        {data.map((item, index) => {
+          if (!item) return null;
+          const rowKey = getRowKey ? getRowKey(item) : item.id || index;
+          return (
+            <TR 
+              key={rowKey} 
+              onClick={onRowClick ? () => onRowClick(item) : undefined}
+              className={onRowClick ? 'cursor-pointer' : ''}
+            >
             {columns.map((col) => (
               <TD 
                 key={col.key} 
@@ -100,7 +105,8 @@ export function OperationalTable<T extends { id: string | number }>({
               </TD>
             )}
           </TR>
-        ))}
+          );
+        })}
       </TBody>
     </Table>
   );

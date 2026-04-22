@@ -1,7 +1,7 @@
 import { db } from '../../../../packages/db/src/adapters/postgres-relational.adapter';
 import { 
     connectorSyncRuns, 
-    processingCheckpoints,
+    pipelineCheckpoints,
     connectorInstances 
 } from '../../../../packages/db/src/drizzle/schema';
 import { eq, and, desc } from 'drizzle-orm';
@@ -40,8 +40,8 @@ export class SyncEngine {
 
             // 2. REGISTER RUN (Requirement 11)
             await db.insert(connectorSyncRuns).values({
-                connectorId: options.connectorId,
-                siteId: options.siteId,
+                id: runId,
+                connectorInstanceId: options.connectorId,
                 syncType: options.syncType,
                 status: 'RUNNING',
                 startedAt: startTime,
@@ -60,10 +60,10 @@ export class SyncEngine {
                 finishedAt: new Date(),
                 recordsFetched: result.fetched,
                 recordsProcessed: result.processed,
-                recordsRejected: result.failed,
+                recordsFailed: result.failed,
                 checkpointValue: result.nextCheckpoint
             }).where(and(
-                eq(connectorSyncRuns.connectorId, options.connectorId),
+                eq(connectorSyncRuns.connectorInstanceId, options.connectorId),
                 eq(connectorSyncRuns.status, 'RUNNING') // Simplified for demo
             ));
 
@@ -72,7 +72,7 @@ export class SyncEngine {
                 fetched: result.fetched,
                 processed: result.processed,
                 rejected: result.failed,
-                checkpoint: result.nextCheckpoint
+                checkpoint: result.nextCheckpoint ?? undefined
             });
 
             return { runId, status: 'COMPLETED', ...result };
@@ -84,7 +84,7 @@ export class SyncEngine {
                 finishedAt: new Date(),
                 errorSummary: { message: err.message, stack: err.stack }
             }).where(and(
-                eq(connectorSyncRuns.connectorId, options.connectorId),
+                eq(connectorSyncRuns.connectorInstanceId, options.connectorId),
                 eq(connectorSyncRuns.status, 'RUNNING')
             ));
 
@@ -138,28 +138,36 @@ export class SyncEngine {
 
     private static async getCheckpoint(connectorId: string, siteId: string): Promise<string | null> {
         const cp = await db.select()
-            .from(processingCheckpoints)
-            .where(eq(processingCheckpoints.partitionKey, `${siteId}:${connectorId}`))
+            .from(pipelineCheckpoints)
+            .where(and(
+                eq(pipelineCheckpoints.integrationId as any, connectorId) as any,
+                eq(pipelineCheckpoints.siteId as any, siteId) as any
+            ) as any)
             .limit(1);
-        return cp.length > 0 ? cp[0].checkpointValue : null;
+        return cp.length > 0 ? cp[0].cursorValue : null;
     }
 
     private static async updateCheckpoint(connectorId: string, siteId: string, value: string) {
-        const key = `${siteId}:${connectorId}`;
         try {
-            await db.insert(processingCheckpoints).values({
-                partitionKey: key,
-                checkpointValue: value,
+            await db.insert(pipelineCheckpoints).values({
+                id: Math.random().toString(36).substring(2, 10),
+                integrationId: connectorId,
+                siteId: siteId,
+                entityType: 'ALL',
+                cursorType: 'TIMESTAMP',
+                cursorValue: value,
                 metadata: { lastUpdate: new Date().toISOString() }
             }).onConflictDoUpdate({
-                target: processingCheckpoints.partitionKey,
-                set: { checkpointValue: value, updatedAt: new Date() }
-            });
+                target: [pipelineCheckpoints.integrationId as any, pipelineCheckpoints.entityType as any],
+                set: { cursorValue: value, updatedAt: new Date() }
+            }) as any;
         } catch (err) {
-            // Simplified for internal adapter without full upsert support in some dialects
-            await db.update(processingCheckpoints)
-                .set({ checkpointValue: value, updatedAt: new Date() })
-                .where(eq(processingCheckpoints.partitionKey, key));
+            await db.update(pipelineCheckpoints)
+                .set({ cursorValue: value, updatedAt: new Date() })
+                .where(and(
+                    eq(pipelineCheckpoints.integrationId as any, connectorId) as any,
+                    eq(pipelineCheckpoints.siteId as any, siteId) as any
+                ) as any);
         }
     }
 }

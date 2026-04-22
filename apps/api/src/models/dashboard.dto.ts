@@ -7,6 +7,7 @@ export interface KpiSummaryResponse {
     value: number;
     trendPct: number;
     state: 'healthy' | 'warning' | 'critical';
+    unit?: string;
 }
 
 /**
@@ -15,7 +16,7 @@ export interface KpiSummaryResponse {
  */
 export interface MetricFilterDto {
     siteId: string;
-    timeRange: '1h' | '24h' | '7d';
+    timeRange?: '1h' | '24h' | '7d';
     region?: string;
     source?: string;
     limit?: number;

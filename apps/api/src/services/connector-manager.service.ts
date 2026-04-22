@@ -29,7 +29,7 @@ export class ConnectorManagerService {
      * Transitions a connector through its lifecycle.
      * Requirement 2 (Formal lifecycle states)
      */
-    static async transitionState(connectorId: string, newState: ConnectorLifecycleState) {
+    static async transitionState(instanceId: string, newState: ConnectorLifecycleState) {
         const timestamp = new Date();
         try {
             await db.update(connectorInstances)
@@ -37,11 +37,11 @@ export class ConnectorManagerService {
                     lifecycleState: newState,
                     updatedAt: timestamp
                 })
-                .where(eq(connectorInstances.connectorId, connectorId));
+                .where(eq(connectorInstances.id, instanceId));
             
-            console.log(`[ConnectorManager] Connector ${connectorId} transitioned to ${newState}`);
+            console.log(`[ConnectorManager] Connector ${instanceId} transitioned to ${newState}`);
         } catch (err) {
-            console.error(`[ConnectorManager] Failed to transition connector ${connectorId}:`, err);
+            console.error(`[ConnectorManager] Failed to transition connector ${instanceId}:`, err);
         }
     }
 
@@ -49,24 +49,24 @@ export class ConnectorManagerService {
      * Starts a sync run.
      * Requirement 5 (Harden polling and sync orchestration)
      */
-    static async startSyncRun(connectorId: string, siteId: string, syncType: 'POLL' | 'WEBHOOK' | 'BACKFILL') {
+    static async startSyncRun(instanceId: string, siteId: string, syncType: 'POLL' | 'WEBHOOK' | 'BACKFILL') {
         const runId = Math.random().toString(36).substring(7);
         try {
             await db.insert(connectorSyncRuns).values({
-                connectorId,
-                siteId,
+                id: runId,
+                connectorInstanceId: instanceId,
                 syncType,
-                status: 'PROCESSING',
+                status: 'RUNNING',
                 startedAt: new Date(),
             });
 
             await db.update(connectorInstances)
                 .set({ lastAttemptAt: new Date() })
-                .where(eq(connectorInstances.connectorId, connectorId));
+                .where(eq(connectorInstances.id, instanceId));
 
             return runId;
         } catch (err) {
-            console.error(`[ConnectorManager] Failed to start sync run for ${connectorId}:`, err);
+            console.error(`[ConnectorManager] Failed to start sync run for ${instanceId}:`, err);
             return null;
         }
     }
@@ -74,7 +74,7 @@ export class ConnectorManagerService {
     /**
      * Completes a sync run with summary metrics.
      */
-    static async completeSyncRun(connectorId: string, siteId: string, metrics: { fetched: number, processed: number, rejected: number, checkpoint?: string }) {
+    static async completeSyncRun(instanceId: string, siteId: string, metrics: { fetched: number, processed: number, rejected: number, checkpoint?: string }) {
         const timestamp = new Date();
         try {
             // Update last successful sync
@@ -84,12 +84,12 @@ export class ConnectorManagerService {
                     healthStatus: 'HEALTHY',
                     lifecycleState: metrics.rejected > 0 ? 'DEGRADED' : 'ACTIVE'
                 })
-                .where(eq(connectorInstances.connectorId, connectorId));
+                .where(eq(connectorInstances.id, instanceId));
 
             // Record success signal
-            await this.recordHealthSignal(connectorId, 'sync', true);
+            await this.recordHealthSignal(instanceId, 'sync', true);
         } catch (err) {
-            console.error(`[ConnectorManager] Failed to complete sync run for ${connectorId}:`, err);
+            console.error(`[ConnectorManager] Failed to complete sync run for ${instanceId}:`, err);
         }
     }
 
@@ -108,6 +108,7 @@ export class ConnectorManagerService {
             'ERP': 1440, // 24 hours
             'CRM': 60,   // 1 hour
             'OMS': 15,   // 15 minutes
+            'COMMERCE': 60,
             'PAYMENT_GATEWAY': 5,
             'SHIPPING_GATEWAY': 30,
             'ANALYTICS': 1440,

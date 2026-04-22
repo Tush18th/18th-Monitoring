@@ -58,33 +58,35 @@ export default function IntegrationsPage() {
         if (!token || !projectId) return;
         setLoading(true);
         try {
-            const [summ, trend, sys, failed] = await Promise.all([
+            // Fetch from the new productized endpoint
+            const response = await apiFetch(`/api/v1/tenants/current/projects/${projectId}/integrations`);
+            const integrations = response?.data || [];
+            
+            const [summ, trend, failed] = await Promise.all([
                 apiFetch(`/api/v1/dashboard/integrations/summary?siteId=${projectId}`),
                 apiFetch(`/api/v1/dashboard/integrations/trends?siteId=${projectId}`),
-                apiFetch(`/api/v1/dashboard/integrations/systems?siteId=${projectId}`),
                 apiFetch(`/api/v1/dashboard/integrations/failed?siteId=${projectId}`)
             ]);
             
-            // Map systems to connectors with rich dimensions (simulated for demo if backend is basic)
-            const mappedConnectors = sys.map((s: any) => ({
-                id: s.connectorId || s.name.toLowerCase().replace(/\s+/g, '_'),
-                name: s.name,
-                provider: s.provider || 'External Service',
-                type: s.type || 'REST API',
-                status: (s.status?.toLowerCase() === 'active' ? 'healthy' : s.status?.toLowerCase() || 'degraded') as ConnectorHealth,
-                healthScore: s.health || 100,
-                lastSync: s.lastSyncAt || '10m ago',
-                lastWebhook: '2m ago',
+            const mappedConnectors = integrations.map((s: any) => ({
+                id: s.id,
+                name: s.label,
+                provider: s.providerId || 'External Service',
+                type: s.family || s.category || 'REST API',
+                status: (s.healthStatus?.toLowerCase() === 'healthy' ? 'healthy' : s.healthStatus?.toLowerCase() || 'degraded') as ConnectorHealth,
+                healthScore: s.healthScore || 100,
+                lastSync: s.lastSyncAt ? new Date(s.lastSyncAt).toLocaleTimeString() : 'Never synced',
+                lastWebhook: s.lastWebhookAt ? new Date(s.lastWebhookAt).toLocaleTimeString() : 'No activity',
                 metrics: {
-                    syncSuccess: s.health || 98,
-                    webhookLatency: s.latency || '420ms',
-                    freshness: (s.health > 90 ? 'fresh' : s.health > 70 ? 'delayed' : 'stale') as any
+                    syncSuccess: s.healthScore || 98,
+                    webhookLatency: '420ms', // Mocked until metric bridge is live
+                    freshness: (s.healthScore > 90 ? 'fresh' : s.healthScore > 70 ? 'delayed' : 'stale') as any
                 },
                 dimensions: {
-                    connectivity: s.status !== 'Offline',
+                    connectivity: s.status === 'ACTIVE',
                     auth: true,
-                    sync: s.health > 50,
-                    webhook: s.status !== 'Offline'
+                    sync: s.healthScore > 50,
+                    webhook: !!s.lastWebhookAt
                 }
             }));
 
@@ -121,9 +123,8 @@ export default function IntegrationsPage() {
         
         if (action === 'resync') {
             try {
-                await apiFetch(`/api/v1/config/${projectId}/integrations/sync/force`, {
-                    method: 'POST',
-                    body: JSON.stringify({ connectorId: selectedConnector.id })
+                await apiFetch(`/api/v1/tenants/current/projects/${projectId}/integrations/${selectedConnector.id}/sync`, {
+                    method: 'POST'
                 });
                 loadData();
             } catch (e) {

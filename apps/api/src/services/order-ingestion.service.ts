@@ -61,7 +61,8 @@ export class OrderIngestionService {
                     }
                 };
 
-                const canonical = await orderNormalizationService.normalize(rawEvent, siteId);
+                const tenantId = GlobalMemoryStore.projects.get(siteId)?.tenantId || 'system';
+                const canonical = await orderNormalizationService.normalize('offline', rawEvent, siteId, tenantId);
                 GlobalMemoryStore.orders.set(orderId, {
                     ...canonical,
                     siteId,

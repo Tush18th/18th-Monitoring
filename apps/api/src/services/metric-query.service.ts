@@ -36,7 +36,8 @@ export class MetricQueryService {
         if (definition.type === 'count') {
             resultValue = values.length;
         } else if (definition.type === 'value' && definition.field) {
-            const nums = values.map(o => Number(o[definition.field] || 0));
+            const field = definition.field;
+            const nums = values.map((o: any) => Number(o[field] || 0));
             if (definition.aggregation === 'sum') resultValue = nums.reduce((a, b) => a + b, 0);
             if (definition.aggregation === 'avg') resultValue = nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : 0;
             if (definition.aggregation === 'max') resultValue = Math.max(...nums);

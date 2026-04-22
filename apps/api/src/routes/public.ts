@@ -1,4 +1,4 @@
-import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+﻿import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { listKpis, getKpi, getSourceBreakdown } from '../controllers/kpi.controller';
 import { rateLimiter } from '../middlewares/rate-limiter.middleware';
 import { metricCatalogService } from '../services/metric-catalog.service';
@@ -37,8 +37,8 @@ export async function publicRoutes(server: FastifyInstance) {
     // For now, we apply the guard if it's applicable.
     server.addHook('preHandler', tenantIsolationGuard);
 
-    // ── KPI Catalog ─────────────────────────────────────────────────────────
-    // GET /api/v1/projects/:siteId/kpis  (Phase 1 — kept for backwards compat)
+    // â”€â”€ KPI Catalog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // GET /api/v1/projects/:siteId/kpis  (Phase 1 â€” kept for backwards compat)
     server.get('/projects/:siteId/kpis', listKpis);
     server.get('/projects/:siteId/kpis/:metricKey', getKpi);
 
@@ -51,7 +51,7 @@ export async function publicRoutes(server: FastifyInstance) {
         }
     );
 
-    // POST /api/v1/projects/:siteId/metrics/query  (Phase 2/3 spec — dynamic filter query)
+    // POST /api/v1/projects/:siteId/metrics/query  (Phase 2/3 spec â€” dynamic filter query)
     server.post(
         '/projects/:siteId/metrics/query',
         async (
@@ -71,10 +71,10 @@ export async function publicRoutes(server: FastifyInstance) {
         }
     );
 
-    // ── Orders ──────────────────────────────────────────────────────────────
+    // â”€â”€ Orders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     server.get('/projects/:siteId/orders/source-breakdown', getSourceBreakdown);
 
-    // ── Integration Status ──────────────────────────────────────────────────
+    // â”€â”€ Integration Status â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // GET /api/v1/projects/:siteId/integrations/status  (Phase 3 spec)
     server.get(
         '/projects/:siteId/integrations/status',
@@ -88,3 +88,4 @@ export async function publicRoutes(server: FastifyInstance) {
         }
     );
 }
+

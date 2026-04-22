@@ -83,6 +83,40 @@ export class GovernanceService {
         });
     }
 
+    static async createKey(siteId: string, actorId: string, body: any) {
+        const id = `ak_${crypto.randomUUID().split('-')[0]}`;
+        const secret = `sk_live_${crypto.randomUUID().replace(/-/g, '')}`;
+        const salt = process.env.JWT_SECRET || 'hardcoded_demo_salt';
+        const hash = crypto.scryptSync(secret, salt, 64).toString('hex');
+        const key = {
+            id,
+            label: body.label || 'New Key',
+            keyPrefix: id.slice(0, 8),
+            secretHash: `${salt}:${hash}`,
+            status: 'active',
+            createdAt: new Date().toISOString(),
+            createdBy: actorId,
+            siteId
+        };
+        const existing = GlobalMemoryStore.projectAccessKeys.get(siteId) || [];
+        existing.push(key as any);
+        GlobalMemoryStore.projectAccessKeys.set(siteId, existing);
+
+        await AuditService.log({
+            action: 'API_KEY_CREATED',
+            actorId,
+            targetId: id,
+            status: 'SUCCESS',
+            metadata: { siteId }
+        });
+
+        return { id, secret };
+    }
+
+    static getAuditLogs(siteId: string) {
+        return GlobalMemoryStore.governanceAuditLogs.filter((l: any) => l.metadata?.siteId === siteId);
+    }
+
     /**
      * Abuse detection: Check for suspicious spikes.
      */

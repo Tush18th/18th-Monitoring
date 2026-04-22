@@ -19,7 +19,7 @@ export const validateRequest = (schemas: { body?: AnyZodObject; query?: AnyZodOb
             }
         } catch (error) {
             if (error instanceof ZodError) {
-                return reply.status(400).send(ResponseUtil.validationError(error, req.id as string));
+                return reply.status(400).send(ResponseUtil.error(error.errors, 'VALIDATION_ERROR', error, req.id as string));
             }
             return reply.status(400).send(ResponseUtil.error('Invalid request format', req.id as string, 'invalid_request'));
         }

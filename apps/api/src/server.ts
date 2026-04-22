@@ -1,5 +1,7 @@
 import fastify from 'fastify';
 import cors from '@fastify/cors';
+import { env } from './config/env';
+import { errorResponse } from './utils/response';
 import { IngestionService } from './services/ingestion.service';
 import { DashboardService } from './services/dashboard.service';
 import { ConfigResolver } from '../../../packages/config/src/resolver';
@@ -7,6 +9,7 @@ import { KafkaStreamConsumer } from '../../../services/processor/src/consumer/ka
 import { TOPICS } from './config/topics';
 import { dashboardRoutes } from './routes/dashboard';
 import { login, getMe, getProjects } from './controllers/auth.controller';
+import { createProject, updateProject } from './controllers/project.controller';
 import { listPlatformUsers, createPlatformUser, updatePlatformUserStatus } from './controllers/admin.controller';
 import { tenantAuthHandler } from './middlewares/auth.middleware';
 import { viewOnlyGuard, roleGuard } from './middlewares/rbac.middleware';
@@ -16,6 +19,24 @@ import { tenantIsolationGuard } from './middlewares/tenant-isolation.middleware'
 import { idempotencyGuard } from './middlewares/idempotency.middleware';
 import { exposureV1Routes } from './exposure/routes/v1';
 import { OutboundBridge } from './services/outbound-bridge';
+import { initializeConnectors } from './initializers/connectors';
+import { ScheduledMonitor } from './services/scheduled-monitor.service';
+import { EventRegistry } from '../../../services/processor/src/registry/event-registry';
+import { integrationRoutes } from './routes/integrations';
+import { ingestionRoutes } from './routes/ingestion';
+import { monitoringRoutes } from './routes/monitoring';
+
+import { connectorRegistryService } from './services/connector-registry.service';
+import { webhookRoutes } from './routes/webhooks';
+import { publicRoutes } from './routes/public';
+import { configRoutes } from './routes/config';
+import { syncRoutes } from './routes/sync';
+import { resilienceRoutes } from './routes/resilience';
+import { transformationRoutes } from './routes/transformation';
+import { pipelineRoutes } from './routes/pipeline';
+import { kpiRoutes } from './routes/kpi';
+import { cache } from '../../../packages/cache/src';
+
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -32,7 +53,6 @@ consumer.onMessage = async (topic: string, message: any) => {
         await OutboundBridge.handleInternalEvent(message);
     } else {
         // Default to processing via EventRegistry for ingestion streams
-        const { EventRegistry } = require('../../../services/processor/src/registry/event-registry');
         await EventRegistry.route(message);
     }
 };
@@ -46,25 +66,39 @@ consumer.connectAndSubscribe([
 // ─── Build server ─────────────────────────────────────────────────────────────
 export const bootstrapApi = async () => {
     console.log('[API] Initializing Fastify server…');
+    initializeConnectors();
+    ScheduledMonitor.start();
+
     const server = fastify({ logger: false });
 
     // ── Security Hardening ──────────────────────────────────────────────────
     
     // 1. Strict CORS Policy
-    const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
+    const allowedOrigins = env.ALLOWED_ORIGINS.split(',').map(s => s.trim()).filter(Boolean);
     await server.register(cors, { 
-        origin: allowedOrigins.length > 0 ? allowedOrigins : [/localhost:\d+$/], // Default to localhost but forbid '*' in prod
+        origin: allowedOrigins.length > 0 ? allowedOrigins : [/localhost:\d+$/], 
         credentials: true
     });
 
-    // 2. JWT Secret Strength Validation
-    const jwtSecret = process.env.JWT_SECRET || '';
-    if (process.env.NODE_ENV === 'production') {
-        if (jwtSecret.length < 64 || jwtSecret === 'replace_with_at_least_64_char_random_string') {
-            console.error('[FATAL] Production JWT_SECRET is missing or insecure (min 64 chars required).');
-            process.exit(1);
+    // ── Global Error Handler ───────────────────────────────────────────────
+    server.setErrorHandler((error: any, request: any, reply: any) => {
+        const correlationId = (request as any).correlationId;
+        
+        // Log error with context
+        console.error(`[ERROR] ${correlationId} | ${error.name}: ${error.message}`, error.stack);
+
+        if (error.validation) {
+            return reply.status(400).send(errorResponse(error.message, 'VALIDATION_ERROR', error.validation, correlationId));
         }
-    }
+
+        if (error.statusCode && error.statusCode < 500) {
+            return reply.status(error.statusCode).send(errorResponse(error.message, (error as any).code || 'CLIENT_ERROR', null, correlationId));
+        }
+
+        const err = error as any;
+        const message = env.NODE_ENV === 'production' ? 'An internal server error occurred' : error.message;
+        reply.status(500).send(errorResponse(message, err.code || 'INTERNAL_SERVER_ERROR', null, correlationId));
+    });
     
     // ── Global Observability & Security Middlewares ────────────────────────
     
@@ -72,7 +106,8 @@ export const bootstrapApi = async () => {
     server.addHook('onRequest', async (req, reply) => {
         const headerId = req.headers['x-correlation-id'];
         const reqId = (Array.isArray(headerId) ? headerId[0] : headerId) || crypto.randomUUID();
-        req.id = reqId; // Fastify attaches this gracefully
+        req.id = reqId; 
+        (req as any).correlationId = reqId; // For unified service access
         reply.header('X-Correlation-ID', reqId);
     });
 
@@ -91,60 +126,110 @@ export const bootstrapApi = async () => {
     // Rate limit: Max 100 requests per minute per IP
     server.addHook('onRequest', rateLimiter(100, 60_000));
 
+    // Scoped Dashboard Routes
     await server.register(dashboardRoutes, { 
-        prefix: '/api/v1/dashboard',
-        preHandler: [tenantAuthHandler, viewOnlyGuard] 
+        prefix: '/api/v1/tenants/:tenantId/projects/:siteId',
+        preHandler: [tenantAuthHandler, tenantIsolationGuard, viewOnlyGuard] 
     });
 
-    await server.register(require('./routes/public').publicRoutes, {
+    // Compatibility Alias (to be deprecated)
+    await server.register(dashboardRoutes, { 
+        prefix: '/api/v1/dashboard',
+        preHandler: [tenantAuthHandler, tenantIsolationGuard, viewOnlyGuard] 
+    });
+
+    // Scoped Integration Routes
+    await server.register(integrationRoutes, { 
+        prefix: '/api/v1/tenants/:tenantId/projects/:siteId/integrations' 
+    });
+
+    // Scoped Data Intake Routes
+    await server.register(ingestionRoutes, { 
+        prefix: '/api/v1' 
+    });
+
+    // Scoped Performance & Metric Routes
+    await server.register(exposureV1Routes, { 
+        prefix: '/api/v1' 
+    });
+
+    // Scoped Monitoring & Alerting Routes
+    await server.register(monitoringRoutes, { 
+       prefix: '/api/v1' 
+    });
+
+
+    await server.register(webhookRoutes, {
+        prefix: '/api/v1/ingest/webhooks'
+    });
+
+    await server.register(publicRoutes, {
         prefix: '/api/v1'
     });
 
-    const configRoutes = require('./routes/config').configRoutes;
     await server.register(configRoutes, { prefix: '/api/v1/config' });
 
-    await server.register(require('./routes/sync').syncRoutes, {
+    await server.register(syncRoutes, {
         prefix: '/api/v1/projects'
     });
 
 
-    await server.register(require('./routes/webhooks').webhookRoutes, {
-        prefix: '/api/v1/webhooks'
-    });
 
-    // ── API Exposure Layer (Production Data Access) ────────────────────────
-    await server.register(exposureV1Routes, {
-        prefix: '/api/v1'
-    });
 
-    await server.register(require('./routes/resilience').resilienceRoutes, {
+    await server.register(resilienceRoutes, {
         prefix: '/api/v1/resilience'
     });
 
+
+    await server.register(transformationRoutes, {
+        prefix: '/api/v1'
+    });
+
+    await server.register(pipelineRoutes, {
+        prefix: '/api/v1'
+    });
+
+    await server.register(kpiRoutes, {
+        prefix: '/api/v1'
+    });
+
+
     // ── Auth & RBAC ────────────────────────────────────────────────────────
-    server.post('/api/v1/auth/login', login);
+    server.post('/api/v1/auth/login', {
+        schema: {
+            body: {
+                type: 'object',
+                required: ['email', 'password'],
+                properties: {
+                    email: { type: 'string', format: 'email' },
+                    password: { type: 'string', minLength: 6 }
+                }
+            }
+        }
+    }, login);
     server.get('/api/v1/user/me',     { preHandler: [tenantAuthHandler] }, getMe);
-    server.get('/api/v1/projects',    { preHandler: [tenantAuthHandler, roleGuard(['ADMIN', 'SUPER_ADMIN', 'CUSTOMER'])] }, getProjects);
+    server.get('/api/v1/projects',    { preHandler: [tenantAuthHandler, roleGuard(['TENANT_ADMIN', 'SUPER_ADMIN', 'VIEWER'])] }, getProjects);
+    server.post('/api/v1/projects',   { preHandler: [tenantAuthHandler, roleGuard(['TENANT_ADMIN', 'SUPER_ADMIN'])] }, createProject);
+    server.patch('/api/v1/projects/:siteId', { preHandler: [tenantAuthHandler, tenantIsolationGuard, roleGuard(['TENANT_ADMIN', 'SUPER_ADMIN', 'PROJECT_ADMIN'])] }, updateProject);
 
     // System Access Management APIs
-    server.get('/api/v1/admin/projects/:projectId/users',   { preHandler: [tenantAuthHandler, roleGuard(['ADMIN', 'SUPER_ADMIN'])] }, listPlatformUsers);
-    server.post('/api/v1/admin/projects/:projectId/users',  { preHandler: [tenantAuthHandler, roleGuard(['ADMIN', 'SUPER_ADMIN'])] }, createPlatformUser);
-    server.patch('/api/v1/admin/users/:userId/status',      { preHandler: [tenantAuthHandler, roleGuard(['ADMIN', 'SUPER_ADMIN'])] }, updatePlatformUserStatus);
+    server.get('/api/v1/admin/projects/:projectId/users',   { preHandler: [tenantAuthHandler, roleGuard(['TENANT_ADMIN', 'SUPER_ADMIN', 'PROJECT_ADMIN'])] }, listPlatformUsers);
+    server.post('/api/v1/admin/projects/:projectId/users',  { preHandler: [tenantAuthHandler, roleGuard(['TENANT_ADMIN', 'SUPER_ADMIN', 'PROJECT_ADMIN'])] }, createPlatformUser);
+    server.patch('/api/v1/admin/users/:userId/status',      { preHandler: [tenantAuthHandler, roleGuard(['TENANT_ADMIN', 'SUPER_ADMIN', 'PROJECT_ADMIN'])] }, updatePlatformUserStatus);
 
     // Legacy Aliases (Compatibility for customers -> users migration)
-    server.get('/api/v1/admin/projects/:projectId/customers',   { preHandler: [tenantAuthHandler, roleGuard(['ADMIN', 'SUPER_ADMIN'])] }, listPlatformUsers);
-    server.post('/api/v1/admin/projects/:projectId/customers',  { preHandler: [tenantAuthHandler, roleGuard(['ADMIN', 'SUPER_ADMIN'])] }, createPlatformUser);
-    server.patch('/api/v1/admin/customers/:userId/status',      { preHandler: [tenantAuthHandler, roleGuard(['ADMIN', 'SUPER_ADMIN'])] }, updatePlatformUserStatus);
+    server.get('/api/v1/admin/projects/:projectId/customers',   { preHandler: [tenantAuthHandler, roleGuard(['TENANT_ADMIN', 'SUPER_ADMIN', 'PROJECT_ADMIN'])] }, listPlatformUsers);
+    server.post('/api/v1/admin/projects/:projectId/customers',  { preHandler: [tenantAuthHandler, roleGuard(['TENANT_ADMIN', 'SUPER_ADMIN', 'PROJECT_ADMIN'])] }, createPlatformUser);
+    server.patch('/api/v1/admin/customers/:userId/status',      { preHandler: [tenantAuthHandler, roleGuard(['TENANT_ADMIN', 'SUPER_ADMIN', 'PROJECT_ADMIN'])] }, updatePlatformUserStatus);
 
     // ── Health & Readiness Probes (K8s / LB) ───────────────────────────────
     server.get('/health', async (_req, reply) => {
         // Liveness probe (is the process running?)
         const memoryUsage = process.memoryUsage();
-        const { cache } = require('../../../packages/cache/src');
         
         reply.send({ 
             status: 'UP', 
-            environment: process.env.NODE_ENV || 'development',
+            environment: env.NODE_ENV,
             uptime_seconds: process.uptime(),
             memory: {
                 rss: Math.round(memoryUsage.rss / 1024 / 1024) + ' MB',
@@ -190,19 +275,19 @@ export const bootstrapApi = async () => {
         return reply.send({ success: true, count: body.events.length });
     });
 
-    // ── Simulate endpoint (dev/demo shortcut) ───────────────────────────────
-    server.post('/api/v1/simulate', { preHandler: [tenantAuthHandler, roleGuard(['ADMIN', 'SUPER_ADMIN'])] }, async (request, reply) => {
+    // Simulate endpoint (dev/demo shortcut)
+    server.post('/api/v1/simulate', { preHandler: [tenantAuthHandler, roleGuard(['TENANT_ADMIN', 'SUPER_ADMIN', 'PROJECT_ADMIN'])] }, async (request, reply) => {
         const { siteId: bodySiteId } = request.body as any || {};
         const { siteId: querySiteId } = request.query as any || {};
         let siteId = bodySiteId || querySiteId;
 
         // If not provided, use the first assigned project or store_001
         if (!siteId) {
-            siteId = request.user.assignedProjects?.length > 0 ? request.user.assignedProjects[0] : 'store_001';
+            siteId = (request.user as any).assignedProjects?.length > 0 ? (request.user as any).assignedProjects[0] : 'store_001';
         }
 
-        // Project membership check for ADMIN
-        if (request.user.role === 'ADMIN' && !request.user.assignedProjects.includes(siteId)) {
+        // Project membership check for ROLE
+        if ((request.user as any).role !== 'SUPER_ADMIN' && !(request.user as any).assignedProjects.includes(siteId)) {
             return reply.status(403).send({ error: 'Forbidden', message: 'You cannot simulate events for a project you do not manage.' });
         }
 
@@ -256,23 +341,31 @@ export const bootstrapApi = async () => {
     });
 
     // ─── Listen ────────────────────────────────────────────────────────────
-    const port = process.env.PORT ? parseInt(process.env.PORT) : 4000;
-    server.listen({ port, host: '0.0.0.0' }, (err, address) => {
-        if (err) { console.error(err); process.exit(1); }
-        console.log(`[API] Server listening on everything at ${address}`);
-        console.log(`[API] Endpoints: GET /health, GET /api/v1/projects/:siteId/metrics/catalog`);
+    if (process.env.NODE_ENV !== 'test') {
+        const port = env.PORT;
+        server.listen({ port, host: '0.0.0.0' }, (err, address) => {
+            if (err) { 
+                if ((err as any).code === 'EADDRINUSE') {
+                    console.error(`[FATAL] Port ${port} is already in use. Please kill the zombie process or change PORT in .env.`);
+                } else {
+                    console.error(err); 
+                }
+                process.exit(1); 
+            }
+            console.log(`[API] Server listening on everything at ${address}`);
+            console.log(`[API] Endpoints: GET /health, GET /api/v1/projects/:siteId/metrics/catalog`);
 
-        // Start connector polling timers after the server is bound
-        const { connectorRegistryService } = require('./services/connector-registry.service');
-        connectorRegistryService.startAllPollers('*');
-    });
+            // Start connector polling timers after the server is bound
+            connectorRegistryService.startAllPollers('*');
+        });
+    }
+
 
     // ─── Graceful Shutdown ─────────────────────────────────────────────────
     const exitHandler = async (signal: string) => {
         console.log(`\n[Server] Received ${signal}, starting graceful shutdown...`);
         try {
             // Stop connector polling timers first to prevent new work being enqueued
-            const { connectorRegistryService } = require('./services/connector-registry.service');
             connectorRegistryService.stopAllPollers();
             // TODO (PROD): Add publisher.disconnect(), db.close() when adapters have real connections
             await server.close();
@@ -284,8 +377,18 @@ export const bootstrapApi = async () => {
         }
     };
 
+
     process.on('SIGINT', () => exitHandler('SIGINT'));
     process.on('SIGTERM', () => exitHandler('SIGTERM'));
+
+    return server;
 };
 
-bootstrapApi();
+// ─── Entry Point ───────────────────────────────────────────────────────────
+if (process.env.NODE_ENV !== 'test') {
+    bootstrapApi().catch(err => {
+        console.error('[API] Critical startup failure', err);
+        process.exit(1);
+    });
+}
+

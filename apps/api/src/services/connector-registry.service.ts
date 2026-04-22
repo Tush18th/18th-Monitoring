@@ -8,6 +8,14 @@ import { connectorInstances } from '../../../../packages/db/src/drizzle/schema';
 export class ConnectorRegistryService {
     private activeTimers: Map<string, NodeJS.Timeout> = new Map();
 
+    public listConnectors() {
+        const configPath = path.join(__dirname, '../config/connectors/connector-registry.schema.json');
+        try {
+            const raw = fs.readFileSync(configPath, 'utf8');
+            return JSON.parse(raw).connectors;
+        } catch { return []; }
+    }
+
     /**
      * Starts all enabled pollers from the database.
      * Requirement 5 (Polling and sync orchestration)
@@ -22,7 +30,7 @@ export class ConnectorRegistryService {
             registryConnectors = JSON.parse(raw).connectors;
         } catch { return; }
 
-        const pollConnectors = registryConnectors.filter(c => c.type === 'api_poll');
+        const pollConnectors = registryConnectors.filter((c: any) => c.type === 'api_poll');
         
         for (const connector of pollConnectors) {
             const intervalMs = connector.pollIntervalMs ?? 15 * 60 * 1000;

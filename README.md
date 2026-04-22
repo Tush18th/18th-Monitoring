@@ -1,76 +1,84 @@
 # E-Commerce KPI Monitoring Platform
 
-> **Status: Production-Grade Synthetic Monitoring + Observability Layer Active**
+> **Status: Advanced Multi-Tenant SaaS Architecture Active**
 
-A production-grade observability, alerting, and synthetic monitoring platform for multi-tenant e-commerce environments. Provides real-time KPI ingestion, Core Web Vitals, automated synthetic journey validation, and deep ERP/OMS integration monitoring with strict tenant isolation.
+A production-grade, multi-tenant observability platform designed for high-density e-commerce monitoring. The system has been evolved from a flat MVP into a resilient, intelligent, and self-healing architecture built for scale.
 
 ---
 
-### 🔌 API Exposure Layer (v1)
-The platform now includes a production-grade API layer for external consumption:
-- **Domains**: Overview, Performance, Orders, Customers, Integrations.
-- **Security**: Scope-based API Keys (`X-API-KEY` header).
-- **Format**: Standardized JSON envelopes with observability trace IDs.
-- **Docs**: See [Exposure Layer Documentation](apps/api/docs/exposure_layer.md).
+## 🚀 Advanced Architecture Features (NEW)
 
-### 🛠️ Key Components
+### 1. 🏢 Multi-Tenant SaaS Foundation
+Strict hierarchical data partitioning that ensures enterprise-grade security and isolation.
+- **Tenant > Project Mapping**: Projects are grouped under independent Tenants for administrative isolation.
+- **Hardened Isolation Middleware**: Every API request is verified for cross-tenant leakage before execution.
+- **Role-Based Access**: Granular control over platform management and data visibility.
 
-### 1. 🧪 Synthetic Monitoring Agent (NEW)
-Automated Playwright-based monitoring that runs every **4 hours** against real desktop and mobile browser contexts.
+### 2. 🔌 Configuration-Driven Connector Framework
+A plugin-style architecture for rapid integration with a standardized "One-time connection" model.
+- **Lifecycle Logic**: Standardized stages for `Connect`, `Validate`, `Discover`, `Sync`, and `Reconcile`.
+- **Vault Service**: Sensitive API credentials (Shopify, Magento, ERP) are protected using **AES-256-GCM** encryption at rest.
+- **Low-Touch Onboarding**: API-driven discovery flow that inspects source systems for available capabilities.
 
-- **Journey Coverage**: Homepage Load, Login Flow, Signup Flow, Protected Route Access, Navigation
-- **Device Emulation**: Full Chromium desktop + iPhone 13 mobile simulation
-- **Metrics Captured per Run**:
-  - Step-level pass/fail results
-  - LCP, TTFB, CLS Core Web Vitals
-  - Execution time per journey
-  - Console errors & network failures
-  - Screenshots on failure
-  - Final journey success rate
-- **Cron Schedule**: `0 */4 * * *` — runs at midnight, 4am, 8am, 12pm, 4pm, 8pm
+### 3. 🛡️ Resilient Ingestion & DLQ
+A high-throughput ingestion layer designed for fault tolerance and zero data loss.
+- **Buffered Intake**: Incoming webhooks are acknowledged in milliseconds and persisted raw before transformation.
+- **Retry Engine**: Exponential backoff for transient failures (e.g., source API timeouts).
+- **Dead Letter Queue (DLQ)**: Failed events are automatically quarantined for manual replay or system "Self-Healing."
 
-### 2. 📊 Performance & Real User Monitoring (RUM) (ENHANCED)
-High-fidelity tracking of frontend health using standardized Google metrics.
+### 4. 💎 Canonical Data Model (CDM)
+A unified "Transactional Truth" that normalizes fragmented data from diverse commerce engines.
+- **Normalization Engine**: Translates Shopify, Magento, and ERP payloads into a standard system schema.
+- **Data Quality Gates**: Automated validation scoring for every record (detecting anomalies like overpayment or missing metadata).
+- **Order Timeline**: Atomic tracking of every state transition (PLACED → PAID → SHIPPED) with historic snapshots.
 
-- **Page Load Metrics**: TTFB, FCP, LCP, Full Load Time, P95 Load Time
-- **Rendering Metrics**: CLS, FID/INP, visual stability
-- **Segmentation**: Desktop vs Mobile, Browser-level (Chrome/Safari/Edge/Firefox), Region-based
-- **Resource Analysis**: JS, CSS, Images, Fonts weight breakdown
+### 5. 🧠 Analytics & Rollup Engine
+High-fidelity KPI computation optimized for massive transactional datasets.
+- **Computed KPIs**: Standardized math for Revenue, Average Order Value (AOV), and Tax Concentration.
+- **Rollup Aggregation**: Pre-computed hourly and daily buckets for sub-second dashboard performance.
+- **Multi-Dimensional Filters**: Segment analytics by Channel, Region, TimeRange, and Browser context.
 
-### 3. 🌍 Integration & ERP Governance
-Real-time monitoring of the data supply chain.
-
-- **Connectivity Map**: Visual status of SAP, Shopify, and Legacy system synchronization.
-- **Sync Success Trends**: Area-chart tracking of ingestion health over the last 24 hours.
-- **Manual Ingestion**: Operational controls for CSV reconciliation and manual sync triggers.
-
-### 4. 📦 KPI Aggregation Engine
-High-throughput event streaming and normalization.
-
-- **Order Reconciliation**: Tracking delayed or stuck orders across the supply chain.
-- **Revenue Monitoring**: Real-time sales tracking with anomaly detection.
-- **Customer Intelligence**: Dynamic segmentation of active user sessions.
-
-### 5. ✨ Premium Enterprise UI (NEW)
-A modernized, high-conversion interface designed for focus and productivity.
-
-- **Redesigned Auth Experience**: 2-column responsive layout with premium typography, mesh gradients, and role-based quick access.
-- **Full Theme Support**: Native Light and Dark mode support across the entire platform.
-- **Design System**: Built on a modular component library (`@kpi-platform/ui`) with strict 8px vertical rhythm and optimized accessibility.
-- **Glassmorphism**: Subtle blur and transparency effects for a high-end, professional SaaS aesthetic.
+### 6. 🚨 Operational Observability & Health
+Proactive system signals that monitor the monitoring platform.
+- **Connector Health Index (CHI)**: A 0-100 executive score representing the reliability of every integration instance.
+- **Alerting Engine**: Anomaly detection for sync failures, ingestion backlogs, and data quality degradation.
+- **Governance Audit Trail**: Immutable logging of all administrative actions for compliance and accountability.
 
 ---
 
 ## 🏗️ Technical Architecture
 
-```
-Browser/Mobile → Playwright Agent → POST /synthetic/run-results
-                                          ↓
-Source: Shopify/SAP → Ingestion Layer → Stream Processor → KPI Aggregation → API Layer → Next.js Dashboard
-                                                                                  ↑            ↑
-                                                              Shared UI Kit (@kpi-platform/ui) + ThemeProvider
-                                                                                  ↑
-                                                              In-Memory Store (GlobalMemoryStore)
+```mermaid
+graph TD
+    subgraph "External Systems"
+        S[Shopify]
+        M[Magento]
+        E[ERP/OMS]
+    end
+
+    subgraph "Ingestion & Resilience"
+        W[Webhook Receiver] --> B[Ingestion Buffer]
+        B --> RE[Resilience Engine]
+        RE -->|Retries| B
+        RE -->|Failures| DLQ[Dead Letter Queue]
+    end
+
+    subgraph "The Intelligence Core"
+        RE --> NE[Normalization Engine]
+        NE --> CDM[Canonical Data Model]
+        CDM --> AE[Analytics Engine]
+        AE --> RS[Rollup Service]
+    end
+
+    subgraph "SaaS Management"
+        IAM[Multi-Tenant Guard]
+        V[Vault/Secrets]
+    end
+
+    W -.-> V
+    RS --> DB[(Performance Store)]
+    DB --> DASH[Next.js Dashboard]
+    IAM --> DASH
 ```
 
 ---
@@ -82,121 +90,23 @@ Source: Shopify/SAP → Ingestion Layer → Stream Processor → KPI Aggregation
 
 ### Quick Start
 ```bash
-# 1. Install all dependencies (including synthetic agent)
+# 1. Install all dependencies
 npm install
-npm install --prefix apps/synthetic-agent
 
-# 2. Install Playwright browsers
-npx --prefix apps/synthetic-agent playwright install chromium
-
-# 3. Start API + Dashboard (in one terminal)
+# 2. Start Advanced API + Dashboard
 npm run dev
 
-# 4. (Optional) Start Synthetic Agent (in separate terminal)
-npm run dev:synthetic
-
-# 5. Boot Live Demo (Tushar's Creation)
-# This injects 140+ realistic events into the running system
-npm run demo:seed
+# 3. Trigger Platform Validation
+# Verifies Isolation, Resilience, and CDM logic
+npm run test:platform
 ```
-
-### Environment Variables
-
-**API** (`apps/api/.env.local`):
-```
-PORT=4000
-JWT_SECRET=your_secret_here
-```
-
-**Synthetic Agent** (`apps/synthetic-agent/.env`):
-```
-TARGET_URL=http://localhost:3000    # Dashboard URL to test against
-API_BASE=http://localhost:4000      # API base URL for ingestion
-SITE_ID=store_001
-AGENT_EMAIL=superadmin@monitor.io
-AGENT_PASS=password123
-```
-
----
-
-## 📡 API Integration & Connectivity
-
-The platform provides a production-grade API for high-throughput telemetry ingestion and cross-system monitoring.
-
-### Available API Modules
-- **Authentication**: JWT Management tokens and Site API Keys.
-- **Ingestion**: Global REST endpoints for Browser (RUM) and Server (Transactional) events.
-- **Analytics**: Aggregated KPI summaries, Order RCA, and Sync health trends.
-- **Governance**: Audit logs, Access key rotation, and Connector configuration.
-
-### 🚀 Quick Start: Your First API Call
-Authenticate and fetch your project list in seconds:
-
-```bash
-# 1. Login to get your Bearer Token
-export TOKEN=$(curl -X POST http://localhost:4000/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email": "superadmin@monitor.io", "password": "password123"}' | jq -r '.token')
-
-# 2. Call the Projects API
-curl -X GET http://localhost:4000/api/v1/projects \
-  -H "Authorization: Bearer $TOKEN"
-```
-
-### 🔗 Integration Onboarding
-- **E-Commerce Patterns**: Webhook templates for **Shopify**, **Magento**, and **Custom sites**.
-- **Supply Chain**: Polling connectors for **SAP ERP**, **IBM Sterling OMS**, and **Marketing APIs**.
-
-**[Read the Full API Integration Documentation →](./API_INTEGRATION.md)**
-
----
-
-## 🔐 Security & Compliance
-- **Tenant Isolation**: Strict middleware enforcement — User A cannot see Site B's data
-- **Bearer JWT Auth**: All dashboard + synthetic endpoints require `Authorization: Bearer <token>`
-- **Rate Limiting**: 100 requests/min per IP
-
----
-
-## 🔔 Alerts
-
-The alert engine triggers on:
-| Event | Severity |
-|-------|----------|
-| Synthetic journey failure | Critical |
-| LCP > 3000ms | High |
-| Login / signup flow fails | Critical |
-| Success rate < 95% | High |
-| OMS sync failure | Critical |
-| Error rate > 4% | High |
 
 ---
 
 ## 📖 Extended Documentation
+- **[Connector Framework](./packages/connector-framework/README.md)** - Plugin development guide
 - **[API Integration Specification](./API_INTEGRATION.md)** - Full production reference
-- [API Synthetic Endpoints](./apps/api/README.md) - Payload reference
-- [Dashboard README](./apps/dashboard/README.md) - Component tree
-- [Synthetic Agent README](./apps/synthetic-agent/README.md) - Playwright setup
-
----
-
-## 🚀 Live Demo Environment: "Tushar's Creation"
-
-The system comes pre-configured with a comprehensive demo environment named **"Tushar's Creation"**.
-
-### How to access:
-1. Start the system: `npm run dev`
-2. Run the seeder: `npm run demo:seed`
-3. Login at `http://localhost:3000/login` with:
-   - **Email:** `superadmin@monitor.io`
-   - **Password:** `password123`
-4. Select the **"Tushar's Creation"** project from the list.
-
-### What is simulated:
-- **E-Commerce Syncs:** Real-time order ingestion from Shopify and Magento.
-- **Supply Chain Issues:** Controlled OMS sync failures on IBM Sterling for Root Cause Analysis (RCA) demonstration.
-- **Performance Drift:** A simulated slow-loading checkout page (4.9s) triggering automated alerts.
-- **Traffic Patterns:** Varied traffic across Desktop, Mobile, and Tablet browsers.
+- **[Advanced Roadmap History](./phase_1_checklist.md)** - Implementation log
 
 ---
 *Architecture: Antigravity Production Observability Platform · 2026*

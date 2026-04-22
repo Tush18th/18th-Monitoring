@@ -5,3 +5,4 @@ export const serverRoutes = (router: any) => {
     // Scaffold route binding
     router.post('/i/server', handleServerIngest);
 };
+

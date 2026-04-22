@@ -20,11 +20,14 @@ export class AuthService {
     }
 
     static async login(email: string, password: string): Promise<{ token: string, user: any } | null> {
-        const user = GlobalMemoryStore.users.get(email);
+        // Find user by email (Map key might be ID or Email)
+        let user = GlobalMemoryStore.users.get(email);
+        if (!user) {
+            user = Array.from(GlobalMemoryStore.users.values()).find(u => u.email === email);
+        }
         
         if (!user || user.status !== 'active') {
             await AuditService.log({ action: 'LOGIN_ATTEMPT', actorId: email, status: 'FAILURE', metadata: { reason: 'User not found or inactive' }});
-            // TODO (PROD): Delay response to prevent timing attacks uncovering valid emails
             return null;
         }
 

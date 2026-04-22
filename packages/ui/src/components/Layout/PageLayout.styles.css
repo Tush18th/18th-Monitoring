@@ -1,7 +1,7 @@
 .ui-page-layout {
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
+  gap: var(--space-5);
   min-width: 0;
 }
 
@@ -10,7 +10,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-6);
-  padding: var(--space-2) 0 var(--space-6);
+  padding: var(--space-2) 0 var(--space-5);
   border-bottom: 1px solid var(--border-subtle);
 }
 
@@ -29,12 +29,12 @@
 }
 
 .page-icon {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 14px;
+  border-radius: 16px;
   background: color-mix(in srgb, var(--primary) 10%, var(--bg-surface));
   color: var(--primary);
   border: 1px solid color-mix(in srgb, var(--primary) 12%, var(--border-subtle));
@@ -56,8 +56,8 @@
 
 .page-title {
   color: var(--text-primary);
-  letter-spacing: -0.03em;
-  line-height: 1.05;
+  letter-spacing: -0.04em;
+  line-height: 1.04;
 }
 
 .page-subtitle {
@@ -73,6 +73,12 @@
   flex-shrink: 0;
   padding-top: 4px;
   flex-wrap: wrap;
+}
+
+.page-content {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1rem, 2vw, 1.5rem);
 }
 
 @media (max-width: 1024px) {

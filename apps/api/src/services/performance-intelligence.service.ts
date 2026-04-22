@@ -19,14 +19,19 @@ export class PerformanceIntelligenceService {
         
         // 1. STORE RAW SIGNAL (Requirement 3)
         await db.insert(performanceMetrics).values({
-            ...signal,
+            siteId: signal.siteId,
+            tenantId: (signal as any).tenantId || 'system',
+            category: 'WEB_VITALS',
+            metricName: signal.name,
             metricValue: signal.value.toString(),
+            unit: 'ms',
             timestamp: new Date(signal.timestamp),
             region: signal.dimensions.region,
             device: signal.dimensions.device,
             browser: signal.dimensions.browser,
             route: signal.dimensions.route,
-            releaseVersion: signal.dimensions.release
+            traceId: (signal as any).traceId,
+            correlationId: (signal as any).correlationId
         });
 
         // 2. REAL-TIME ANOMALY CHECK (Requirement 11)
@@ -50,9 +55,9 @@ export class PerformanceIntelligenceService {
 
         if (signals.length === 0) return null;
 
-        const values = signals.map(s => parseFloat(s.metricValue as string)).sort((a, b) => a - b);
+        const values = signals.map((s: any) => parseFloat(s.metricValue as string)).sort((a: number, b: number) => a - b);
         const count = values.length;
-        const sum = values.reduce((a, b) => a + b, 0);
+        const sum = values.reduce((a: number, b: number) => a + b, 0);
 
         // PERCENTILE COMPUTATION (Requirement 5)
         const getP = (p: number) => values[Math.floor((p / 100) * (count - 1))];
@@ -76,15 +81,19 @@ export class PerformanceIntelligenceService {
 
         // 3. STORE ROLLUP (Requirement 4)
         await db.insert(performanceRollups).values({
-            ...rollup,
+            siteId: rollup.siteId,
+            metricName: rollup.metricName,
+            bucketSize: rollup.bucketSize,
+            timestamp: new Date(rollup.timestamp),
+            count: rollup.count,
             min: rollup.min.toString(),
             max: rollup.max.toString(),
+            avg: rollup.avg.toString(),
+            sum: sum.toString(),
             p50: rollup.p50.toString(),
-            p75: rollup.p75.toString(),
             p90: rollup.p90.toString(),
-            p95: rollup.p95.toString(),
             p99: rollup.p99.toString(),
-            timestamp: new Date(rollup.timestamp)
+            dimensions: JSON.stringify(rollup.dimensions) as any
         });
 
         return rollup;

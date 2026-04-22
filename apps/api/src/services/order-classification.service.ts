@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { CanonicalOrder, OrderSource } from '../../../../packages/shared-types/src';
+import { CanonicalOrder, OrderChannel } from '../../../../packages/shared-types/src';
 
 export class OrderClassificationService {
     private rulesPayload: any;
@@ -12,20 +12,20 @@ export class OrderClassificationService {
             this.rulesPayload = JSON.parse(fileData);
         } catch (err) {
             console.error('[ClassificationService] Failed to load rules definition', err);
-            this.rulesPayload = { rules: [], default: 'online' };
+            this.rulesPayload = { rules: [], default: 'ONLINE_STOREFRONT' };
         }
     }
 
-    public classify(order: Partial<CanonicalOrder>): OrderSource {
+    public classify(order: Partial<CanonicalOrder>): OrderChannel {
         const sortedRules = [...this.rulesPayload.rules].sort((a, b) => a.priority - b.priority);
 
         for (const rule of sortedRules) {
             if (this.evaluateConditions(order, rule.conditions)) {
-                return rule.result.orderSource as OrderSource;
+                return rule.result.orderSource as OrderChannel;
             }
         }
         
-        return this.rulesPayload.default as OrderSource;
+        return this.rulesPayload.default as OrderChannel;
     }
 
     private evaluateConditions(data: any, conditions: any[]): boolean {

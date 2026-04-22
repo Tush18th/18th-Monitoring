@@ -38,7 +38,7 @@ export const LandingHeader = () => {
 
         <div className="auth-actions">
           <Link href="/login" className="login-link">Sign In</Link>
-          <Button size="sm" className="get-started-btn" onClick={() => window.location.href = '/project/Tushars_Creation/overview'}>
+          <Button size="sm" className="get-started-btn" onClick={() => window.location.href = '/projects'}>
             View Demo
             <ChevronRight size={14} />
           </Button>

@@ -1,79 +1,70 @@
-/**
- * AuditService — Phase 4 Enhanced
- *
- * Writes structured audit events to:
- *   1. Postgres `audit_logs` table (durable, queryable)
- *   2. stdout (structured JSON for log aggregators — Datadog, Splunk, CloudWatch)
- *
- * Covers all auditability domains:
- *   - CONFIG_*         config publish / rollback / draft
- *   - SYNC_*           connector sync start / complete / fail
- *   - IMPORT_*         CSV import submit / complete / fail
- *   - RECON_*          reconciliation trigger / complete
- *   - API_ACCESS       public/admin API access events
- */
-
+import { GlobalMemoryStore } from '../../../../packages/db/src/adapters/in-memory.adapter';
 import crypto from 'crypto';
-import { db } from '../../../../packages/db/src/adapters/postgres-relational.adapter';
-import { auditLogs } from '../../../../packages/db/src/drizzle/schema';
 
-export type AuditAction =
-    | 'CONFIG_PUBLISHED' | 'CONFIG_ROLLBACK' | 'CONFIG_DRAFT_CREATED'
-    | 'SYNC_STARTED'     | 'SYNC_COMPLETED'  | 'SYNC_FAILED'
-    | 'IMPORT_SUBMITTED' | 'IMPORT_COMPLETED' | 'IMPORT_FAILED'
-    | 'RECON_TRIGGERED'  | 'RECON_COMPLETED'
-    | 'API_ACCESS'       | 'AUTH_LOGIN'       | 'AUTH_FAILURE';
-
-export interface AuditEvent {
-    action:      AuditAction;
-    actorId:     string;
-    siteId:      string;
-    entityType:  string;
-    entityId:    string;
-    changes?:    Record<string, any>;
-    status?:     'SUCCESS' | 'FAILURE' | 'PENDING';
-    meta?:       Record<string, any>;
-}
-
+/**
+ * AuditService
+ *
+ * Centralized immutable audit trail for governance and compliance.
+ */
 export class AuditService {
-    static async log(event: AuditEvent): Promise<void> {
-        const logId = crypto.randomUUID();
-        const timestamp = new Date();
 
-        const entry = {
-            action:     event.action,
-            actorId:    event.actorId,
-            siteId:     event.siteId,
-            entityType: event.entityType,
-            entityId:   event.entityId,
-            changes:    event.changes    ?? {},
-            status:     event.status     ?? 'SUCCESS',
-            meta:       event.meta       ?? {},
-            timestamp:  timestamp.toISOString(),
-            service:    'kpi-monitoring-api',
+    /**
+     * Unified audit log method — accepts the flexible event signature
+     * used across auth, governance, middleware, and public routes.
+     */
+    public static async log(params: {
+        action: string;
+        tenantId?: string;
+        siteId?: string;
+        actorId?: string;
+        actorRole?: string;
+        targetId?: string;
+        entityType?: string;
+        entityId?: string;
+        status?: string;
+        metadata?: any;
+        meta?: any;
+    }): Promise<void> {
+        const auditEntry = {
+            id: crypto.randomUUID(),
+            timestamp: new Date().toISOString(),
+            ...params
         };
 
-        // 1. Structured stdout — parsed by log aggregators
-        console.log(`[AUDIT] ${JSON.stringify(entry)}`);
-
-        // 2. Persist to Postgres with Memory Fallback
-        try {
-            await db.insert(auditLogs).values({
-                siteId:     event.siteId,
-                actorId:    event.actorId,
-                action:     event.action,
-                entityType: event.entityType,
-                entityId:   event.entityId,
-                changes:    { ...event.changes, status: entry.status, meta: entry.meta },
-            });
-        } catch (err) {
-            // Fallback to GlobalMemoryStore if DB fails
-            console.error('[AuditService] Persistence failed, falling back to MemoryStore:', (err as any).message);
-            const { GlobalMemoryStore } = require('../../../../packages/db/src/adapters/in-memory.adapter');
-            GlobalMemoryStore.governanceAuditLogs.push({
-                ...entry,
-                logId
-            });
+        if (!GlobalMemoryStore.governanceAuditLogs) {
+            (GlobalMemoryStore as any).governanceAuditLogs = [];
         }
+        GlobalMemoryStore.governanceAuditLogs.push(auditEntry);
+
+        const statusTag = params.status ? `[${params.status}]` : '';
+        console.log(`[AUDIT] ${statusTag} ${params.action} | tenant=${params.tenantId || 'platform'} | site=${params.siteId || params.targetId || 'global'} | actor=${params.actorId || 'system'}`);
+    }
+
+    /**
+     * Records an administrative action (legacy alias — prefer log()).
+     */
+    public static async logAction(params: {
+        siteId: string;
+        userId: string;
+        action: string;
+        resource: string;
+        details?: any;
+    }) {
+        return AuditService.log({
+            action: params.action,
+            actorId: params.userId,
+            siteId: params.siteId,
+            entityType: 'resource',
+            entityId: params.resource,
+            metadata: params.details,
+            status: 'SUCCESS'
+        });
+    }
+
+    /**
+     * Retrieves audit trail for a project.
+     */
+    public static async getTrail(siteId: string) {
+        return (GlobalMemoryStore.governanceAuditLogs || []).filter((l: any) => l.siteId === siteId);
     }
 }

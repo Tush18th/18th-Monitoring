@@ -9,7 +9,8 @@ export class OrderHandler {
         if (!orderId) return;
 
         if (eventType === 'order_placed') {
-            const canonicalOrder = await orderNormalizationService.normalize(event.value, siteId);
+            const tenantId = GlobalMemoryStore.projects.get(siteId)?.tenantId || 'system';
+            const canonicalOrder = await orderNormalizationService.normalize(metadata?.providerId || 'web', event.value, siteId, tenantId);
             GlobalMemoryStore.orders.set(orderId, {
                 ...canonicalOrder,
                 siteId,

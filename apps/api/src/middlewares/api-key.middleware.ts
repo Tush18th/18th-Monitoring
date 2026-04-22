@@ -1,6 +1,6 @@
 import { GlobalMemoryStore } from '../../../../packages/db/src/adapters/in-memory.adapter';
 import crypto from 'crypto';
-import { ResponseUtil } from '../utils/response.ts';
+import { ResponseUtil } from '../utils/response';
 import { GovernanceService } from '../services/governance.service';
 import { AuditService } from '../services/audit.service';
 
@@ -41,6 +41,13 @@ export const apiKeyAuth = (requiredScopes: string[] = []) => {
             if (key) {
                 foundKey = key;
                 foundSiteId = siteId;
+                
+                // Find Tenant ID for this project
+                const project = GlobalMemoryStore.projects.get(siteId);
+                if (project) {
+                    req.tenantId = project.tenantId;
+                }
+                
                 break;
             }
         }
@@ -114,6 +121,7 @@ export const apiKeyAuth = (requiredScopes: string[] = []) => {
             name: foundKey.label,
             role: 'API_CLIENT',
             scopes: foundKey.scopes,
+            tenantId: req.tenantId, // Ensure tenantId is present
             assignedProjects: [foundSiteId],
             isVip: foundKey.isVip || false
         };

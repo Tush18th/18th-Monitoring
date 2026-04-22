@@ -6,9 +6,9 @@ export type BaseEvent = z.infer<typeof BaseEventSchema>;
 export type BrowserIngestPayload = z.infer<typeof BrowserIngestPayloadSchema>;
 export type ServerIngestPayload = z.infer<typeof ServerIngestPayloadSchema>;
 
-export type Role = 'SUPER_ADMIN' | 'ADMIN' | 'CUSTOMER';
+export type Role = 'SUPER_ADMIN' | 'TENANT_ADMIN' | 'PROJECT_ADMIN' | 'OPERATOR' | 'VIEWER' | 'CUSTOMER';
 export type UserStatus = 'active' | 'suspended' | 'inactive';
-export type ProjectStatus = 'active' | 'maintenance' | 'archived';
+export type ProjectStatus = 'ACTIVE' | 'MAINTENANCE' | 'ARCHIVED';
 
 export interface UserAudit {
     createdAt: string;
@@ -23,6 +23,7 @@ export interface User {
     name: string;
     role: Role;
     status: UserStatus;
+    tenantId: string; // Every user belongs to a tenant
     passwordHash?: string; // Stored securely
     assignedProjects: string[]; // array of siteIds
     audit: UserAudit;
@@ -30,11 +31,17 @@ export interface User {
 
 export interface Project {
     id: string; // siteId
+    tenantId: string; // Mandatory scoping
     name: string;
+    slug: string; // URL-friendly identifier
     description?: string;
     status: ProjectStatus;
     organizationId?: string;
     lastActivity?: string;
+    configMetadata?: Record<string, any>;
+    createdBy?: string;
+    createdAt: string;
+    updatedAt: string;
     metricsSummary?: {
         activeUsers: number;
         errorRate: number;
@@ -230,7 +237,7 @@ export interface ConnectorHealthDimensions {
 }
 
 export type IntegrationCategory = 
-    | 'ERP' | 'CRM' | 'OMS' 
+    | 'ERP' | 'CRM' | 'OMS' | 'COMMERCE'
     | 'PAYMENT_GATEWAY' | 'SHIPPING_GATEWAY' 
     | 'ANALYTICS' | 'MARKETPLACE' | 'MARKETING' 
     | 'CUSTOM_API' | 'FILE_BASED' | 'WEBHOOK_SOURCE';
@@ -238,7 +245,7 @@ export type IntegrationCategory =
 export interface ConnectorInstanceMetadata {
     connectorId: string;
     siteId: string;
-    tenantId?: string;
+    tenantId: string;
     providerName: string;
     category: IntegrationCategory;
     environment: 'production' | 'sandbox' | 'development';
@@ -249,6 +256,50 @@ export interface ConnectorInstanceMetadata {
     lastWebhookAt?: string;
     healthStatus: 'HEALTHY' | 'DEGRADED' | 'UNHEALTHY';
     lifecycleState: ConnectorLifecycleState;
+    configVersion: string;
+}
+
+export type ConnectorCapability = 
+    | 'OAUTH' 
+    | 'API_KEY' 
+    | 'WEBHOOKS' 
+    | 'POLLING' 
+    | 'DISCOVERY' 
+    | 'BACKFILL' 
+    | 'INCREMENTAL_SYNC' 
+    | 'RECONCILIATION' 
+    | 'HEALTH_PROBE';
+
+export interface ConnectorRegistryEntry {
+    type: string;
+    family: IntegrationCategory;
+    name: string;
+    description: string;
+    capabilities: ConnectorCapability[];
+    version: string;
+}
+
+export type IntegrationSyncType = 'INITIAL_BACKFILL' | 'INCREMENTAL' | 'RECONCILIATION' | 'MANUAL_RESYNC';
+
+export interface IntegrationCredentialRef {
+    authType: 'OAUTH2' | 'API_KEY' | 'BASIC' | 'BEARER';
+    vaultKey: string; // Reference to external vault or encrypted field
+    expiresAt?: string;
+    lastRotatedAt?: string;
+    scopes?: string[];
+}
+
+export interface IntegrationLifecycleEvent {
+    id: string;
+    tenantId: string;
+    projectId: string; // siteId
+    integrationId: string;
+    type: string; // e.g., 'AUTH_SUCCESS', 'SYNC_FAILED'
+    severity: 'INFO' | 'WARNING' | 'ERROR';
+    payload: any;
+    correlationId: string;
+    triggeredBy: 'SYSTEM' | 'USER';
+    createdAt: string;
 }
 
 // --- Data Integrity & Reconciliation Types ---
@@ -561,6 +612,91 @@ export interface RecoveryJob {
         throttlingMs: number;
         forceRevalidate: boolean;
     };
+}
+
+// --- Ingestion Layer Types (Phase 4) ---
+
+export type IngestionMode = 'WEBHOOK' | 'POLLING' | 'FILE_IMPORT' | 'MANUAL_ENTRY' | 'SYNTHETIC';
+
+export type IngestionProcessingStatus = 
+    | 'RECEIVED'
+    | 'VALIDATING'
+    | 'REJECTED'
+    | 'ARCHIVED'
+    | 'QUEUED'
+    | 'PROCESSING'
+    | 'COMPLETED'
+    | 'FAILED'
+    | 'DEAD_LETTERED';
+
+export interface IngestionValidationReport {
+    isValid: boolean;
+    stages: {
+        auth: { status: 'PASS' | 'FAIL' | 'SKIP'; message?: string };
+        scope: { status: 'PASS' | 'FAIL'; message?: string };
+        schema: { status: 'PASS' | 'FAIL' | 'SKIP'; message?: string };
+        dedupe: { status: 'PASS' | 'FAIL'; isDuplicate: boolean };
+    };
+    errors: string[];
+    warnings: string[];
+}
+
+export interface IngestionEnvelope {
+    id: string; // Internal correlation ID
+    mode: IngestionMode;
+    tenantId: string;
+    projectId: string; // siteId
+    integrationId?: string;
+    connectorType?: string;
+    
+    entityType: string; // e.g., 'ORDER', 'PRODUCT', 'CUSTOMER'
+    sourceEventId?: string; // Original ID from source
+    receivedAt: string;
+    
+    rawPayloadRef?: string; // Reference to archived artifact
+    payload: any; // Raw or structured payload
+    
+    metadata: {
+        sourceIp?: string;
+        userAgent?: string;
+        headers?: Record<string, string>;
+        checkpoint?: any; // For polling cursor
+        [key: string]: any;
+    };
+}
+
+export interface IngestionEventRecord {
+    id: string;
+    envelopeId: string;
+    tenantId: string;
+    projectId: string;
+    integrationId?: string;
+    
+    mode: IngestionMode;
+    status: IngestionProcessingStatus;
+    validation: IngestionValidationReport;
+    
+    sourceReferenceId?: string;
+    receivedAt: string;
+    updatedAt: string;
+    
+    artifactId?: string;
+    queueMessageId?: string;
+    error?: {
+        code: string;
+        message: string;
+    };
+}
+
+export interface RawIngestionArtifact {
+    id: string;
+    ingestionEventId: string;
+    type: 'WEBHOOK_PAYLOAD' | 'API_RESPONSE' | 'FILE_UPLOAD';
+    storagePath: string; // or object key
+    contentType: string;
+    size: number;
+    checksum: string;
+    createdAt: string;
 }
 
 

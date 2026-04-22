@@ -2,7 +2,7 @@ import { db } from '../../../../packages/db/src/adapters/postgres-relational.ada
 import { 
     alerts, 
     alertRules, 
-    auditLogs, 
+    iamAuditLogs, 
     systemLogs 
 } from '../../../../packages/db/src/drizzle/schema';
 import { eq, and, sql } from 'drizzle-orm';
@@ -26,8 +26,9 @@ export class ObservabilityService {
             module: entry.module,
             message: entry.message,
             siteId: entry.siteId,
+            tenantId: (entry as any).tenantId || 'tenant_001',
             correlationId: entry.correlationId,
-            metadata: entry.metadata
+            metadata: entry.metadata || {}
         });
 
         // If ERROR or FATAL, automatically check if we should trigger an alert
@@ -68,11 +69,12 @@ export class ObservabilityService {
         await db.insert(alerts).values({
             id,
             siteId: alertData.siteId,
+            tenantId: (alertData as any).tenantId || 'tenant_001',
             severity: alertData.severity,
             module: alertData.module,
             alertType: alertData.alertType,
             message: alertData.message,
-            context: alertData.context,
+            context: alertData.context || {},
             correlationId: alertData.correlationId,
             status: 'TRIGGERED'
         });
@@ -86,6 +88,7 @@ export class ObservabilityService {
      */
     static async audit(options: {
         siteId: string;
+        tenantId?: string;
         actorId: string;
         action: string;
         entityType: string;
@@ -94,13 +97,13 @@ export class ObservabilityService {
         newValue?: any;
         metadata?: Record<string, any>;
     }) {
-        await db.insert(auditLogs).values({
-            siteId: options.siteId,
+        await db.insert(iamAuditLogs).values({
+            tenantId: options.tenantId || 'tenant_001',
             actorId: options.actorId,
             action: options.action,
-            entityType: options.entityType,
-            entityId: options.entityId,
-            changes: {
+            targetType: options.entityType,
+            targetId: options.entityId,
+            metadata: {
                 from: options.previousValue,
                 to: options.newValue,
                 ...options.metadata

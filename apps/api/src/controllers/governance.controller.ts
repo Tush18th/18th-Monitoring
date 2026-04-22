@@ -1,5 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { governanceService } from '../services/governance.service';
+import { GovernanceService } from '../services/governance.service';
 
 export const listAccessKeys = async (request: FastifyRequest, reply: FastifyReply) => {
     const { siteId } = request.params as any;
@@ -11,27 +11,27 @@ export const listAccessKeys = async (request: FastifyRequest, reply: FastifyRepl
 export const createAccessKey = async (request: FastifyRequest, reply: FastifyReply) => {
     const { siteId } = request.params as any;
     const userId = (request.user as any)?.id || 'unknown';
-    const result = await governanceService.createKey(siteId, userId, request.body);
+    const result = await GovernanceService.createKey(siteId, userId, request.body);
     return reply.send(result);
 };
 
 export const rotateAccessKey = async (request: FastifyRequest, reply: FastifyReply) => {
     const { siteId, keyId } = request.params as any;
     const userId = (request.user as any)?.id || 'unknown';
-    const result = await governanceService.rotateKey(siteId, keyId, userId);
+    const result = await GovernanceService.rotateKey(siteId, keyId, userId);
     return reply.send(result);
 };
 
 export const revokeAccessKey = async (request: FastifyRequest, reply: FastifyReply) => {
     const { siteId, keyId } = request.params as any;
     const userId = (request.user as any)?.id || 'unknown';
-    const result = await governanceService.revokeKey(siteId, keyId, userId);
+    const result = await GovernanceService.revokeKey(siteId, keyId, userId);
     return reply.send(result);
 };
 
 export const getAuditLogs = async (request: FastifyRequest, reply: FastifyReply) => {
     const { siteId } = request.params as any;
-    const logs = governanceService.getAuditLogs(siteId);
+    const logs = GovernanceService.getAuditLogs(siteId);
     return reply.send(logs);
 };
 

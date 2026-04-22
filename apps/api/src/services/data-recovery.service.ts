@@ -60,13 +60,13 @@ export class DataRecoveryService {
         const scope = job.scope as ReprocessScope;
         
         // 2. FETCH RAW EVENTS (Requirement 1)
-        let query = db.select().from(ingestionEvents).where(eq(ingestionEvents.siteId, job.siteId));
+        let query = db.select().from(ingestionEvents).where(eq(ingestionEvents.projectId, job.siteId));
         
         if (scope.dateRange) {
             query = db.select().from(ingestionEvents).where(and(
-                eq(ingestionEvents.siteId, job.siteId),
-                gte(ingestionEvents.ingestionTimestamp, new Date(scope.dateRange.start)),
-                lte(ingestionEvents.ingestionTimestamp, new Date(scope.dateRange.end))
+                eq(ingestionEvents.projectId, job.siteId),
+                gte(ingestionEvents.receivedAt, new Date(scope.dateRange.start)),
+                lte(ingestionEvents.receivedAt, new Date(scope.dateRange.end))
             ));
         }
 
@@ -78,12 +78,12 @@ export class DataRecoveryService {
         for (const event of events) {
             try {
                 // REPLAY NORMALIZATION & VALIDATION (Requirement 1, 11)
-                await HardenedIngestionService.ingestRawSignal({
-                    siteId: event.siteId,
-                    connectorId: event.connectorId,
-                    sourceSystem: event.sourceSystem,
-                    payload: event.rawPayload as any,
-                    eventType: event.eventType as any
+                await HardenedIngestionService.ingest({
+                    siteId: event.projectId,
+                    connectorId: event.integrationId || 'unknown',
+                    sourceSystem: 'REPLAY',
+                    payload: (event as any).payload || {},
+                    eventType: (event as any).eventType || 'REPLAY'
                 });
                 processed++;
             } catch (err) {

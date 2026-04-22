@@ -1,10 +1,10 @@
 import { db } from '../../../../packages/db/src/adapters/postgres-relational.adapter';
 import { 
     ingestionEvents, 
-    normalizedOrders, 
+    canonicalOrders, 
     connectorSyncRuns,
     systemHealthMetrics,
-    processingCheckpoints
+    pipelineCheckpoints
 } from '../../../../packages/db/src/drizzle/schema';
 import { eq, and, gte, lte, sql } from 'drizzle-orm';
 import { 
