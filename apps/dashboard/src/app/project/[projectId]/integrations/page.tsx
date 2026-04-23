@@ -78,14 +78,15 @@ export default function IntegrationsPage() {
                 lastSync: s.lastSyncAt ? new Date(s.lastSyncAt).toLocaleTimeString() : 'Never synced',
                 lastWebhook: s.lastWebhookAt ? new Date(s.lastWebhookAt).toLocaleTimeString() : 'No activity',
                 metrics: {
-                    syncSuccess: s.healthScore || 98,
-                    webhookLatency: '420ms', // Mocked until metric bridge is live
+                metrics: {
+                    syncSuccess: s.healthScore || 100,
+                    webhookLatency: s.avgLatency ? `${s.avgLatency}ms` : summ.avgOmsLatency ? `${summ.avgOmsLatency}ms` : 'N/A',
                     freshness: (s.healthScore > 90 ? 'fresh' : s.healthScore > 70 ? 'delayed' : 'stale') as any
                 },
                 dimensions: {
                     connectivity: s.status === 'ACTIVE',
                     auth: true,
-                    sync: s.healthScore > 50,
+                    sync: (s.healthScore || 100) > 50,
                     webhook: !!s.lastWebhookAt
                 }
             }));
@@ -97,7 +98,7 @@ export default function IntegrationsPage() {
                 degraded: mappedConnectors.filter((c:any) => c.status === 'degraded').length,
                 critical: mappedConnectors.filter((c:any) => c.status === 'critical').length,
                 stale: mappedConnectors.filter((c:any) => c.status === 'stale').length,
-                successRate: summ.successRate || 98,
+                successRate: summ.successRate ?? 100,
                 avgLatency: summ.avgOmsLatency || 420
             });
             setTrends(trend);

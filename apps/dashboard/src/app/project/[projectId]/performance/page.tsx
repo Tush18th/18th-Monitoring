@@ -51,6 +51,7 @@ export default function PerformancePage() {
     const [anomalies, setAnomalies] = useState<any[]>([]);
     const [regional, setRegional] = useState<any[]>([]);
     const [apis, setApis] = useState<any[]>([]);
+    const [integrations, setIntegrations] = useState<any[]>([]);
 
     // UI UI State
     const [selectedAnomaly, setSelectedAnomaly] = useState<any>(null);
@@ -63,17 +64,20 @@ export default function PerformancePage() {
         if (!token || !projectId) return;
         setLoading(true);
         try {
-            const [summ, trnd, anom, reg, pages] = await Promise.all([
+            const [summ, trnd, anom, reg, pages, intg] = await Promise.all([
                 apiFetch(`/api/v1/dashboard/performance/summary?siteId=${projectId}`),
                 apiFetch(`/api/v1/dashboard/performance/trends?siteId=${projectId}`),
                 apiFetch(`/api/v1/dashboard/performance/anomalies?siteId=${projectId}`),
                 apiFetch(`/api/v1/dashboard/performance/regional?siteId=${projectId}`),
-                apiFetch(`/api/v1/dashboard/performance/slowest-pages?siteId=${projectId}`)
+                apiFetch(`/api/v1/dashboard/performance/slowest-pages?siteId=${projectId}`),
+                apiFetch(`/api/v1/dashboard/integrations/summary?siteId=${projectId}`)
             ]);
 
             setSummary(summ);
             setTrends(Array.isArray(trnd) ? trnd : []);
             setAnomalies(Array.isArray(anom) ? anom : []);
+            setIntegrations(Array.isArray(intg) ? intg : []);
+            
             setRegional(reg?.map((r: any) => ({
                 dimension: r.name,
                 count: r.share * 1000,
@@ -82,6 +86,7 @@ export default function PerformancePage() {
                 errors: r.errorRate,
                 health: r.lcp > 2000 ? 'critical' : r.lcp > 1500 ? 'warning' : 'healthy'
             })) || []);
+            
             setApis(pages?.map((p: any) => ({
                 dimension: p.page,
                 count: p.hits || 5000,
@@ -99,55 +104,83 @@ export default function PerformancePage() {
 
     useEffect(() => {
         loadData();
-        const interval = setInterval(loadData, 30000); // 30s resolution
+        const interval = setInterval(loadData, 30000);
         return () => clearInterval(interval);
     }, [loadData]);
 
-    const handleAnomalyInspect = (anom: any) => {
-        setSelectedAnomaly(anom);
+    const handleAnomalyInspect = (anomaly: any) => {
+        setSelectedAnomaly(anomaly);
         setIsDrawerOpen(true);
     };
 
     return (
-        <PageLayout 
-            title="Performance Intelligence Lab" 
-            subtitle="Deep percentile analysis, regression detection, and technical root-cause exploration."
+        <PageLayout
+            title="Performance Lab"
+            subtitle="Deep intelligence on site reliability, latency distributions, and anomaly attribution."
             icon={<Activity size={24} />}
         >
-            <div className="space-y-6 pb-12">
-                {/* 1. Performance Health Header (p50-p99) */}
-                <PerformanceHealthHeader stats={summary} loading={loading} />
+            <div className="space-y-8 pb-12">
+                {/* 1. System Health Header */}
+                <PerformanceHealthHeader 
+                    summary={summary} 
+                    loading={loading} 
+                />
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* 2. Laboratory Left Column: Anomalies & Trends */}
-                    <div className="lg:col-span-2 space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                    {/* 2. Visual Intelligence Zone */}
+                    <div className="lg:col-span-3 space-y-8">
+                        <PerformanceTrendExplorer 
+                            trends={trends} 
+                            loading={loading}
+                            activeMetric={activeMetric}
+                            onMetricChange={setActiveMetric}
+                        />
+
                         <AnomalyExplorer 
                             anomalies={anomalies} 
                             loading={loading}
-                            onInspect={handleAnomalyInspect} 
+                            onInspect={handleAnomalyInspect}
                         />
 
-                        <PerformanceTrendExplorer 
-                             data={trends} 
-                             loading={loading}
+                        <SegmentationPivot 
+                            regionalData={regional}
+                            loading={loading}
                         />
                     </div>
 
-                    {/* 3. Laboratory Right Column: Pivots & Segmentation */}
+                    {/* 3. Contextual Sidebar */}
                     <div className="space-y-6">
-                        <SegmentationPivot 
-                            title="Regional Latency Pivot"
-                            icon={Globe}
-                            data={regional}
-                            loading={loading}
-                            onSelect={(s) => console.log('Region Filter:', s)}
-                        />
+                        <Card className="p-6 border-subtle">
+                           <Typography variant="body" weight="bold" className="text-sm uppercase tracking-wider text-text-muted mb-6 block border-b border-subtle pb-2">
+                              Top Bottlenecks
+                           </Typography>
+                           <div className="space-y-6">
+                              {apis.slice(0, 5).map((api, idx) => (
+                                 <div key={idx} className="flex flex-col gap-1 cursor-pointer group">
+                                    <div className="flex justify-between items-center">
+                                       <Typography variant="body" weight="bold" className="text-xs truncate max-w-[140px] group-hover:text-primary transition-colors">
+                                          {api.dimension}
+                                       </Typography>
+                                       <Badge variant={api.health as any} size="sm">{api.p95}ms</Badge>
+                                    </div>
+                                    <div className="h-1 w-full bg-muted rounded-full overflow-hidden">
+                                       <div 
+                                          className={`h-full ${api.health === 'critical' ? 'bg-error' : 'bg-success'}`} 
+                                          style={{ width: `${Math.min(100, (api.p95 / 5000) * 100)}%` }} 
+                                       />
+                                    </div>
+                                 </div>
+                              ))}
+                           </div>
+                        </Card>
 
-                        <SegmentationPivot 
-                            title="Service / API Distribution"
-                            icon={Server}
-                            data={apis}
-                            loading={loading}
+                        <OperationalTable 
+                            columns={[
+                                { key: 'dimension', header: 'Resource' },
+                                { key: 'p95', header: 'p95', width: '80px', render: (v) => `${v}ms` }
+                            ] as any}
+                            data={apis.slice(5, 10)}
+                            isLoading={loading}
                             onSelect={(s) => console.log('API Filter:', s)}
                         />
 
@@ -159,7 +192,7 @@ export default function PerformancePage() {
                               </Typography>
                            </div>
                            <div className="flex items-end gap-2">
-                              <Typography variant="h2" weight="bold" noMargin>98.4%</Typography>
+                              <Typography variant="h2" weight="bold" noMargin>{summary.uptime || '99.9'}%</Typography>
                               <Typography variant="caption" className="text-success mb-1 font-bold">+0.2% vs avg</Typography>
                            </div>
                            <Typography variant="micro" className="text-text-muted mt-2 block">
@@ -176,22 +209,24 @@ export default function PerformancePage() {
                           External System Correlation
                        </Typography>
                        <div className="space-y-4">
-                          {[
-                            { name: 'Payment (Stripe)', id: 'INT-402', status: 'Healthy', latency: '240ms' },
-                            { name: 'Shipping (FedEx)', id: 'INT-88', status: 'Degraded', latency: '1.2s' },
-                            { name: 'Identity (Auth0)', id: 'INT-12', status: 'Healthy', latency: '42ms' },
-                          ].map((dep) => (
-                             <div key={dep.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
-                                <div>
-                                   <Typography variant="body" weight="bold" className="text-sm">{dep.name}</Typography>
-                                   <Typography variant="micro" className="text-text-muted uppercase">{dep.id}</Typography>
-                                </div>
-                                <div className="text-right">
-                                   <Typography variant="body" weight="bold" className="text-sm">{dep.latency}</Typography>
-                                   <Badge variant={dep.status === 'Healthy' ? 'success' : 'warning'} size="sm">{dep.status}</Badge>
-                                </div>
-                             </div>
-                          ))}
+                          {integrations.length > 0 ? (
+                            integrations.slice(0, 4).map((dep) => (
+                              <div key={dep.name} className="flex items-center justify-between p-3 bg-muted/30 rounded-xl">
+                                 <div>
+                                    <Typography variant="body" weight="bold" className="text-sm">{dep.name}</Typography>
+                                    <Typography variant="micro" className="text-text-muted uppercase">{dep.status}</Typography>
+                                 </div>
+                                 <div className="text-right">
+                                    <Typography variant="body" weight="bold" className="text-sm">{dep.latency}</Typography>
+                                    <Badge variant={dep.status === 'Active' ? 'success' : 'warning'} size="sm">{dep.status}</Badge>
+                                 </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="p-8 text-center">
+                              <Typography variant="caption" className="text-text-muted">No external dependencies tracked.</Typography>
+                            </div>
+                          )}
                        </div>
                     </Card>
 
@@ -212,85 +247,60 @@ export default function PerformancePage() {
                 </div>
             </div>
 
-            {/* Performance Diagnostic Side Panel */}
-            <DiagnosticDrawer
-                isOpen={isDrawerOpen}
+            <DiagnosticDrawer 
+                isOpen={isDrawerOpen} 
                 onClose={() => setIsDrawerOpen(false)}
-                title="Performance Anomaly Lab"
-                subtitle={`Anomaly ID: ${selectedAnomaly?.id} • Impact: ${selectedAnomaly?.severity?.toUpperCase()}`}
-                width="700px"
+                title="Anomaly Diagnostic"
+                subtitle={`Fingerprint: ${selectedAnomaly?.id || 'Unknown'}`}
             >
                 {selectedAnomaly && (
                     <div className="space-y-8">
-                        <section className="bg-error-bg/20 p-5 rounded-2xl border border-error/10">
-                            <div className="flex justify-between items-start mb-4">
-                                <div>
-                                    <Typography variant="h3" weight="bold" noMargin className="text-error-text">
-                                        {selectedAnomaly.metric} Regression
-                                    </Typography>
-                                    <Typography variant="caption" className="text-error-text opacity-70">
-                                        Observed Deviation: <span className="font-bold">{selectedAnomaly.deviation}</span>
-                                    </Typography>
-                                </div>
-                                <Badge variant="error" dot>CRITICAL REGRESSION</Badge>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-error/10">
-                                <div>
-                                    <Typography variant="micro" weight="bold" className="text-error-text opacity-50 uppercase">SCOPE</Typography>
-                                    <Typography variant="body" weight="bold" className="text-sm">{selectedAnomaly.scope}</Typography>
-                                </div>
-                                <div>
-                                    <Typography variant="micro" weight="bold" className="text-error-text opacity-50 uppercase">AFFECTED SEGMENT</Typography>
-                                    <Typography variant="body" weight="bold" className="text-sm font-mono">{selectedAnomaly.impact}</Typography>
-                                </div>
-                            </div>
-                        </section>
-
-                        <section>
-                            <Typography variant="caption" weight="bold" className="text-text-muted uppercase tracking-wider mb-4 block">
-                                Correlation Intelligence
-                            </Typography>
-                            <div className="space-y-3">
-                                <div className="p-4 bg-muted/30 rounded-xl flex gap-4">
-                                    <History size={20} className="text-primary mt-1" />
-                                    <div>
-                                        <Typography variant="body" weight="bold" className="text-sm">Matched Release Event</Typography>
-                                        <Typography variant="caption" className="text-text-muted block mt-1">
-                                            Regression started exactly 4m after <strong>deployment v2.4.1-rc</strong>. 
-                                            This release modified the <code>ProductView.tsx</code> and <code>CheckoutService.go</code> files.
-                                        </Typography>
-                                    </div>
-                                </div>
-                                <div className="p-4 bg-muted/30 rounded-xl flex gap-4">
-                                    <Layers size={20} className="text-warning mt-1" />
-                                    <div>
-                                        <Typography variant="body" weight="bold" className="text-sm">Regional Infrastructure Anomaly</Typography>
-                                        <Typography variant="caption" className="text-text-muted block mt-1">
-                                            Cloud provider <strong>AWS ap-south-1</strong> reported 40ms increased gateway latency during this window.
-                                        </Typography>
-                                    </div>
-                                </div>
-                            </div>
-                        </section>
-
-                        <section>
-                            <div className="flex items-center gap-2 mb-4">
-                                <Box size={18} className="text-text-muted" />
-                                <Typography variant="h3" weight="bold" noMargin className="text-sm">
-                                    Technical Triage Actions
+                        <div className="p-4 bg-error/10 border border-error/20 rounded-2xl flex gap-3">
+                            <AlertTriangle className="text-error" size={24} />
+                            <div>
+                                <Typography variant="body" weight="bold">Critical Performance Regression</Typography>
+                                <Typography variant="caption" className="text-text-secondary mt-1 block">
+                                    The system detected a {selectedAnomaly.deviation} deviation in {selectedAnomaly.metric} across {selectedAnomaly.scope}.
                                 </Typography>
                             </div>
+                        </div>
+
+                        <section className="space-y-4">
+                            <Typography variant="body" weight="bold" className="text-sm text-text-muted uppercase tracking-wider">Root Cause Attribution</Typography>
                             <div className="grid grid-cols-2 gap-4">
-                                <button type="button" className="action-btn action-btn--primary">
-                                    <RefreshCw size={16} />
-                                    Immediate Rollback
-                                </button>
-                                <button type="button" className="action-btn action-btn--outline">
-                                    <Search size={16} />
-                                    Isolate Segment
-                                </button>
+                                <div className="p-4 bg-muted/20 border border-subtle rounded-2xl">
+                                    <Typography variant="micro" className="text-text-muted uppercase font-bold block mb-1">Primary Factor</Typography>
+                                    <Typography variant="body" weight="bold">{selectedAnomaly.metric}</Typography>
+                                </div>
+                                <div className="p-4 bg-muted/20 border border-subtle rounded-2xl">
+                                    <Typography variant="micro" className="text-text-muted uppercase font-bold block mb-1">Impacted Scope</Typography>
+                                    <Typography variant="body" weight="bold">{selectedAnomaly.scope}</Typography>
+                                </div>
                             </div>
                         </section>
+
+                        <section className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <Typography variant="body" weight="bold" className="text-sm text-text-muted uppercase tracking-wider">Historical Context</Typography>
+                                <Badge variant="info">3 SAMPLES</Badge>
+                            </div>
+                            <div className="space-y-2">
+                                {[1, 2, 3].map(i => (
+                                    <div key={i} className="flex justify-between items-center p-3 border border-subtle rounded-xl bg-surface">
+                                        <div className="flex items-center gap-3">
+                                            <History size={16} className="text-text-muted" />
+                                            <Typography variant="body" className="text-xs">T - {i*10}m occurrence</Typography>
+                                        </div>
+                                        <Typography variant="body" weight="bold" className="text-xs">{selectedAnomaly.deviation}</Typography>
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+
+                        <div className="pt-8 flex gap-4">
+                            <button className="action-btn action-btn--primary flex-1">Acknowledge Anomaly</button>
+                            <button className="action-btn action-btn--outline flex-1">Open CloudTrace</button>
+                        </div>
                     </div>
                 )}
             </DiagnosticDrawer>

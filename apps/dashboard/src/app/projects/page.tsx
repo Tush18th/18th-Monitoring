@@ -1,137 +1,178 @@
 'use client';
+
 import React, { useEffect, useMemo, useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'next/navigation';
-import { 
-  ArrowRight, 
-  AlertTriangle, 
-  Building2, 
-  Activity, 
-  Users, 
-  FolderKanban, 
-  ShieldCheck, 
-  LayoutDashboard, 
-  Info,
-  Clock,
+import {
+  Activity,
+  AlertTriangle,
+  ArrowRight,
+  Bell,
+  Building2,
+  ChevronDown,
+  FolderKanban,
+  LayoutDashboard,
+  ShieldCheck,
+  Sparkles,
   TrendingUp,
-  ExternalLink,
-  ShieldAlert,
-  ChevronRight
+  Users,
 } from 'lucide-react';
-import { Card, Typography, Button, Badge } from '@kpi-platform/ui';
 import { PerformanceChart } from '../../components/ui/PerformanceChart';
+import { useAuth } from '../../context/AuthContext';
 
-// --- Local Components for Portfolio Specifics ---
+type ProjectSummary = {
+  id: string;
+  name: string;
+  metricsSummary?: {
+    activeUsers?: number;
+    errorRate?: number;
+  };
+};
 
-const PortfolioMetricCard = ({ 
-  title, 
-  value, 
-  unit = '', 
-  state = 'healthy', 
-  icon: Icon, 
-  secondaryTag 
-}: any) => {
-  const statusColors = {
+const timeFilters = [
+  { label: '24h', value: '24h' },
+  { label: '7d', value: '7d' },
+  { label: '30d', value: '30d' },
+] as const;
+
+function formatValue(value: number) {
+  return new Intl.NumberFormat('en-US').format(value);
+}
+
+function buildTrendData(range: string) {
+  const factor = range === '7d' ? 1.12 : range === '30d' ? 1.22 : 1;
+
+  return Array.from({ length: 12 }).map((_, index) => ({
+    timestamp: `${String(index * 2).padStart(2, '0')}:00`,
+    pageLoadTime: 220 + index * 8 * factor + Math.sin(index / 2) * 18,
+    ttfb: 90 + index * 3 * factor + Math.cos(index / 2) * 7,
+    fcp: 145 + index * 4 * factor + Math.sin(index / 3) * 9,
+    lcp: 380 + index * 10 * factor + Math.cos(index / 4) * 16,
+  }));
+}
+
+function getHealthTone(health: number) {
+  if (health < 92) return 'critical';
+  if (health < 97) return 'warning';
+  return 'healthy';
+}
+
+const MetricCard = ({
+  title,
+  value,
+  icon: Icon,
+  statusLabel,
+  statusTone,
+  secondaryTag,
+}: {
+  title: string;
+  value: string;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  statusLabel: string;
+  statusTone: 'healthy' | 'warning' | 'critical';
+  secondaryTag: string;
+}) => {
+  const toneClasses = {
     healthy: 'text-success bg-success/10 border-success/20',
     warning: 'text-warning bg-warning/10 border-warning/20',
-    critical: 'text-error bg-error/10 border-error/20'
-  };
-
-  const dotColors = {
-    healthy: 'bg-success',
-    warning: 'bg-warning',
-    critical: 'bg-error'
+    critical: 'text-error bg-error/10 border-error/20',
   };
 
   return (
-    <div className="group relative bg-bg-surface border border-border-subtle rounded-[20px] p-6 transition-all duration-300 hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 hover:border-primary/30">
-      {/* Icon - Top Right */}
-      <div className="absolute top-6 right-6 p-2 rounded-xl bg-bg-muted/50 text-text-muted group-hover:text-primary transition-colors">
+    <div className="group relative h-full min-h-[168px] rounded-2xl border border-border-subtle bg-bg-surface p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-xl hover:shadow-primary/5">
+      <div className="absolute right-5 top-5 rounded-xl bg-bg-muted/60 p-2 text-text-muted transition-colors group-hover:text-primary">
         <Icon size={20} />
       </div>
 
-      <div className="flex flex-col h-full justify-between gap-6">
-        <div>
-          <Typography variant="micro" color="muted" weight="bold" className="uppercase tracking-widest mb-1">
-            {title}
-          </Typography>
-          <div className="flex items-baseline gap-1">
-            <Typography variant="h1" noMargin className="text-3xl font-black tracking-tighter text-text-primary">
-              {value}
-            </Typography>
-            {unit && <span className="text-sm font-bold text-text-muted">{unit}</span>}
-          </div>
+      <div className="flex h-full flex-col justify-between gap-6">
+        <div className="space-y-2">
+          <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-text-muted">{title}</div>
+          <div className="text-4xl font-black tracking-tight text-text-primary">{value}</div>
         </div>
 
-        <div className="flex items-center justify-between mt-2">
-          {/* Status Badge - Bottom Left */}
-          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-black uppercase tracking-wider ${statusColors[state as keyof typeof statusColors]}`}>
-            <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${dotColors[state as keyof typeof dotColors]}`} />
-            {state}
+        <div className="flex items-end justify-between gap-3">
+          <div className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${toneClasses[statusTone]}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${statusTone === 'healthy' ? 'bg-success' : statusTone === 'warning' ? 'bg-warning' : 'bg-error'} animate-pulse`} />
+            {statusLabel}
           </div>
-
-          {/* Secondary Tag - Bottom Right */}
-          {secondaryTag && (
-            <span className="text-[10px] font-bold text-text-muted/60 flex items-center gap-1">
-              <TrendingUp size={10} />
-              {secondaryTag}
-            </span>
-          )}
+          <div className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.16em] text-text-muted">
+            <TrendingUp size={11} />
+            {secondaryTag}
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-const ProjectCard = ({ project, onClick }: any) => {
+const ProjectCard = ({
+  project,
+  onOpen,
+  isPending,
+}: {
+  project: ProjectSummary;
+  onOpen: (projectId: string) => void;
+  isPending: boolean;
+}) => {
+  const traffic = project.metricsSummary?.activeUsers || 0;
   const health = Math.max(0, 100 - (project.metricsSummary?.errorRate || 0));
-  const totalUsers = project.metricsSummary?.activeUsers || 0;
-  const statusState = health < 95 ? 'warning' : 'healthy';
+  const tone = getHealthTone(health);
 
   return (
     <button
-      onClick={onClick}
-      className="group flex flex-col bg-bg-surface border border-border-subtle rounded-2xl p-5 text-left transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 hover:border-primary/20 relative overflow-hidden"
+      type="button"
+      onClick={() => onOpen(project.id)}
+      aria-busy={isPending}
+      className="group relative flex h-full min-h-[228px] flex-col justify-between overflow-hidden rounded-2xl border border-border-subtle bg-bg-surface p-5 text-left shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-primary/25 hover:shadow-xl hover:shadow-primary/5 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
     >
-      <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-3xl rounded-full -mr-16 -mt-16 group-hover:bg-primary/10 transition-colors" />
-      
-      <div className="relative z-10 flex flex-col h-full gap-5">
-        <div className="flex justify-between items-start">
-          <div className="flex flex-col">
-            <Typography variant="h3" noMargin weight="bold" className="text-lg group-hover:text-primary transition-colors">
-              {project.name}
-            </Typography>
-            <Typography variant="micro" color="muted" className="font-mono tracking-tighter mt-0.5">
-              ID: {project.id.toUpperCase()}
-            </Typography>
-          </div>
-          <div className={`p-2 rounded-lg ${statusState === 'warning' ? 'bg-warning/10 text-warning' : 'bg-success/10 text-success'}`}>
-             {statusState === 'warning' ? <AlertTriangle size={18} /> : <ShieldCheck size={18} />}
-          </div>
-        </div>
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.03] via-transparent to-secondary/[0.03] opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
+      <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-primary/5 blur-3xl transition-colors group-hover:bg-primary/10" />
 
-        <div className="grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-bg-muted/40 border border-border-subtle/50">
-          <div className="flex flex-col">
-            <span className="text-[9px] font-black text-text-muted uppercase tracking-widest mb-1">Live Traffic</span>
-            <span className="text-base font-black text-text-primary">{totalUsers.toLocaleString()}</span>
+      <div className="relative z-10 flex h-full flex-col justify-between gap-5">
+        <div className="space-y-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="truncate text-lg font-semibold tracking-tight text-text-primary transition-colors group-hover:text-primary">
+                {project.name}
+              </div>
+              <div className="mt-1 font-mono text-[11px] font-medium tracking-[0.12em] text-text-muted">
+                ID {project.id.toUpperCase()}
+              </div>
+            </div>
+
+            <div
+              className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] ${
+                tone === 'healthy'
+                  ? 'border-success/20 bg-success/10 text-success'
+                  : tone === 'warning'
+                    ? 'border-warning/20 bg-warning/10 text-warning'
+                    : 'border-error/20 bg-error/10 text-error'
+              }`}
+            >
+              {tone === 'healthy' ? <ShieldCheck size={12} /> : <AlertTriangle size={12} />}
+              {tone}
+            </div>
           </div>
-          <div className="flex flex-col border-l border-border-subtle/50 pl-3">
-            <span className="text-[9px] font-black text-text-muted uppercase tracking-widest mb-1">System Health</span>
-            <div className="flex items-center gap-1.5">
-              <span className={`text-base font-black ${statusState === 'warning' ? 'text-warning' : 'text-success'}`}>
+
+          <div className="grid grid-cols-2 gap-3 rounded-2xl border border-border-subtle/70 bg-bg-muted/35 p-3">
+            <div className="space-y-1">
+              <div className="text-[10px] font-black uppercase tracking-[0.18em] text-text-muted">Live Traffic</div>
+              <div className="text-2xl font-black tracking-tight text-text-primary">{formatValue(traffic)}</div>
+            </div>
+
+            <div className="space-y-1 border-l border-border-subtle/70 pl-3">
+              <div className="text-[10px] font-black uppercase tracking-[0.18em] text-text-muted">System Health</div>
+              <div className={`text-2xl font-black tracking-tight ${tone === 'healthy' ? 'text-success' : tone === 'warning' ? 'text-warning' : 'text-error'}`}>
                 {health.toFixed(0)}%
-              </span>
-              <div className={`w-1.5 h-1.5 rounded-full ${statusState === 'warning' ? 'bg-warning' : 'bg-success'} animate-pulse`} />
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center justify-between mt-auto pt-4 border-t border-border-subtle/30">
-          <span className="text-[11px] font-black text-primary uppercase tracking-widest flex items-center gap-2">
-            Launch Workspace
-            <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-          </span>
-          <ChevronRight size={16} className="text-text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
+        <div className="flex items-center justify-between border-t border-border-subtle/60 pt-4">
+          <div className="text-[11px] font-black uppercase tracking-[0.18em] text-primary">
+            {isPending ? 'Opening workspace...' : 'Launch Workspace'}
+          </div>
+          <ArrowRight size={16} className={`text-text-muted transition-transform duration-200 group-hover:translate-x-1 group-hover:text-primary ${isPending ? 'animate-pulse' : ''}`} />
         </div>
       </div>
     </button>
@@ -141,11 +182,14 @@ const ProjectCard = ({ project, onClick }: any) => {
 export default function ProjectsPage() {
   const { user, token, apiFetch, setProject } = useAuth();
   const router = useRouter();
-  const [projects, setProjects] = useState<any[]>([]);
+  const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedRange, setSelectedRange] = useState<'24h' | '7d' | '30d'>('24h');
+  const [pendingProjectId, setPendingProjectId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token) return;
+
     setLoading(true);
     apiFetch('/api/v1/projects')
       .then((data) => {
@@ -173,19 +217,10 @@ export default function ProjectsPage() {
     };
   }, [projects]);
 
-  const trendData = useMemo(
-    () =>
-      Array.from({ length: 12 }).map((_, index) => ({
-        timestamp: `${index * 2}:00`,
-        pageLoadTime: 220 + Math.random() * 180,
-        ttfb: 90 + Math.random() * 70,
-        fcp: 140 + Math.random() * 80,
-        lcp: 380 + Math.random() * 240,
-      })),
-    [],
-  );
+  const trendData = useMemo(() => buildTrendData(selectedRange), [selectedRange]);
 
   const openProject = (projectId: string) => {
+    setPendingProjectId(projectId);
     setProject(projectId);
     router.push(`/project/${projectId}/overview`);
   };
@@ -194,227 +229,308 @@ export default function ProjectsPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 text-center animate-pulse">
-        <div className="w-16 h-16 rounded-2xl bg-bg-muted flex items-center justify-center">
-          <LayoutDashboard size={32} className="text-text-muted" />
-        </div>
-        <div>
-          <div className="h-8 w-64 bg-bg-muted rounded-lg mb-2 mx-auto" />
-          <div className="h-4 w-48 bg-bg-muted rounded-lg mx-auto opacity-50" />
+      <div className="min-h-[60vh] px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-[1440px] flex-col gap-6">
+          <div className="h-28 rounded-3xl border border-border-subtle bg-bg-surface/80 p-6 shadow-sm">
+            <div className="h-6 w-72 rounded-full bg-bg-muted animate-pulse" />
+            <div className="mt-4 h-4 w-96 rounded-full bg-bg-muted/70 animate-pulse" />
+          </div>
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="h-[168px] rounded-2xl border border-border-subtle bg-bg-surface animate-pulse" />
+            ))}
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-[1440px] mx-auto space-y-10 pb-20">
-      {/* 4. Header Section Refinement */}
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 pt-6 pb-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-3">
-            <Typography variant="h1" noMargin className="text-3xl font-black tracking-tight text-text-primary">
-              Portfolio Command Center
-            </Typography>
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-success/10 border border-success/20">
-              <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
-              <span className="text-[10px] font-black text-success uppercase tracking-widest">Live</span>
-            </div>
-          </div>
-          <Typography variant="body" color="muted" className="text-sm font-medium tracking-tight">
-            Consolidated operational surface for all authorized project streams.
-          </Typography>
-        </div>
+    <div className="min-h-screen bg-bg-base">
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute left-[-10%] top-[-8%] h-72 w-72 rounded-full bg-primary/5 blur-3xl" />
+        <div className="absolute right-[-12%] top-[8%] h-80 w-80 rounded-full bg-secondary/5 blur-3xl" />
+      </div>
 
-        <div className="flex items-center gap-4">
-          {metrics.projectsAtRisk > 0 && (
-            <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-error/10 border border-error/20 text-error animate-fade-in shadow-sm shadow-error/5">
-              <ShieldAlert size={14} className="animate-pulse" />
-              <span className="text-[11px] font-black uppercase tracking-wider">
-                {metrics.projectsAtRisk} projects need attention
-              </span>
+      <header className="sticky top-0 z-30 border-b border-border-subtle bg-[color-mix(in_srgb,var(--bg-base)_86%,transparent)] backdrop-blur-xl">
+        <div className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <h1 className="text-[28px] font-semibold tracking-tight text-text-primary sm:text-[30px]">
+                  Portfolio Command Center
+                </h1>
+                <span className="inline-flex items-center gap-2 rounded-full border border-success/20 bg-success/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-success">
+                  <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
+                  Live
+                </span>
+              </div>
+              <p className="max-w-2xl text-sm leading-6 text-text-muted">
+                Consolidated operational surface for all authorized project streams, optimized for fast scanning and precise workspace entry.
+              </p>
             </div>
-          )}
-          
-          <div className="flex items-center gap-2 p-1.5 bg-bg-surface border border-border-subtle rounded-xl shadow-sm">
-            <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-bg-muted transition-colors text-xs font-bold text-text-secondary">
-              <Clock size={14} />
-              Last 24h
-            </button>
+
+            <div className="flex flex-wrap items-center justify-start gap-3 xl:justify-end">
+              {metrics.projectsAtRisk > 0 && (
+                <div className="inline-flex items-center gap-2 rounded-full border border-error/20 bg-error/10 px-4 py-2 text-error shadow-sm">
+                  <AlertTriangle size={14} />
+                  <span className="text-[11px] font-black uppercase tracking-[0.16em]">
+                    {metrics.projectsAtRisk} projects need attention
+                  </span>
+                </div>
+              )}
+
+              <div className="inline-flex items-center gap-1 rounded-full border border-border-subtle bg-bg-surface p-1 shadow-sm">
+                {timeFilters.map((filter) => {
+                  const active = selectedRange === filter.value;
+                  return (
+                    <button
+                      key={filter.value}
+                      type="button"
+                      onClick={() => setSelectedRange(filter.value)}
+                      className={`rounded-full px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] transition-all duration-150 active:scale-[0.98] ${
+                        active
+                          ? 'bg-primary text-white shadow-sm'
+                          : 'text-text-muted hover:bg-bg-muted hover:text-text-primary'
+                      }`}
+                    >
+                      {filter.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                type="button"
+                className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-bg-surface text-text-muted transition-all duration-150 hover:border-primary/25 hover:text-primary hover:shadow-md active:scale-[0.98]"
+                aria-label="Notifications"
+              >
+                <Bell size={18} />
+                {metrics.projectsAtRisk > 0 && (
+                  <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-error ring-2 ring-bg-surface" />
+                )}
+              </button>
+
+              <button
+                type="button"
+                className="flex items-center gap-3 rounded-full border border-border-subtle bg-bg-surface px-3 py-2 transition-all duration-150 hover:border-primary/25 hover:shadow-md active:scale-[0.99]"
+                aria-label="User profile"
+              >
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-black text-primary">
+                  {user.name?.charAt(0)?.toUpperCase() || 'A'}
+                </div>
+                <div className="hidden text-left sm:block">
+                  <div className="text-sm font-semibold text-text-primary">{user.name}</div>
+                  <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-text-muted">
+                    {user.role.replace('_', ' ')}
+                  </div>
+                </div>
+                <ChevronDown size={14} className="text-text-muted" />
+              </button>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* 5. KPI Cards Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-slide-up">
-        <PortfolioMetricCard
-          title="Active Projects"
-          value={metrics.totalProjects}
-          state="healthy"
-          icon={Building2}
-          secondaryTag="Global Scope"
-        />
-        <PortfolioMetricCard
-          title="Portfolio Health"
-          value={metrics.avgHealth}
-          unit="%"
-          state={Number(metrics.avgHealth) < 95 ? 'warning' : 'healthy'}
-          icon={Activity}
-          secondaryTag="Real-time"
-        />
-        <PortfolioMetricCard
-          title="Active Operators"
-          value={metrics.totalUsers.toLocaleString()}
-          state="healthy"
-          icon={Users}
-          secondaryTag="Sessions"
-        />
-        <PortfolioMetricCard
-          title="Incident Surface"
-          value={metrics.projectsAtRisk}
-          state={metrics.projectsAtRisk > 0 ? 'critical' : 'healthy'}
-          icon={AlertTriangle}
-          secondaryTag="Open Alerts"
-        />
-      </div>
-
-      {/* 6. Trendline + Operational Context Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-        <div className="lg:col-span-8">
-          <Card className="h-full rounded-[24px] overflow-hidden border-border-subtle/60 shadow-xl shadow-black/5">
-            <div className="p-6 border-b border-border-subtle/40 flex items-center justify-between bg-bg-surface">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                  <Activity size={18} />
-                </div>
-                <div>
-                   <Typography variant="h3" noMargin weight="bold">Cross-portfolio Trendline</Typography>
-                   <Typography variant="caption" color="muted">Global synthetic latency patterns (24h)</Typography>
-                </div>
-              </div>
-            </div>
-            <div className="p-6 bg-bg-muted/10 min-h-[320px] flex flex-col justify-center">
-              <PerformanceChart data={trendData} title="" />
-            </div>
-          </Card>
-        </div>
-
-        <div className="lg:col-span-4">
-          <Card className="h-full rounded-[24px] border-border-subtle/60 shadow-xl shadow-black/5 bg-bg-surface">
-            <div className="p-6 border-b border-border-subtle/40 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-secondary/10 text-secondary">
-                  <ShieldCheck size={18} />
-                </div>
-                <Typography variant="h3" noMargin weight="bold">Operational Context</Typography>
-              </div>
-            </div>
-            
-            <div className="p-6 space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 rounded-2xl bg-bg-muted/30 border border-border-subtle/40">
-                  <div className="space-y-0.5">
-                    <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Operator Identity</span>
-                    <Typography variant="body" weight="bold" noMargin className="text-text-primary">{user.name}</Typography>
-                  </div>
-                  <Badge variant="info" size="sm" className="font-black">{user.role.replace('_', ' ')}</Badge>
-                </div>
-
-                <div className="flex items-center justify-between p-4 rounded-2xl bg-bg-muted/30 border border-border-subtle/40">
-                  <div className="space-y-0.5">
-                    <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Authorized Scope</span>
-                    <Typography variant="body" weight="bold" noMargin className="text-text-primary">{projects.length} Workspaces</Typography>
-                  </div>
-                  <div className="w-8 h-8 rounded-full bg-success/10 flex items-center justify-center text-success">
-                     <ShieldCheck size={16} />
-                  </div>
-                </div>
-              </div>
-
-              <div className="relative p-5 rounded-2xl bg-primary/5 border border-primary/10 overflow-hidden group">
-                <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                  <Info size={40} />
-                </div>
-                <span className="text-[10px] font-black text-primary uppercase tracking-widest block mb-2">Portfolio Intelligence</span>
-                <Typography variant="caption" className="text-text-secondary leading-relaxed font-medium">
-                  Currently observing {projects.length} active data streams. Launch a project workspace for deep-dive diagnostics and infrastructure reporting.
-                </Typography>
-              </div>
-            </div>
-          </Card>
-        </div>
-      </div>
-
-      {/* 7. Project Portfolio Section */}
-      <section className="animate-slide-up" style={{ animationDelay: '0.2s' }}>
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-bg-surface border border-border-subtle flex items-center justify-center text-primary shadow-sm">
-              <FolderKanban size={20} />
-            </div>
-            <div>
-              <Typography variant="h2" noMargin className="text-2xl font-black tracking-tight">Project Portfolio</Typography>
-              <Typography variant="caption" color="muted">Secure entry points for all assigned project workspaces.</Typography>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-bg-muted/50 border border-border-subtle text-[11px] font-bold text-text-muted">
-            <Activity size={12} className="text-success" />
-            {projects.length} ACTIVE STREAMS
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {projects.map((project, i) => (
-            <ProjectCard 
-              key={project.id} 
-              project={project} 
-              onClick={() => openProject(project.id)} 
+      <main className="mx-auto max-w-[1440px] px-4 py-6 pb-20 sm:px-6 lg:px-8">
+        <div className="space-y-10">
+          <section className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+            <MetricCard
+              title="Active Projects"
+              value={formatValue(metrics.totalProjects)}
+              icon={Building2}
+              statusLabel="Portfolio"
+              statusTone="healthy"
+              secondaryTag="Global Scope"
             />
-          ))}
+            <MetricCard
+              title="Portfolio Health"
+              value={`${metrics.avgHealth}%`}
+              icon={Activity}
+              statusLabel={Number(metrics.avgHealth) < 95 ? 'Warning' : 'Healthy'}
+              statusTone={Number(metrics.avgHealth) < 95 ? 'warning' : 'healthy'}
+              secondaryTag="Real Time"
+            />
+            <MetricCard
+              title="Active Operators"
+              value={formatValue(metrics.totalUsers)}
+              icon={Users}
+              statusLabel="Live Sessions"
+              statusTone="healthy"
+              secondaryTag="Connected"
+            />
+            <MetricCard
+              title="Incident Surface"
+              value={formatValue(metrics.projectsAtRisk)}
+              icon={AlertTriangle}
+              statusLabel={metrics.projectsAtRisk > 0 ? 'Critical' : 'Stable'}
+              statusTone={metrics.projectsAtRisk > 0 ? 'critical' : 'healthy'}
+              secondaryTag="Open Alerts"
+            />
+          </section>
 
-          {!projects.length && (
-            <div className="col-span-full py-20 bg-bg-surface border border-dashed border-border-subtle rounded-[32px] flex flex-col items-center justify-center text-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-bg-muted flex items-center justify-center text-text-muted">
-                <FolderKanban size={32} />
+          <section className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+            <div className="lg:col-span-8">
+              <div className="flex h-full min-h-[420px] flex-col overflow-hidden rounded-3xl border border-border-subtle bg-bg-surface shadow-sm">
+                <div className="flex items-start justify-between gap-4 border-b border-border-subtle/70 px-6 py-5">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-xl bg-primary/10 p-2 text-primary">
+                        <TrendingUp size={18} />
+                      </div>
+                      <div>
+                        <div className="text-lg font-semibold tracking-tight text-text-primary">Cross-portfolio Trendline</div>
+                        <div className="text-sm text-text-muted">Synthetic performance pattern for the selected time range.</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="hidden flex-wrap items-center justify-end gap-2 xl:flex">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-border-subtle bg-bg-muted/40 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-text-muted">
+                      <span className="h-2 w-2 rounded-full bg-primary" />
+                      Page Load
+                    </span>
+                    <span className="inline-flex items-center gap-2 rounded-full border border-border-subtle bg-bg-muted/40 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-text-muted">
+                      <span className="h-2 w-2 rounded-full bg-amber-500" />
+                      LCP
+                    </span>
+                    <span className="inline-flex items-center gap-2 rounded-full border border-border-subtle bg-bg-muted/40 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-text-muted">
+                      <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                      FCP
+                    </span>
+                    <span className="inline-flex items-center gap-2 rounded-full border border-border-subtle bg-bg-muted/40 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-text-muted">
+                      <span className="h-2 w-2 rounded-full bg-rose-500" />
+                      TTFB
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex-1 px-6 py-5">
+                  <div className="min-h-[320px]">
+                    <PerformanceChart data={trendData} title="" height={320} />
+                  </div>
+                </div>
               </div>
-              <div className="space-y-1">
-                <Typography variant="h3" noMargin>No projects assigned</Typography>
-                <Typography variant="body" color="muted">Ask an administrator to grant you workspace access.</Typography>
-              </div>
-              <Button variant="primary" className="mt-4 px-8 rounded-full font-black">
-                Request Access
-              </Button>
             </div>
-          )}
+
+            <div className="lg:col-span-4">
+              <div className="flex h-full min-h-[420px] flex-col overflow-hidden rounded-3xl border border-border-subtle bg-bg-surface shadow-sm">
+                <div className="border-b border-border-subtle/70 px-6 py-5">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-xl bg-secondary/10 p-2 text-secondary">
+                      <ShieldCheck size={18} />
+                    </div>
+                    <div>
+                      <div className="text-lg font-semibold tracking-tight text-text-primary">Operational Context</div>
+                      <div className="text-sm text-text-muted">Identity, scope, and portfolio intelligence at a glance.</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-1 flex-col gap-4 p-5">
+                  <div className="rounded-2xl border border-border-subtle/70 bg-bg-muted/30 p-4">
+                    <div className="text-[10px] font-black uppercase tracking-[0.18em] text-text-muted">Operator Identity</div>
+                    <div className="mt-2 flex items-center justify-between gap-3">
+                      <div>
+                        <div className="text-base font-semibold text-text-primary">{user.name}</div>
+                        <div className="text-sm text-text-muted">{user.email}</div>
+                      </div>
+                      <div className="rounded-full border border-primary/15 bg-primary/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-primary">
+                        {user.role.replace('_', ' ')}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-border-subtle/70 bg-bg-muted/30 p-4">
+                    <div className="text-[10px] font-black uppercase tracking-[0.18em] text-text-muted">Authorized Scope</div>
+                    <div className="mt-2 flex items-center justify-between gap-3">
+                      <div>
+                        <div className="text-base font-semibold text-text-primary">{metrics.totalProjects} workspaces</div>
+                        <div className="text-sm text-text-muted">Accessible portfolio count</div>
+                      </div>
+                      <div className="rounded-full bg-success/10 p-2 text-success">
+                        <Sparkles size={16} />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex-1 rounded-2xl border border-primary/10 bg-primary/[0.04] p-4">
+                    <div className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">Portfolio Intelligence</div>
+                    <div className="mt-2 space-y-3">
+                      <p className="text-sm leading-6 text-text-secondary">
+                        Monitoring {metrics.totalProjects} active streams with a stable control surface for fast workspace entry and reduced cognitive load.
+                      </p>
+                      <div className="space-y-2 border-t border-primary/10 pt-3">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-text-muted">Attention surface</span>
+                          <span className="font-semibold text-text-primary">{metrics.projectsAtRisk} projects</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-text-muted">Scanning effort</span>
+                          <span className="font-semibold text-text-primary">Low</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-text-muted">Navigation depth</span>
+                          <span className="font-semibold text-text-primary">Portfolio first</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="space-y-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-xl border border-border-subtle bg-bg-surface p-2 text-primary shadow-sm">
+                    <FolderKanban size={20} />
+                  </div>
+                  <div>
+                    <div className="text-2xl font-semibold tracking-tight text-text-primary">Project Portfolio</div>
+                    <div className="text-sm text-text-muted">Each card is a direct launch point into a project workspace.</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="inline-flex items-center gap-2 rounded-full border border-border-subtle bg-bg-surface px-3 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-text-muted shadow-sm">
+                <LayoutDashboard size={12} className="text-success" />
+                {metrics.totalProjects} active streams
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
+              {projects.map((project) => (
+                <ProjectCard
+                  key={project.id}
+                  project={project}
+                  onOpen={openProject}
+                  isPending={pendingProjectId === project.id}
+                />
+              ))}
+
+              {!projects.length && (
+                <div className="col-span-full flex flex-col items-center justify-center gap-4 rounded-[32px] border border-dashed border-border-subtle bg-bg-surface px-8 py-20 text-center">
+                  <div className="rounded-2xl bg-bg-muted p-4 text-text-muted">
+                    <FolderKanban size={32} />
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-xl font-semibold tracking-tight text-text-primary">No projects assigned</div>
+                    <div className="text-sm text-text-muted">Ask an administrator to grant workspace access.</div>
+                  </div>
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-black uppercase tracking-[0.16em] text-white transition-all duration-150 hover:shadow-lg hover:shadow-primary/20 active:scale-[0.98]"
+                  >
+                    Request Access
+                  </button>
+                </div>
+              )}
+            </div>
+          </section>
         </div>
-      </section>
-
-      <style jsx global>{`
-        .animate-slide-up {
-          animation: slide-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-          opacity: 0;
-        }
-
-        @keyframes slide-up {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .animate-fade-in {
-          animation: fade-in 0.4s ease-out forwards;
-        }
-
-        @keyframes fade-in {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-      `}</style>
+      </main>
     </div>
   );
 }

@@ -379,3 +379,13 @@ export const updateGovernanceConfig = async (req: any, res: any) => {
         return respondWithError(res, err, 'updateGovernanceConfig', siteId);
     }
 };
+
+export const getIncidents = async (req: any, res: any) => {
+    const { siteId } = getFilters(req);
+    try {
+        const data = await DashboardService.getIncidents(getFilters(req) as any);
+        return res.code(200).send(successResponse(data));
+    } catch (err) {
+        return respondWithError(res, err, 'getIncidents', siteId);
+    }
+};

@@ -377,16 +377,60 @@ export const GlobalMemoryStore = {
 
         // Seed Metrics for tc_demo_004
         const metrics = [
-            { siteId: 'tc_demo_004', kpiName: 'pageLoadTime', value: 2450, timestamp: now, dimensions: { url: '/home' } },
-            { siteId: 'tc_demo_004', kpiName: 'pageLoadTime', value: 3100, timestamp: now, dimensions: { url: '/checkout' } },
-            { siteId: 'tc_demo_004', kpiName: 'errorRatePct', value: 1.2, timestamp: now, dimensions: {} },
-            { siteId: 'tc_demo_004', kpiName: 'activeUsersIncrement', value: 1, timestamp: now, dimensions: { sessionId: 's1', action: 'active' } },
-            { siteId: 'tc_demo_004', kpiName: 'activeUsersIncrement', value: 1, timestamp: now, dimensions: { sessionId: 's2', action: 'active' } },
+            { siteId: 'tc_demo_004', kpiName: 'pageLoadTime', value: 2450, timestamp: now, dimensions: { url: '/home', region: 'US', device: 'Desktop' } },
+            { siteId: 'tc_demo_004', kpiName: 'pageLoadTime', value: 3100, timestamp: now, dimensions: { url: '/checkout', region: 'US', device: 'Mobile' } },
+            { siteId: 'tc_demo_004', kpiName: 'pageLoadTime', value: 4500, timestamp: now, dimensions: { url: '/cart', region: 'IN', device: 'Mobile' } },
+            { siteId: 'tc_demo_004', kpiName: 'errorRatePct', value: 1.2, timestamp: now, dimensions: { region: 'US' } },
+            { siteId: 'tc_demo_004', kpiName: 'errorRatePct', value: 4.5, timestamp: now, dimensions: { region: 'IN' } },
+            { siteId: 'tc_demo_004', kpiName: 'activeUsersIncrement', value: 1, timestamp: now, dimensions: { sessionId: 's1', action: 'active', device: 'Desktop' } },
+            { siteId: 'tc_demo_004', kpiName: 'activeUsersIncrement', value: 1, timestamp: now, dimensions: { sessionId: 's2', action: 'active', device: 'Mobile' } },
+            { siteId: 'tc_demo_004', kpiName: 'activeUsersIncrement', value: 1, timestamp: now, dimensions: { sessionId: 's3', action: 'active', device: 'Mobile' } },
             { siteId: 'tc_demo_004', kpiName: 'syncSuccessPing', value: 1, timestamp: now, dimensions: { systemName: 'SAP' } }
         ];
+
+        // Regional Seeds
+        ['US', 'UK', 'IN', 'SG', 'AE'].forEach(region => {
+            metrics.push({
+                siteId: 'tc_demo_004',
+                kpiName: 'regionalLatency',
+                value: Math.random() * 500 + 100,
+                timestamp: now,
+                dimensions: { region }
+            });
+        });
+
         this.metrics.push(...metrics as any);
 
-        console.log('[DB] Seeded 3 users, 2 webhook subscriptions, and baseline metrics for tc_demo_004');
+        // Seed some Identities
+        this.users.set('alex@example.com', {
+            id: 'CUST-8821',
+            email: 'alex@example.com',
+            name: 'Alex Johnson',
+            role: 'CUSTOMER',
+            status: 'active',
+            tenantId: 'tenant_001',
+            assignedProjects: ['tc_demo_004'],
+            state: 'VIP',
+            sessions: 24,
+            lastActive: new Date(Date.now() - 120000).toISOString(),
+            audit: { createdAt: now, updatedAt: now }
+        });
+
+        this.users.set('sarah.c@gmail.com', {
+            id: 'CUST-4011',
+            email: 'sarah.c@gmail.com',
+            name: 'Sarah Chen',
+            role: 'CUSTOMER',
+            status: 'active',
+            tenantId: 'tenant_001',
+            assignedProjects: ['tc_demo_004'],
+            state: 'New Customer',
+            sessions: 2,
+            lastActive: new Date(Date.now() - 300000).toISOString(),
+            audit: { createdAt: now, updatedAt: now }
+        });
+
+        console.log('[DB] Seeded multi-dimensional telemetry and customer identities for tc_demo_004');
     },
 
     pruneSessions() {

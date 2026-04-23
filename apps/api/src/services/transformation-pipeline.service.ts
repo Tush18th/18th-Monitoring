@@ -102,8 +102,10 @@ export class TransformationPipeline {
     }
 
     private static async applyEnrichment(entity: any, envelope: IngestionEnvelope) {
-        // E.g., infer channel based on Shopify source properties
-        entity.channel = 'ONLINE_STOREFRONT'; // Mock derived logic
+        // Infer channel based on connector type or metadata
+        entity.channel = envelope.connectorType?.includes('store') || envelope.connectorType?.includes('magento') || envelope.connectorType?.includes('shopify') 
+            ? 'ONLINE_STOREFRONT' 
+            : 'EXTERNAL_PARTNER';
         return entity;
     }
 

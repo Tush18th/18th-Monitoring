@@ -22,7 +22,15 @@ export class OrderReconciliationService {
             ));
         
         const platformCount = platformCountResult[0]?.count || 0;
-        const externalCount = 100; // MOCKED from external API call
+
+        // Query ingestion events as the external source of truth for count comparison
+        const externalCountResult = await db.select({ count: sql<number>`count(*)` })
+            .from(ingestionEvents)
+            .where(and(
+                eq(ingestionEvents.siteId, siteId),
+                eq(ingestionEvents.eventType, 'order')
+            ));
+        const externalCount = externalCountResult[0]?.count || 0;
 
         if (platformCount !== externalCount) {
             mismatches.push({

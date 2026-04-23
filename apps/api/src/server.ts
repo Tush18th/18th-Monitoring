@@ -25,9 +25,12 @@ import { EventRegistry } from '../../../services/processor/src/registry/event-re
 import { integrationRoutes } from './routes/integrations';
 import { ingestionRoutes } from './routes/ingestion';
 import { monitoringRoutes } from './routes/monitoring';
+import { browserRoutes } from './routes/browser';
+import { simulationRoutes } from './routes/simulation';
 
 import { connectorRegistryService } from './services/connector-registry.service';
 import { webhookRoutes } from './routes/webhooks';
+import { SyntheticSchedulerService } from './services/synthetic-scheduler.service';
 import { publicRoutes } from './routes/public';
 import { configRoutes } from './routes/config';
 import { syncRoutes } from './routes/sync';
@@ -36,6 +39,7 @@ import { transformationRoutes } from './routes/transformation';
 import { pipelineRoutes } from './routes/pipeline';
 import { kpiRoutes } from './routes/kpi';
 import { cache } from '../../../packages/cache/src';
+import { BackendMonitor } from './utils/backend-monitor';
 
 
 declare module 'fastify' {
@@ -120,6 +124,9 @@ export const bootstrapApi = async () => {
         const time = Math.round((reply as any).getResponseTime?.() || 0);
         // Structured log for CloudWatch/Datadog metrics extraction
         console.log(`[METRIC] event=http_request siteId=${(req.params as any).siteId || 'global'} status=${reply.statusCode} latency_ms=${time} path=${req.url}`);
+        
+        // Phase 2: Record backend performance metrics for internal observability
+        await BackendMonitor.recordResponse(req, reply, time);
     });
 
     server.addHook('onRequest', secureHeaders);
@@ -158,6 +165,8 @@ export const bootstrapApi = async () => {
        prefix: '/api/v1' 
     });
 
+    await server.register(browserRoutes, { prefix: '/api/v1' });
+    await server.register(simulationRoutes, { prefix: '/api/v1' });
 
     await server.register(webhookRoutes, {
         prefix: '/api/v1/ingest/webhooks'
@@ -255,15 +264,7 @@ export const bootstrapApi = async () => {
 
 
 
-    // ── Browser Ingest (/i/browser) ─────────────────────────────────────────
-    server.post('/api/v1/i/browser', async (request, reply) => {
-        const body = request.body as any;
-        if (!body?.siteId || !Array.isArray(body.events)) {
-            return reply.status(400).send({ error: 'Invalid payload: siteId and events[] required' });
-        }
-        await IngestionService.processBrowserEvents(body.siteId, body.events);
-        return reply.send({ success: true, count: body.events.length });
-    });
+    // Standardized via browserRoutes plugin (/api/v1/ingest/frontend)
 
     // ── Server Ingest (/i/server) ────────────────────────────────────────────
     server.post('/api/v1/i/server', async (request, reply) => {
@@ -273,71 +274,6 @@ export const bootstrapApi = async () => {
         }
         await IngestionService.processServerEvents(body.siteId, body.events);
         return reply.send({ success: true, count: body.events.length });
-    });
-
-    // Simulate endpoint (dev/demo shortcut)
-    server.post('/api/v1/simulate', { preHandler: [tenantAuthHandler, roleGuard(['TENANT_ADMIN', 'SUPER_ADMIN', 'PROJECT_ADMIN'])] }, async (request, reply) => {
-        const { siteId: bodySiteId } = request.body as any || {};
-        const { siteId: querySiteId } = request.query as any || {};
-        let siteId = bodySiteId || querySiteId;
-
-        // If not provided, use the first assigned project or store_001
-        if (!siteId) {
-            siteId = (request.user as any).assignedProjects?.length > 0 ? (request.user as any).assignedProjects[0] : 'store_001';
-        }
-
-        // Project membership check for ROLE
-        if ((request.user as any).role !== 'SUPER_ADMIN' && !(request.user as any).assignedProjects.includes(siteId)) {
-            return reply.status(403).send({ error: 'Forbidden', message: 'You cannot simulate events for a project you do not manage.' });
-        }
-
-        console.log(`\n[Simulate] ▶ Running Comprehensive E2E Simulation for: ${siteId}…`);
-
-        // 1. Performance Scenarios
-        await IngestionService.processBrowserEvents(siteId, [
-            // Fast loads
-            { eventId: crypto.randomUUID(), eventType: 'page_view', siteId, timestamp: new Date().toISOString(), sessionId: 's_perf_1', userId: 'u1', metadata: { loadTime: 1200, url: '/', ttfb: 200, fcp: 800, lcp: 1100 } },
-            // Slow load (SLA breach > 3000ms)
-            { eventId: crypto.randomUUID(), eventType: 'page_view', siteId, timestamp: new Date().toISOString(), sessionId: 's_perf_2', userId: 'u2', metadata: { loadTime: 4200, url: '/checkout', ttfb: 800, fcp: 2500, lcp: 4000 } },
-            // Web Vitals metrics
-            { eventId: crypto.randomUUID(), eventType: 'browser_metric', siteId, timestamp: new Date().toISOString(), sessionId: 's_perf_1', userId: 'u1', metadata: { metric: 'CLS', value: 0.15 } },
-            { eventId: crypto.randomUUID(), eventType: 'browser_metric', siteId, timestamp: new Date().toISOString(), sessionId: 's_perf_1', userId: 'u1', metadata: { metric: 'FID', value: 120 } },
-            // JS Errors
-            { eventId: crypto.randomUUID(), eventType: 'js_error', siteId, timestamp: new Date().toISOString(), sessionId: 's_err_1', userId: 'u3', metadata: { errorMsg: 'Uncaught TypeError: window.oms is not a function' } }
-        ]);
-
-        // 2. User Activity Scenarios
-        const userSessions = ['us_1', 'us_2', 'us_3'];
-        for (const sid of userSessions) {
-            await IngestionService.processBrowserEvents(siteId, [
-                { eventId: crypto.randomUUID(), eventType: 'session_start', siteId, timestamp: new Date().toISOString(), sessionId: sid, userId: sid, metadata: {} },
-                { eventId: crypto.randomUUID(), eventType: 'page_view', siteId, timestamp: new Date(Date.now() + 1000).toISOString(), sessionId: sid, userId: sid, metadata: { url: '/products' } },
-                { eventId: crypto.randomUUID(), eventType: 'click', siteId, timestamp: new Date(Date.now() + 5000).toISOString(), sessionId: sid, userId: sid, metadata: { elementId: 'add-to-cart-btn' } },
-                { eventId: crypto.randomUUID(), eventType: 'user_activity', siteId, timestamp: new Date(Date.now() + 10000).toISOString(), sessionId: sid, userId: sid, metadata: { action: 'active' } }
-            ]);
-        }
-
-        // 3. Order Lifecycle Scenarios
-        await IngestionService.processServerEvents(siteId, [
-            // Successful flow
-            { eventId: crypto.randomUUID(), eventType: 'order_placed', siteId, timestamp: new Date().toISOString(), sessionId: 'o_1', userId: 'ou_1', metadata: { orderId: 'ORD-SUCCESS-101', value: 150.0, channel: 'web' } },
-            { eventId: crypto.randomUUID(), eventType: 'order_processed', siteId, timestamp: new Date(Date.now() + 2000).toISOString(), metadata: { orderId: 'ORD-SUCCESS-101' } },
-            // Delayed flow (Triggered because missing processed event)
-            { eventId: crypto.randomUUID(), eventType: 'order_placed', siteId, timestamp: new Date(Date.now() - 10000).toISOString(), sessionId: 'o_2', userId: 'ou_2', metadata: { orderId: 'ORD-DELAY-202', value: 259.99, channel: 'mobile' } },
-            // POS order
-            { eventId: crypto.randomUUID(), eventType: 'order_placed', siteId, timestamp: new Date().toISOString(), metadata: { orderId: 'ORD-POS-303', value: 45.0, channel: 'pos' } }
-        ]);
-
-        // 4. Integration Health Scenarios
-        await IngestionService.processServerEvents(siteId, [
-            { eventId: crypto.randomUUID(), eventType: 'oms_sync', siteId, timestamp: new Date().toISOString(), metadata: { system: 'OMS-1' } },
-            { eventId: crypto.randomUUID(), eventType: 'oms_sync', siteId, timestamp: new Date().toISOString(), metadata: { system: 'OMS-1' } },
-            { eventId: crypto.randomUUID(), eventType: 'oms_sync_failed', siteId, timestamp: new Date().toISOString(), metadata: { error: 'Connection Timeout', system: 'OMS-1' } },
-            { eventId: crypto.randomUUID(), eventType: 'csv_upload', siteId, timestamp: new Date().toISOString(), metadata: { filename: 'inventory.csv', success: false } }
-        ]);
-
-        console.log('[Simulate] ✓ Full monitoring spectrum scenarios dispatched');
-        return reply.send({ message: 'Simulation complete — dashboards updated across 4 domains', eventCount: 20 });
     });
 
     // ─── Listen ────────────────────────────────────────────────────────────
@@ -355,8 +291,9 @@ export const bootstrapApi = async () => {
             console.log(`[API] Server listening on everything at ${address}`);
             console.log(`[API] Endpoints: GET /health, GET /api/v1/projects/:siteId/metrics/catalog`);
 
-            // Start connector polling timers after the server is bound
+            // Start connector polling and synthetic monitors after the server is bound
             connectorRegistryService.startAllPollers('*');
+            SyntheticSchedulerService.start();
         });
     }
 

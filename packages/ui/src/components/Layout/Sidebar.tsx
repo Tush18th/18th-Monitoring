@@ -2,7 +2,8 @@ import React from 'react';
 import { 
   ChevronLeft, 
   ChevronRight, 
-  LucideIcon
+  LucideIcon,
+  AlertCircle
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -14,7 +15,7 @@ function cn(...inputs: ClassValue[]) {
 export interface NavItem {
   label: string;
   href: string;
-  icon: LucideIcon;
+  icon?: React.ComponentType<any>;
   badge?: number | string;
 }
 
@@ -97,7 +98,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       onCloseMobile?.();
                     }}
                   >
-                    <item.icon size={20} className={cn("shrink-0 transition-transform group-hover:scale-110", isActive && "text-primary")} />
+                    {item.icon ? (
+                      <item.icon size={20} className={cn("shrink-0 transition-transform group-hover:scale-110", isActive && "text-primary")} />
+                    ) : (
+                      <AlertCircle size={20} className="shrink-0 text-error/50" />
+                    )}
                     {!isCollapsed && <span className="text-sm font-bold tracking-tight whitespace-nowrap">{item.label}</span>}
                     {!isCollapsed && item.badge !== undefined && item.badge !== 0 && (
                         <div className="ml-auto bg-error text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-md">

@@ -33,7 +33,8 @@ import {
     getDeviceSegmentation,
     getResourceBreakdown,
     getMetricsCatalog,
-    getMetricsSeries
+    getMetricsSeries,
+    getIncidents
 } from '../controllers/dashboard.controller';
 import { tenantAuthHandler } from '../middlewares/auth.middleware';
 import { syntheticRoutes } from './synthetic';
@@ -49,6 +50,7 @@ export const dashboardRoutes = async (fastify: any) => {
     fastify.get('/activity', getActivityFeed);
     fastify.get('/governance', getGovernanceConfig);
     fastify.post('/governance', updateGovernanceConfig);
+    fastify.get('/incidents', getIncidents);
     
     // Performance Endpoints
     fastify.get('/performance/summary', getPerformanceSummary);

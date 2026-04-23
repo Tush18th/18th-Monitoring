@@ -229,7 +229,7 @@ export default function OrdersPage() {
                                 <FileText size={24} />
                             </div>
                             <div>
-                                <Typography variant="h2" weight="bold" noMargin>14</Typography>
+                                <Typography variant="h2" weight="bold" noMargin>{stats.mismatches || 0}</Typography>
                                 <Typography variant="caption" className="text-text-muted">Unreconciled Mismatches</Typography>
                             </div>
                         </div>
@@ -240,15 +240,7 @@ export default function OrdersPage() {
                 {/* 3. Lifecycle & Distribution */}
                 <LifecycleDistribution 
                     loading={loading}
-                    stages={[
-                        { stage: 'Created', count: 120, color: 'var(--text-muted)' },
-                        { stage: 'Paid', count: 85, color: '#3b82f6' },
-                        { stage: 'Processing', count: 42, color: '#f59e0b' },
-                        { stage: 'Shipped', count: 215, color: '#10b981' },
-                        { stage: 'Delivered', count: 480, color: '#059669' },
-                        { stage: 'Cancelled', count: 12, color: '#ef4444' },
-                        { stage: 'Returned', count: 5, color: '#6366f1' },
-                    ]}
+                    stages={stats.stages || []}
                 />
 
                 {/* 4. Unified Filter Bar */}
@@ -298,18 +290,29 @@ export default function OrdersPage() {
             >
                 <OrderDetailDrawerContent 
                     order={selectedOrder}
-                    timeline={[
-                        { title: 'Payment Success', time: '10m ago', system: 'Stripe', type: 'success' },
-                        { title: 'Order Export Delay', time: '15m ago', system: 'OMS-1', type: 'error', description: 'API rate limit exceeded during synchronization attempt.' },
-                        { title: 'Entry Point Validated', time: '20m ago', system: 'Ingestion-V3', type: 'success' },
-                        { title: 'Order Placed', time: '21m ago', system: 'Magento', type: 'success' },
-                    ]}
-                    reconciliation={[
-                        { name: 'Storefront State', id: 'MAGENTO_API', value: `$${selectedOrder?.amount?.toFixed(2)}`, match: true, icon: <ShoppingBag size={14}/> },
-                        { name: 'OMS State', id: 'STERLING_OMS', value: `$${selectedOrder?.amount?.toFixed(2)}`, match: true, icon: <Building2 size={14}/> },
-                        { name: 'ERP Ledger', id: 'SAP_S4HANA', value: `$${selectedOrder?.amount ? (selectedOrder.syncStatus === 'mismatch' ? selectedOrder.amount - 10 : selectedOrder.amount).toFixed(2) : '-'}`, match: selectedOrder?.syncStatus !== 'mismatch', icon: <RefreshCw size={14}/> },
-                        { name: 'Payment Gateway', id: 'STRIPE_V3', value: `$${selectedOrder?.amount?.toFixed(2)}`, match: true, icon: <CreditCard size={14}/> },
-                    ]}
+                    timeline={useMemo(() => {
+                        if (!selectedOrder) return [];
+                        const events = [
+                            { title: 'Order Placed', time: 'Captured', system: selectedOrder.channel?.toUpperCase() || 'SOURCE', type: 'success' },
+                        ];
+                        if (['paid', 'shipped', 'delivered'].includes(selectedOrder.status)) {
+                            events.push({ title: 'Payment Validated', time: 'Processed', system: 'GATEWAY', type: 'success' });
+                        }
+                        if (selectedOrder.syncStatus === 'error') {
+                            events.push({ title: 'Sync Failure', time: 'Recent', system: 'OMS-1', type: 'error', description: 'Internal processing error during synchronization.' });
+                        } else if (selectedOrder.syncStatus === 'synced') {
+                            events.push({ title: 'Unified State Sync', time: 'Success', system: 'CORE', type: 'success' });
+                        }
+                        return events.reverse();
+                    }, [selectedOrder])}
+                    reconciliation={useMemo(() => {
+                        if (!selectedOrder) return [];
+                        return [
+                            { name: 'Storefront State', id: 'SOURCE_API', value: `$${selectedOrder.amount?.toFixed(2)}`, match: true, icon: <ShoppingBag size={14}/> },
+                            { name: 'OMS State', id: 'INTEGRATION_LAYER', value: `$${selectedOrder.amount?.toFixed(2)}`, match: selectedOrder.syncStatus !== 'mismatch', icon: <Building2 size={14}/> },
+                            { name: 'Financial Ledger', id: 'ERP_CORE', value: `$${selectedOrder.amount?.toFixed(2)}`, match: true, icon: <RefreshCw size={14}/> },
+                        ];
+                    }, [selectedOrder])}
                     onAction={handleAction}
                 />
             </DiagnosticDrawer>

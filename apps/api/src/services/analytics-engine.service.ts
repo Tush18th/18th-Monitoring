@@ -64,10 +64,21 @@ export class AnalyticsEngine {
             ? apiLatency.reduce((s, m) => s + m.value, 0) / apiLatency.length 
             : 0;
 
+        // Uptime: derived from health check pings
+        const totalChecks = metrics.filter(m => ['healthCheckSuccess', 'healthCheckFail', 'syncSuccessPing', 'syncFailurePing'].includes(m.kpiName)).length;
+        const failedChecks = metrics.filter(m => ['healthCheckFail', 'syncFailurePing'].includes(m.kpiName)).length;
+        const uptime = totalChecks > 0 ? Math.round(((totalChecks - failedChecks) / totalChecks) * 10000) / 100 : 100;
+
+        // Error rate: derived from error rate metrics or error count vs total
+        const errorMetrics = metrics.filter(m => m.kpiName === 'errorRatePct');
+        const errorRate = errorMetrics.length > 0
+            ? Math.round(errorMetrics.reduce((s, m) => s + m.value, 0) / errorMetrics.length * 100) / 100
+            : 0;
+
         return {
             avgLatencyMs: Math.round(avgPageLoad || avgApiLatency),
-            uptime: 99.98, // Mocked for MVP
-            errorRate: 0.05
+            uptime,
+            errorRate
         };
     }
 }

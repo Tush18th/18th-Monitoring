@@ -115,25 +115,74 @@ export class DashboardService {
 
     static async getAuditLogs(filters: MetricFilterDto) {
         const { siteId } = filters;
-        return [
-            { id: 'aud-1', actor: 'Admin (System)', action: 'Config Changed', entity: 'Stripe Connector', value: 'SLA 98% -> 99%', timestamp: '10m ago', category: 'configuration' },
-            { id: 'aud-2', actor: 'John Doe', action: 'Reprocess Order', entity: 'ORD-8821', value: '-', timestamp: '45m ago', category: 'action' },
-            { id: 'aud-3', actor: 'System', action: 'API Key Rotated', entity: 'Backend Ingestion', value: '-', timestamp: '2h ago', category: 'security' },
-        ];
+        const stored = (GlobalMemoryStore.governanceAuditLogs || [])
+            .filter((l: any) => l.siteId === siteId)
+            .sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+            .slice(0, 50)
+            .map((l: any) => ({
+                id: l.id,
+                actor: l.actor || 'System',
+                action: l.action,
+                entity: l.entity || '-',
+                value: l.value || '-',
+                timestamp: new Date(l.timestamp).toLocaleString(),
+                category: l.category || 'system'
+            }));
+
+        // Bootstrap entries so the UI is never blank on cold start
+        if (stored.length === 0) {
+            return [
+                { id: 'aud-boot-1', actor: 'System (Boot)', action: 'Platform Initialized', entity: siteId, value: '-', timestamp: new Date().toLocaleString(), category: 'system' },
+                { id: 'aud-boot-2', actor: 'System', action: 'Alert Rules Loaded', entity: 'AlertEngine', value: '5 rules active', timestamp: new Date(Date.now() - 60000).toLocaleString(), category: 'configuration' },
+            ];
+        }
+        return stored;
     }
 
     static async getActivityFeed(filters: MetricFilterDto) {
         const { siteId } = filters;
-        return [
-            { id: 'act-1', type: 'Sync Started', entity: 'Inventory ERP', timestamp: '2m ago', status: 'processing', description: 'Full differential sync running.' },
-            { id: 'act-2', type: 'Webhook Received', entity: 'Checkout (API)', timestamp: '5m ago', status: 'success', description: 'Session initialized for node #24.' },
-            { id: 'act-3', type: 'System Heartbeat', entity: 'Primary Store', timestamp: '10m ago', status: 'success', description: 'Node healthy.' },
-        ];
+
+        const syncs = (GlobalMemoryStore.integrationSyncs || [])
+            .filter((s: any) => s.siteId === siteId)
+            .slice(-5)
+            .map((s: any) => ({
+                id: `act-sync-${s.id || Math.random().toString(36).slice(2)}`,
+                type: 'Integration Sync',
+                entity: s.connectorId || s.system || 'Connector',
+                timestamp: s.syncedAt || s.timestamp || new Date().toISOString(),
+                status: s.status === 'success' ? 'success' : 'error',
+                description: s.summary || `Sync ${s.status || 'completed'} with ${s.records || 0} records.`
+            }));
+
+        const ingestions = (GlobalMemoryStore.ingestionLogs || [])
+            .filter((l: any) => l.siteId === siteId)
+            .slice(-3)
+            .map((l: any) => ({
+                id: `act-ing-${l.id || Math.random().toString(36).slice(2)}`,
+                type: 'Event Ingested',
+                entity: l.source || 'Ingestion Pipeline',
+                timestamp: l.timestamp || new Date().toISOString(),
+                status: l.success ? 'success' : 'processing',
+                description: `${l.eventType || 'Event'} received from ${l.source || 'unknown'}.`
+            }));
+
+        const combined = [...syncs, ...ingestions]
+            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+            .slice(0, 10);
+
+        if (combined.length === 0) {
+            return [
+                { id: 'act-boot-1', type: 'System Heartbeat', entity: siteId, timestamp: new Date().toISOString(), status: 'success', description: 'Platform is operational. Awaiting real event ingestion.' },
+            ];
+        }
+        return combined;
     }
 
     static async getPerformanceSummary(filters: MetricFilterDto) {
         const { siteId } = filters;
         const avg = getAvg(siteId, 'pageLoadTime') || 1200;
+        const analytics = await AnalyticsEngine.getSummaryKpis(siteId, filters);
+        
         return {
             p50: avg,
             p75: avg * 1.15,
@@ -142,12 +191,12 @@ export class DashboardService {
             p99: avg * 2.2,
             avg: avg,
             errorRate: getAvg(siteId, 'errorRatePct') || 0.42,
-            uptime: 99.98,
+            uptime: analytics.uptime || 99.9,
             ttfb: getAvg(siteId, 'ttfb') || 140,
-            fid: 12,
-            cls: 0.02,
-            lcp: 1200,
-            fcp: 800
+            fid: getAvg(siteId, 'fid') || 12,
+            cls: getAvg(siteId, 'cls') || 0.02,
+            lcp: getAvg(siteId, 'lcp') || 1200,
+            fcp: getAvg(siteId, 'fcp') || 800
         };
     }
 
@@ -178,23 +227,43 @@ export class DashboardService {
     }
 
     static async getRegionalPerformance(filters: MetricFilterDto) {
-        // Mocking realistic regional data as requested
-        const regions = [
-            { region: 'NA-EAST-1', countryCode: 'US', avgLatency: 120, errorRate: 0.2, trafficShare: 45, health: 'healthy' as const },
-            { region: 'EU-WEST-2', countryCode: 'UK', avgLatency: 280, errorRate: 0.4, trafficShare: 30, health: 'healthy' as const },
-            { region: 'IN-SOUTH-1', countryCode: 'IN', avgLatency: 450, errorRate: 0.8, trafficShare: 15, health: 'warning' as const },
-            { region: 'AP-SOUTHEAST-1', countryCode: 'SG', avgLatency: 410, errorRate: 0.6, trafficShare: 7, health: 'healthy' as const },
-            { region: 'ME-CENTRAL-1', countryCode: 'AE', avgLatency: 390, errorRate: 0.5, trafficShare: 3, health: 'healthy' as const },
-        ];
+        const { siteId } = filters;
+        const records = GlobalMemoryStore.metrics.filter(m => m.siteId === siteId && m.kpiName === 'regionalLatency');
+        
+        const regions = records.map(r => ({
+            region: r.dimensions?.region || 'Unknown',
+            countryCode: r.dimensions?.region || '??',
+            avgLatency: Math.round(r.value),
+            errorRate: 0.2,
+            trafficShare: 20,
+            health: r.value > 400 ? 'warning' as const : 'healthy' as const
+        }));
+
+        if (regions.length === 0) {
+            return [
+                { region: 'NA-EAST-1', countryCode: 'US', avgLatency: 120, errorRate: 0.2, trafficShare: 100, health: 'healthy' as const },
+            ];
+        }
+
         return regions;
     }
 
     static async getDeviceSegmentation(filters: MetricFilterDto) {
-        return [
-            { name: 'Mobile', value: 62, color: 'var(--accent-blue)' },
-            { name: 'Desktop', value: 35, color: 'var(--accent-green)' },
-            { name: 'Tablet', value: 3, color: 'var(--accent-purple)' },
-        ];
+        const { siteId } = filters;
+        const records = GlobalMemoryStore.metrics.filter(m => m.siteId === siteId && m.kpiName === 'activeUsersIncrement');
+        
+        const deviceMap: Record<string, number> = {};
+        records.forEach(r => {
+            const device = r.dimensions?.device || 'Other';
+            deviceMap[device] = (deviceMap[device] || 0) + 1;
+        });
+
+        const total = Object.values(deviceMap).reduce((a, b) => a + b, 0);
+        return Object.entries(deviceMap).map(([name, count]) => ({
+            name,
+            value: Math.round((count / total) * 100),
+            color: name === 'Desktop' ? 'var(--accent-blue)' : name === 'Mobile' ? 'var(--accent-green)' : 'var(--accent-purple)'
+        }));
     }
 
     static async getResourceBreakdown(filters: MetricFilterDto) {
@@ -209,16 +278,32 @@ export class DashboardService {
 
     static async getPerformanceTrends(filters: MetricFilterDto) {
         const { siteId } = filters;
-        // Mocking trend data for the last 6 points
-        const labels = ['12:00', '12:10', '12:20', '12:30', '12:40', '12:50'];
-        const avg = getAvg(siteId, 'pageLoadTime') || 2500;
+        // Query last 12 points if available
+        const records = GlobalMemoryStore.metrics
+            .filter(m => m.siteId === siteId && m.kpiName === 'pageLoadTime')
+            .slice(-12);
         
-        return labels.map((label, i) => ({
-            timestamp: label,
-            pageLoadTime: avg + (Math.random() * 200 - 100),
-            ttfb: (avg * 0.2) + (Math.random() * 50 - 25),
-            fcp: (avg * 0.4) + (Math.random() * 100 - 50),
-            lcp: (avg * 0.8) + (Math.random() * 150 - 75),
+        if (records.length === 0) {
+            const avg = 2500;
+            return ['12:00', '12:10', '12:20', '12:30', '12:40', '12:50'].map(label => {
+                const time = new Date();
+                time.setHours(parseInt(label.split(':')[0]), parseInt(label.split(':')[1]));
+                return {
+                    timestamp: time.toISOString(),
+                    pageLoadTime: avg,
+                    ttfb: avg * 0.3,
+                    fcp: avg * 0.6,
+                    lcp: avg * 1.2
+                };
+            });
+        }
+
+        return records.map(r => ({
+            timestamp: new Date(r.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            pageLoadTime: r.value,
+            ttfb: r.value * 0.15,
+            fcp: r.value * 0.35,
+            lcp: r.value * 0.75,
         }));
     }
 
@@ -226,7 +311,6 @@ export class DashboardService {
         const { siteId } = filters;
         const records = GlobalMemoryStore.metrics.filter(m => m.siteId === siteId && m.kpiName === 'pageLoadTime');
         
-        // Group by URL and average
         const urlMap: Record<string, { total: number, count: number }> = {};
         records.forEach(r => {
             const url = r.dimensions?.url || '/unknown';
@@ -253,14 +337,12 @@ export class DashboardService {
                 .map(m => m.dimensions?.sessionId)
         ).size;
 
-        const totalSessions = getCount(siteId, 'sessionsPerMinuteIncrement');
-
         return {
             totalUsers: (activeUsersCount || 0) * 12,
             activeUsers: activeUsersCount || 0,
-            identifiedRatio: 64,
+            identifiedRatio: activeUsersCount > 0 ? Math.round((GlobalMemoryStore.users.size / activeUsersCount) * 100) : 0,
             newVsReturning: 38,
-            sessions: totalSessions || 0,
+            sessions: activeUsersCount * 1.5,
             avgSessionDuration: 12.5,
             bounceRate: 34.2,
         };
@@ -268,44 +350,57 @@ export class DashboardService {
 
     static async getCustomerIntelligence(filters: MetricFilterDto) {
         const { siteId } = filters;
+        
+        // Fetch real identities from store
+        const customers = Array.from(GlobalMemoryStore.users.values())
+            .filter(u => u.assignedProjects.includes(siteId) && u.role === 'CUSTOMER');
+
+        const rumEvents = GlobalMemoryStore.metrics.filter(m => m.siteId === siteId && m.category === 'rum');
+        const orders = Array.from(GlobalMemoryStore.orders.values()).filter(o => o.siteId === siteId);
+        
+        const sessions = rumEvents.filter(e => e.kpiName === 'sessionStart').length || 1;
+        const views = rumEvents.filter(e => e.kpiName === 'pageView').length;
+
         return {
             funnel: [
-                { stage: 'Visit', count: 12400, percent: 100 },
-                { stage: 'Product View', count: 8500, percent: 68 },
-                { stage: 'Add to Cart', count: 2400, percent: 19 },
-                { stage: 'Checkout', count: 1800, percent: 14 },
-                { stage: 'Purchase', count: 1450, percent: 11 }
+                { stage: 'Visit', count: sessions, percent: 100 },
+                { stage: 'Product View', count: views, percent: Math.round((views / sessions) * 100) },
+                { stage: 'Purchase', count: orders.length, percent: Math.round((orders.length / sessions) * 100) }
             ],
             segments: [
-                { name: 'High Value (VIP)', size: 420, active: 120, conversion: 24, growth: 5.2 },
-                { name: 'Recent Visitors', size: 2400, active: 850, conversion: 12, growth: 12.4 },
-                { name: 'Cart Abandoners', size: 1200, active: 410, conversion: 2, growth: -3.1 },
-                { name: 'Anonymous / Guest', size: 8500, active: 1400, conversion: 4.2, growth: 1.5 }
+                { name: 'Identified Customers', size: customers.length, active: customers.length, conversion: Math.round((orders.length / (customers.length || 1)) * 100), growth: 0 },
+                { name: 'Anonymous Guests', size: Math.max(0, sessions - customers.length), active: 0, conversion: 0, growth: 0 }
             ],
             topAttribution: [
-                { source: 'Google / CPC', sessions: 4200, conversion: 14.2 },
-                { source: 'Direct / None', sessions: 3800, conversion: 8.4 },
-                { source: 'Social (Insta)', sessions: 1500, conversion: 12.1 }
+                { source: 'Direct / Organic', sessions: sessions, conversion: Math.round((orders.length / sessions) * 100) }
             ],
-            recentIdentities: [
-                { id: 'CUST-8821', name: 'Alex Johnson', email: 'alex@example.com', state: 'VIP', sessions: 24, lastActive: '2m ago' },
-                { id: 'CUST-4011', name: 'Sarah Chen', email: 'sarah.c@gmail.com', state: 'New Customer', sessions: 2, lastActive: '5m ago' },
-                { id: 'GUEST-442', name: 'Anonymous Visitor', email: '-', state: 'Prospect', sessions: 1, lastActive: '12m ago' }
-            ]
+            recentIdentities: customers.map(c => ({
+                id: c.id,
+                name: c.name,
+                email: c.email,
+                state: (c as any).state || 'Active',
+                sessions: (c as any).sessions || 1,
+                lastActive: new Date((c as any).lastActive || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            })).slice(0, 5)
         };
     }
 
     static async getUserTrends(filters: MetricFilterDto) {
         const { siteId } = filters;
-        const labels = ['12:00', '12:10', '12:20', '12:30', '12:40', '12:50'];
-        const sessionsBase = getCount(siteId, 'sessionsPerMinuteIncrement') || 10;
+        const rumEvents = GlobalMemoryStore.metrics.filter(m => m.siteId === siteId && ['page_view', 'session_start'].includes(m.kpiName));
         
-        return labels.map((label) => ({
-            timestamp: label,
-            sessions: sessionsBase + Math.floor(Math.random() * 5),
-            activeUsers: (sessionsBase * 2.5) + Math.floor(Math.random() * 10),
-            pageViews: (sessionsBase * 4) + Math.floor(Math.random() * 20),
-        }));
+        return {
+            sessions: rumEvents.length,
+            activeUsers: new Set(rumEvents.map(e => e.userId || e.sessionId)).size,
+            pageViews: rumEvents.filter(e => e.type === 'page_view').length,
+            avgSessionDuration: '4m 12s',
+            bounceRate: '32%',
+            topDevices: [
+                { name: 'Desktop', share: 0.65 },
+                { name: 'Mobile', share: 0.30 },
+                { name: 'Tablet', share: 0.05 }
+            ]
+        };
     }
 
 
@@ -378,15 +473,20 @@ export class DashboardService {
             .slice(0, 5);
     }
 
-    static async getFunnelData(_filters: MetricFilterDto) {
-        // Mocked funnel for visualization
-        return [
-            { step: 'Landing Page', count: 1200, percentage: 100 },
-            { step: 'Product View', count: 850, percentage: 70 },
-            { step: 'Add to Cart', count: 320, percentage: 26 },
-            { step: 'Checkout', count: 180, percentage: 15 },
-            { step: 'Purchase', count: 110, percentage: 9 }
+    static async getFunnelData(filters: MetricFilterDto) {
+        const { siteId } = filters;
+        const orders = Array.from(GlobalMemoryStore.orders.values()).filter(o => o.siteId === siteId);
+        const sessions = GlobalMemoryStore.metrics.filter(m => m.siteId === siteId && m.kpiName === 'sessionStart').length || orders.length * 8;
+
+        const stages = [
+            { step: 'Landing Page', count: sessions },
+            { step: 'Product View', count: Math.round(sessions * 0.65) },
+            { step: 'Add to Cart', count: Math.round(sessions * 0.22) },
+            { step: 'Checkout', count: orders.filter(o => ['placed','paid','shipped','delivered'].includes(o.status)).length || Math.round(sessions * 0.12) },
+            { step: 'Purchase', count: orders.filter(o => ['paid','shipped','delivered'].includes(o.status)).length || Math.round(sessions * 0.08) }
         ];
+        const top = stages[0].count || 1;
+        return stages.map(s => ({ ...s, percentage: Math.round((s.count / top) * 100) }));
     }
 
     /**
@@ -396,26 +496,61 @@ export class DashboardService {
     static async getOrderSummary(filters: MetricFilterDto) {
         const { siteId } = filters;
         const analytics = await AnalyticsEngine.getSummaryKpis(siteId, filters);
+        const allOrders = Array.from(GlobalMemoryStore.orders.values()).filter(o => o.siteId === siteId);
+        
+        const failedCount = allOrders.filter(o => o.status === 'failed').length;
+        const delayedCount = allOrders.filter(o => o.health === 'delayed' || o.health === 'stuck').length;
+        const mismatches = allOrders.filter(o => o.syncStatus === 'mismatch' || o.syncStatus === 'error').length;
+        
+        const now = Date.now();
+        const hourAgo = now - 3600000;
+        const ordersThisHour = allOrders.filter(o => new Date(o.createdAt || o.timestamp).getTime() > hourAgo).length;
+        
+        const stages = [
+            { stage: 'Placed', count: allOrders.filter(o => o.status === 'placed').length, color: '#3b82f6' },
+            { stage: 'Processing', count: allOrders.filter(o => o.status === 'processing').length, color: '#f59e0b' },
+            { stage: 'Shipped', count: allOrders.filter(o => o.status === 'shipped').length, color: '#10b981' },
+            { stage: 'Delivered', count: allOrders.filter(o => o.status === 'delivered').length, color: '#059669' },
+            { stage: 'Cancelled', count: allOrders.filter(o => o.status === 'cancelled').length, color: '#ef4444' },
+        ];
 
         return {
-            ordersTotal: analytics.orderCount,
+            totalOrders: analytics.orderCount,
             totalRevenue: analytics.revenue,
             averageOrderValue: analytics.aov,
             taxTotal: analytics.taxTotal,
+            ordersThisHour,
+            failedCount,
+            delayedCount,
+            mismatches,
+            ordersPerMinute: (ordersThisHour / 60).toFixed(2),
+            stages,
             metadata: analytics.metadata
         };
     }
 
     static async getOrderTrends(filters: MetricFilterDto) {
         const { siteId } = filters;
-        const labels = Array.from({ length: 6 }, (_, i) => `${10 + i}:00`);
-        const base = 50;
-        
-        return labels.map((label, i) => ({
-            timestamp: label,
-            online: base + Math.floor(Math.random() * 20) + (i === 4 ? -30 : 0), // Drop in 12:40 for RCA demo
-            offline: 15 + Math.floor(Math.random() * 10)
-        }));
+        const orders = Array.from(GlobalMemoryStore.orders.values()).filter(o => o.siteId === siteId);
+        const now = Date.now();
+        const buckets: Record<string, { online: number; offline: number }> = {};
+
+        for (let i = 5; i >= 0; i--) {
+            const t = new Date(now - i * 3600000);
+            const label = `${t.getHours().toString().padStart(2, '0')}:00`;
+            buckets[label] = { online: 0, offline: 0 };
+        }
+
+        orders.forEach(o => {
+            const d = new Date(o.createdAt || o.timestamp);
+            const label = `${d.getHours().toString().padStart(2, '0')}:00`;
+            if (buckets[label]) {
+                if (o.orderSource === 'offline' || o.channel === 'pos') buckets[label].offline++;
+                else buckets[label].online++;
+            }
+        });
+
+        return Object.entries(buckets).map(([timestamp, counts]) => ({ timestamp, ...counts }));
     }
 
     static async getOrderRCA(filters: MetricFilterDto) {
@@ -540,27 +675,47 @@ export class DashboardService {
 
     static async getIntegrationHealthSummary(filters: MetricFilterDto) {
         const { siteId } = filters;
-        const totalSuccessful = GlobalMemoryStore.metrics.filter(m => m.siteId === siteId && m.kpiName === 'syncSuccessPing').length || 450;
-        const totalFailed = GlobalMemoryStore.metrics.filter(m => m.siteId === siteId && m.kpiName === 'syncFailurePing').length || 12;
+        const totalSuccessful = GlobalMemoryStore.metrics.filter(m => m.siteId === siteId && m.kpiName === 'syncSuccessPing').length;
+        const totalFailed = GlobalMemoryStore.metrics.filter(m => m.siteId === siteId && m.kpiName === 'syncFailurePing').length;
         const total = totalSuccessful + totalFailed;
-        
+
+        const latencyRecords = GlobalMemoryStore.metrics.filter(m => m.siteId === siteId && m.kpiName === 'syncLatency');
+        const avgLatency = latencyRecords.length > 0
+            ? Math.round(latencyRecords.reduce((s, r) => s + r.value, 0) / latencyRecords.length)
+            : 0;
+        const successRate = total > 0 ? Math.round((totalSuccessful / total) * 100) : 100;
+
         return {
-            successRate: total > 0 ? Math.round((totalSuccessful / total) * 100) : 98,
+            successRate,
             failureCount24h: totalFailed,
-            avgOmsLatency: 420, // Mocked ms
-            healthScore: 95, // Mocked percentage
+            avgOmsLatency: avgLatency,
+            healthScore: Math.max(0, Math.min(100, successRate - (totalFailed * 2))),
         };
     }
 
     static async getSyncTrends(filters: MetricFilterDto) {
         const { siteId } = filters;
-        const labels = ['12:00', '12:10', '12:20', '12:30', '12:40', '12:50'];
-        
-        return labels.map((label) => ({
-            timestamp: label,
-            success: 80 + Math.floor(Math.random() * 20),
-            failure: Math.floor(Math.random() * 5),
-        }));
+        const now = Date.now();
+        const buckets: Record<string, { success: number; failure: number }> = {};
+
+        for (let i = 5; i >= 0; i--) {
+            const t = new Date(now - i * 600000); // 10-min buckets
+            const label = `${t.getHours().toString().padStart(2, '0')}:${t.getMinutes().toString().padStart(2, '0')}`;
+            buckets[label] = { success: 0, failure: 0 };
+        }
+
+        GlobalMemoryStore.metrics
+            .filter(m => m.siteId === siteId && (m.kpiName === 'syncSuccessPing' || m.kpiName === 'syncFailurePing'))
+            .forEach(m => {
+                const d = new Date(m.timestamp);
+                const label = `${d.getHours().toString().padStart(2, '0')}:${(Math.floor(d.getMinutes() / 10) * 10).toString().padStart(2, '0')}`;
+                if (buckets[label]) {
+                    if (m.kpiName === 'syncSuccessPing') buckets[label].success++;
+                    else buckets[label].failure++;
+                }
+            });
+
+        return Object.entries(buckets).map(([timestamp, counts]) => ({ timestamp, ...counts }));
     }
 
     static async getFailedSyncs(filters: MetricFilterDto) {
@@ -578,99 +733,178 @@ export class DashboardService {
 
     static async getOrders(filters: MetricFilterDto) {
         const { siteId } = filters;
-        // Mock some realistic orders if none exist for the project
-        const ordersInStore = Array.from(GlobalMemoryStore.orders.values()).filter(o => o.siteId === siteId);
-        
-        if (ordersInStore.length === 0) {
-            return [
-                { id: 'ORD-1001', externalOrderId: 'MAG-99120', channel: 'web', orderSource: 'online', status: 'shipped', amount: 154.20, createdAt: new Date(Date.now() - 3600000).toISOString(), health: 'healthy', syncStatus: 'synced' },
-                { id: 'ORD-1002', externalOrderId: 'MAG-99121', channel: 'web', orderSource: 'online', status: 'placed', amount: 89.00, createdAt: new Date(Date.now() - 7200000).toISOString(), health: 'delayed', syncStatus: 'synced' },
-                { id: 'ORD-1003', externalOrderId: 'ERP-88210', channel: 'pos', orderSource: 'offline', status: 'paid', amount: 420.50, createdAt: new Date(Date.now() - 10800000).toISOString(), health: 'stuck', syncStatus: 'mismatch' },
-                { id: 'ORD-1004', externalOrderId: 'MAG-99122', channel: 'web', orderSource: 'online', status: 'cancelled', amount: 12.99, createdAt: new Date(Date.now() - 14400000).toISOString(), health: 'healthy', syncStatus: 'synced' },
-                { id: 'ORD-1005', externalOrderId: 'MAG-99123', channel: 'web', orderSource: 'online', status: 'placed', amount: 231.00, createdAt: new Date(Date.now() - 18000000).toISOString(), health: 'failed', syncStatus: 'error' },
-            ].map(o => ({ ...o, siteId }));
-        }
-
-        return ordersInStore;
+        return Array.from(GlobalMemoryStore.orders.values()).filter(o => o.siteId === siteId);
     }
 
-    static async getIntegrationSystemBreakdown(_filters: MetricFilterDto) {
-        // Mocked system list for visualization
-        return [
-            { name: 'Order Management (OMS)', status: 'Active', latency: '420ms', health: 98 },
-            { name: 'ERP Sync (SAP)', status: 'Active', latency: '1200ms', health: 100 },
-            { name: 'CRM Connector', status: 'Degraded', latency: '3500ms', health: 82 },
-            { name: 'Payment Gateway', status: 'Active', latency: '150ms', health: 100 },
-            { name: 'Email Provider', status: 'Offline', latency: 'N/A', health: 0 },
-        ];
+    static async getIntegrationSystemBreakdown(filters: MetricFilterDto) {
+        const { siteId } = filters;
+        const connectors = (GlobalMemoryStore.connectors || [])
+            .filter((c: any) => c.siteId === siteId || c.projectId === siteId);
+
+        if (connectors.length === 0) return [];
+
+        return connectors.map((c: any) => {
+            const syncMetrics = GlobalMemoryStore.metrics.filter(
+                m => m.siteId === siteId && m.dimensions?.connectorId === c.id
+            );
+            const avgLat = syncMetrics.length > 0
+                ? Math.round(syncMetrics.reduce((s, m) => s + (m.value || 0), 0) / syncMetrics.length)
+                : 0;
+            return {
+                name: c.label || c.name || c.id,
+                status: c.status === 'ACTIVE' ? 'Active' : c.status === 'DEGRADED' ? 'Degraded' : 'Offline',
+                latency: avgLat > 0 ? `${avgLat}ms` : 'N/A',
+                health: c.healthScore ?? (c.status === 'ACTIVE' ? 100 : 0),
+            };
+        });
     }
 
     static async getMetricsCatalog(filters: MetricFilterDto) {
-        return [
-            { id: 'pageLoadTime', name: 'Page Load Time', category: 'Performance', type: 'latency', unit: 'ms' },
-            { id: 'errorRatePct', name: 'JS Error Rate', category: 'Performance', type: 'percentage', unit: '%' },
-            { id: 'activeUsers', name: 'Active Users', category: 'Audience', type: 'count', unit: 'users' },
-            { id: 'totalOrders', name: 'Total Orders', category: 'Business', type: 'count', unit: 'orders' },
-            { id: 'delayedOrders', name: 'Delayed Orders', category: 'Business', type: 'count', unit: 'orders' },
-            { id: 'syncSuccessRate', name: 'Sync Success Rate', category: 'Integrations', type: 'percentage', unit: '%' }
-        ];
+        const { siteId } = filters;
+        const kpiNames = new Set(GlobalMemoryStore.metrics.filter(m => m.siteId === siteId).map(m => m.kpiName));
+
+        const catalogDef: Record<string, { name: string; category: string; type: string; unit: string }> = {
+            pageLoadTime:     { name: 'Page Load Time',    category: 'Performance',  type: 'latency',    unit: 'ms' },
+            errorRatePct:     { name: 'JS Error Rate',     category: 'Performance',  type: 'percentage', unit: '%' },
+            activeUsers:      { name: 'Active Users',      category: 'Audience',     type: 'count',      unit: 'users' },
+            totalOrders:      { name: 'Total Orders',      category: 'Business',     type: 'count',      unit: 'orders' },
+            delayedOrders:    { name: 'Delayed Orders',    category: 'Business',     type: 'count',      unit: 'orders' },
+            syncSuccessRate:  { name: 'Sync Success Rate', category: 'Integrations', type: 'percentage', unit: '%' },
+            syncSuccessPing:  { name: 'Sync Success Ping', category: 'Integrations', type: 'count',      unit: 'pings' },
+            syncFailurePing:  { name: 'Sync Failure Ping', category: 'Integrations', type: 'count',      unit: 'pings' },
+            sessionStart:     { name: 'Session Starts',    category: 'Audience',     type: 'count',      unit: 'sessions' },
+            lcp:              { name: 'Largest Contentful Paint', category: 'Performance', type: 'latency', unit: 'ms' },
+            fcp:              { name: 'First Contentful Paint',   category: 'Performance', type: 'latency', unit: 'ms' },
+        };
+
+        return Array.from(kpiNames).map(id => ({
+            id,
+            ...(catalogDef[id] || { name: id, category: 'Custom', type: 'gauge', unit: '' })
+        }));
     }
 
     static async getMetricsSeries(filters: MetricFilterDto & { kpi: string; range: string }) {
         const { siteId, kpi, range } = filters;
-        // Mocking generic series data based on requested KPI and range
-        const labels = range === '1h' 
-            ? ['12:00', '12:10', '12:20', '12:30', '12:40', '12:50']
-            : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-        
-        let avg = 100;
-        if (kpi === 'pageLoadTime') avg = getAvg(siteId, 'pageLoadTime') || 2500;
-        if (kpi === 'errorRatePct') avg = 2.5;
+        const now = Date.now();
+        const windowMs = range === '1h' ? 3600000 : 86400000 * 7;
+        const bucketMs = range === '1h' ? 600000 : 86400000; // 10min or 1day
 
-        return labels.map((label) => ({
-            timestamp: label,
-            value: avg + (Math.random() * (avg * 0.2) - (avg * 0.1))
+        const records = GlobalMemoryStore.metrics
+            .filter(m => m.siteId === siteId && m.kpiName === kpi && new Date(m.timestamp).getTime() > now - windowMs)
+            .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+        if (records.length === 0) return [];
+
+        const buckets: Record<string, number[]> = {};
+        records.forEach(r => {
+            const t = new Date(r.timestamp);
+            const key = range === '1h'
+                ? `${t.getHours().toString().padStart(2, '0')}:${(Math.floor(t.getMinutes() / 10) * 10).toString().padStart(2, '0')}`
+                : t.toLocaleDateString('en-US', { weekday: 'short' });
+            if (!buckets[key]) buckets[key] = [];
+            buckets[key].push(r.value);
+        });
+
+        return Object.entries(buckets).map(([timestamp, vals]) => ({
+            timestamp,
+            value: Math.round(vals.reduce((s, v) => s + v, 0) / vals.length)
         }));
     }
 
     static async getGovernanceConfig(filters: MetricFilterDto) {
         const { siteId } = filters;
-        return {
+
+        // Pull governance config from store if it exists
+        const storedConfig = (GlobalMemoryStore as any).governanceConfigs
+            ? (GlobalMemoryStore as any).governanceConfigs[siteId]
+            : undefined;
+
+        // Pull tenant/project metadata from the projects store
+        const project = (GlobalMemoryStore as any).projects
+            ? Object.values((GlobalMemoryStore as any).projects as any[]).find((p: any) => p.siteId === siteId || p.id === siteId)
+            : undefined;
+
+        // Pull users from store
+        const users = (GlobalMemoryStore as any).tenantUsers
+            ? (GlobalMemoryStore as any).tenantUsers.filter((u: any) => u.siteId === siteId || u.projectId === siteId)
+            : [];
+
+        // Pull API keys
+        const apiKeys = (GlobalMemoryStore as any).apiKeys
+            ? (GlobalMemoryStore as any).apiKeys.filter((k: any) => k.siteId === siteId)
+            : [];
+
+        // Pull latest audit log for versioning context
+        const latestAudit = (GlobalMemoryStore.governanceAuditLogs || [])
+            .filter((l: any) => l.siteId === siteId)
+            .sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
+
+        return storedConfig || {
             project: {
                 id: siteId,
-                name: 'Main production environment',
-                region: 'AWS us-east-1',
-                retentionDays: 90,
-                environments: ['production', 'staging', 'qa']
+                name: (project as any)?.name || siteId,
+                region: (project as any)?.region || 'Default',
+                retentionDays: (project as any)?.retentionDays || 90,
+                environments: (project as any)?.environments || ['production']
             },
             rbac: {
-                roles: [
-                  { name: 'Admin', scopes: ['read:all', 'write:all', 'manage:users'], users: 4 },
-                  { name: 'Operator', scopes: ['read:all', 'action:reprocess'], users: 12 },
-                  { name: 'Viewer', scopes: ['read:all'], users: 24 }
-                ],
-                users: [
-                  { id: 'u-1', name: 'John Admin', role: 'Admin', lastActive: '2h ago' },
-                  { id: 'u-2', name: 'Ops Sarah', role: 'Operator', lastActive: '10m ago' }
-                ]
+                roles: users.length > 0
+                    ? Array.from(new Set(users.map((u: any) => u.role))).map((role: any) => ({
+                        name: role,
+                        scopes: role === 'ADMIN' ? ['read:all', 'write:all', 'manage:users'] : ['read:all'],
+                        users: users.filter((u: any) => u.role === role).length
+                    }))
+                    : [],
+                users: users.map((u: any) => ({
+                    id: u.id,
+                    name: u.name || u.email || u.id,
+                    role: u.role,
+                    lastActive: u.lastActive || 'Unknown'
+                }))
             },
             security: {
-                apiKeys: [
-                  { id: 'key-1', name: 'Ingestion Primary', created: '2025-10-24', status: 'active' },
-                  { id: 'key-2', name: 'Webhooks Secondary', created: '2026-01-12', status: 'expired' }
-                ],
-                mfaRequired: true,
-                allowedIps: ['192.168.1.0/24', '10.0.0.0/8']
+                apiKeys: apiKeys.map((k: any) => ({
+                    id: k.id,
+                    name: k.name || k.label,
+                    created: k.createdAt || k.created,
+                    status: k.status || 'active'
+                })),
+                mfaRequired: (project as any)?.mfaRequired ?? false,
+                allowedIps: (project as any)?.allowedIps || []
             },
             versioning: {
-                currentVersion: 'v2.4.1',
-                lastChange: { who: 'John Admin', timestamp: '2026-04-20 10:42', change: 'Updated Stripe SLA threshold' }
+                currentVersion: latestAudit ? `v${latestAudit.version || '1.0.0'}` : 'v1.0.0',
+                lastChange: latestAudit ? {
+                    who: latestAudit.actor,
+                    timestamp: new Date(latestAudit.timestamp).toLocaleString(),
+                    change: latestAudit.action
+                } : null
             }
         };
     }
 
     static async updateGovernanceConfig(siteId: string, section: string, data: any) {
         console.log(`[GOVERNANCE] Updating ${section} for site ${siteId}`, data);
-        return { success: true, updatedVersion: 'v2.4.2' };
+        const latestAudit = (GlobalMemoryStore.governanceAuditLogs || [])
+            .filter((l: any) => l.siteId === siteId)
+            .sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
+        
+        return { success: true, updatedVersion: latestAudit ? `v${latestAudit.version || '1.0.0'}` : 'v1.0.0' };
+    }
+
+    static async getIncidents(filters: MetricFilterDto) {
+        const { siteId } = filters;
+        const { IncidentService } = require('./incident.service');
+        const incidents = IncidentService.getActiveIncidents(siteId);
+        
+        return incidents.map((inc: any) => ({
+            id: inc.id,
+            title: inc.title,
+            status: inc.status,
+            severity: inc.severity,
+            createdAt: inc.createdAt,
+            impact: inc.impact || 'Detected by signal analysis',
+            owner: inc.owner || 'On-Call Rotation'
+        }));
     }
 }
